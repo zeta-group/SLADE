@@ -891,6 +891,7 @@ bool MainApp::OnInit()
 	// Calculate scaling factor (from system ppi)
 	wxMemoryDC dc;
 	Global::ppi_scale = (double)(dc.GetPPI().x) / 96.0;
+	wxLogMessage(S_FMT("DPI scaling factor: %1.2f", Global::ppi_scale));
 
 	// Show splash screen
 	theSplashWindow->init();

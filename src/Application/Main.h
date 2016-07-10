@@ -106,6 +106,13 @@ namespace Global
 	extern int win_version_minor;
 };
 
+// DPI scaling stuff
+#ifdef _WINDOWS
+#define SM(a) (a * Global::ppi_scale)
+#else
+#define SM(a) a
+#endif
+
 
 // Path related stuff
 enum Directory { DIR_USER, DIR_DATA, DIR_APP, DIR_RES, DIR_TEMP };
