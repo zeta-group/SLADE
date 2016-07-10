@@ -242,9 +242,9 @@ void MainWindow::setupLayout()
 	// Setup panel info & add panel
 	p_inf.DefaultPane();
 	p_inf.Float();
-	p_inf.FloatingSize(600, 400);
+	p_inf.FloatingSize(SM(600), SM(400));
 	p_inf.FloatingPosition(100, 100);
-	p_inf.MinSize(-1, 192);
+	p_inf.MinSize(-1, SM(256));
 	p_inf.Show(false);
 	p_inf.Caption("Console");
 	p_inf.Name("console");
@@ -257,7 +257,7 @@ void MainWindow::setupLayout()
 	// Setup panel info & add panel
 	p_inf.DefaultPane();
 	p_inf.Left();
-	p_inf.BestSize(192, 480);
+	p_inf.BestSize(SM(192), SM(480));
 	p_inf.Caption("Archive Manager");
 	p_inf.Name("archive_manager");
 	p_inf.Show(true);
@@ -271,7 +271,7 @@ void MainWindow::setupLayout()
 	// Setup panel info & add panel
 	p_inf.DefaultPane();
 	p_inf.Right();
-	p_inf.BestSize(128, 480);
+	p_inf.BestSize(SM(192), SM(480));
 	p_inf.Caption("Undo History");
 	p_inf.Name("undo_history");
 	p_inf.Show(false);
@@ -448,6 +448,12 @@ void MainWindow::createStartPage(bool newtip)
 
 	// Get html as string
 	string html = wxString::FromAscii((const char*)(entry_html->getData()), entry_html->getSize());
+
+	// Logo
+	int width = SM(300);
+	int height = SM(200);
+	string logo_str = S_FMT("<img src=\"logo.png\" width=\"%d\" height=\"%d\"", width, height);
+	html.Replace("#logo#", logo_str);
 
 	// Generate tip of the day string
 	string tip = "It seems tips.txt is missing from your slade.pk3";
