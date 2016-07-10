@@ -42,7 +42,7 @@
  * VARIABLES
  *******************************************************************/
 SplashWindow*	SplashWindow::instance = NULL;
-wxBitmap		SplashWindow::bm_logo;
+wxBitmap*		SplashWindow::bm_logo;
 int				SplashWindow::width = 300;
 int				SplashWindow::height = 204;
 
@@ -122,7 +122,16 @@ void SplashWindow::init()
 	if (logo)
 	{
 		logo->exportFile(tempfile);
-		bm_logo.LoadFile(tempfile, wxBITMAP_TYPE_PNG);
+		//bm_logo.LoadFile(tempfile, wxBITMAP_TYPE_PNG);
+		wxImage img;
+		img.LoadFile(tempfile, wxBITMAP_TYPE_PNG);
+		bm_logo = new wxBitmap(
+			img.Rescale(
+				SM(img.GetWidth()),
+				SM(img.GetHeight()),
+				wxIMAGE_QUALITY_BICUBIC
+			)
+		);
 	}
 
 	// Clean up
@@ -154,9 +163,9 @@ void SplashWindow::show(string message, bool progress, wxWindow* parent)
 
 	// Show & init window
 #ifndef __WXGTK__
-	SetInitialSize(wxSize(width, rheight));
+	SetInitialSize(wxSize(SM(width), SM(rheight)));
 #else
-	SetInitialSize(wxSize(width + 6, rheight + 6));
+	SetInitialSize(wxSize(SM(width + 6), SM(rheight + 6)));
 #endif
 	setMessage(message);
 	Show();
@@ -202,11 +211,11 @@ void SplashWindow::onPaint(wxPaintEvent& e)
 	// Draw border
 	dc.SetBrush(wxBrush(wxColour(180, 186, 200)));
 	dc.SetPen(wxPen(wxColour(100, 104, 116)));
-	dc.DrawRectangle(0, 0, width, height);
+	dc.DrawRectangle(0, 0, SM(width), SM(height));
 
 	// Draw SLADE logo
-	if (bm_logo.IsOk())
-		dc.DrawBitmap(bm_logo, 0, 0, true);
+	if (bm_logo && bm_logo->IsOk())
+		dc.DrawBitmap(*bm_logo, 0, 0, true);
 
 	// Setup text
 	wxFont font(8, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Calibri");
@@ -215,8 +224,8 @@ void SplashWindow::onPaint(wxPaintEvent& e)
 	// Draw version
 	string vers = "v" + Global::version;
 	wxSize text_size = dc.GetTextExtent(vers);
-	wxCoord x = width - text_size.GetWidth() - 8;
-	wxCoord y = 190 - text_size.GetHeight();
+	wxCoord x = SM(width) - text_size.GetWidth() - SM(8);
+	wxCoord y = SM(190) - text_size.GetHeight();
 	dc.DrawText(vers, x, y);
 
 	// Draw message
@@ -224,15 +233,15 @@ void SplashWindow::onPaint(wxPaintEvent& e)
 	font.SetWeight(wxFONTWEIGHT_BOLD);
 	dc.SetFont(font);
 	text_size = dc.GetTextExtent(message);
-	x = (width*0.5) - int((double)text_size.GetWidth() * 0.5);
-	y = (height-4) - text_size.GetHeight();
+	x = SM((width*0.5)) - int((double)text_size.GetWidth() * 0.5);
+	y = SM((height-4)) - text_size.GetHeight();
 	dc.DrawText(message, x, y);
 
 	// Draw progress bar if necessary
 	if (show_progress)
 	{
 		// Setup progress bar
-		wxRect rect_pbar(0, height-4, width, 14);
+		wxRect rect_pbar(0, SM(height)-SM(4), SM(width), SM(14));
 
 		// Draw background
 		dc.SetBrush(wxBrush(wxColour(40, 40, 56)));
@@ -241,7 +250,7 @@ void SplashWindow::onPaint(wxPaintEvent& e)
 		// Draw meter
 		if (progress >= 0)
 		{
-			rect_pbar.SetRight(progress * width);
+			rect_pbar.SetRight(progress * SM(width));
 			rect_pbar.Deflate(1, 1);
 			dc.SetBrush(wxBrush(wxColour(100, 120, 255)));
 			dc.SetPen(*wxTRANSPARENT_PEN);
@@ -273,8 +282,8 @@ void SplashWindow::onPaint(wxPaintEvent& e)
 		font.SetPointSize(8);
 		dc.SetFont(font);
 		text_size = dc.GetTextExtent(message_progress);
-		x = (width*0.5) - int((double)text_size.GetWidth() * 0.5);
-		y = height-4;
+		x = SM((width*0.5)) - int((double)text_size.GetWidth() * 0.5);
+		y = SM(height)-SM(4);
 		dc.SetTextForeground(wxColour(200, 210, 255));
 		dc.DrawText(message_progress, x, y);
 	}

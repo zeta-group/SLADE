@@ -16,7 +16,7 @@ private:
 	wxStopWatch	timer;
 
 	static SplashWindow*	instance;
-	static wxBitmap			bm_logo;
+	static wxBitmap*		bm_logo;
 	static int				width;
 	static int				height;
 
