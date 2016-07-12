@@ -822,7 +822,10 @@ void ArchiveManagerPanel::openTab(Archive* archive)
 		wp->SetName("archive");
 		stc_archives->AddPage(wp, archive->getFilename(false), false);
 		stc_archives->SetSelection(stc_archives->GetPageCount() - 1);
-		stc_archives->SetPageBitmap(stc_archives->GetPageCount() - 1, Icons::getIcon(Icons::ENTRY, icon));
+		stc_archives->SetPageBitmap(
+			stc_archives->GetPageCount() - 1,
+			Icons::getIcon(Icons::ENTRY, icon, (Global::ppi_scale >= 1.5))
+		);
 		wp->addMenus();
 		wp->Show(true);
 		wp->SetFocus();

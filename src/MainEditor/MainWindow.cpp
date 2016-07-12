@@ -217,7 +217,7 @@ void MainWindow::setupLayout()
 	if (show_start_page)
 	{
 		stc_tabs->AddPage(html_startpage,"Start Page");
-		stc_tabs->SetPageBitmap(0, Icons::getIcon(Icons::GENERAL, "logo"));
+		stc_tabs->SetPageBitmap(0, Icons::getIcon(Icons::GENERAL, "logo", (Global::ppi_scale >= 1.5)));
 		createStartPage();
 	}
 	else

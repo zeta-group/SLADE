@@ -54,7 +54,7 @@ STabCtrl::STabCtrl(wxWindow* parent, bool close_buttons, bool window_list, int h
 
 	// Setup tabs
 	SetArtProvider(new SAuiTabArt(close_buttons, main_tabs));
-	SetTabCtrlHeight(height);
+	SetTabCtrlHeight(SM(height));
 }
 
 /* STabCtrl::~STabCtrl

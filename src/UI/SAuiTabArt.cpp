@@ -141,7 +141,7 @@ SAuiTabArt::SAuiTabArt(bool close_buttons, bool main_tabs)
 	m_closeButtons = close_buttons;
 	m_mainTabs = main_tabs;
 
-	m_fixedTabWidth = 100;
+	m_fixedTabWidth = SM(100);
 	m_tabCtrlHeight = 0;
 
 	wxColor baseColour = Drawing::getPanelBGColour();
@@ -394,17 +394,17 @@ void SAuiTabArt::DrawTab(wxDC& dc,
 	}
 
 
-	int text_offset = tab_x + 8;
+	int text_offset = tab_x + SM(8);
 	int close_button_width = 0;
 	if (close_button_state != wxAUI_BUTTON_STATE_HIDDEN)
 	{
-		close_button_width = m_activeCloseBmp.GetWidth();
+		close_button_width = SM(m_activeCloseBmp.GetWidth());
 	}
 
 	int bitmap_offset = 0;
 	if (page.bitmap.IsOk())
 	{
-		bitmap_offset = tab_x + 8;
+		bitmap_offset = tab_x + SM(8);
 
 		// draw bitmap
 		dc.DrawBitmap(page.bitmap,
@@ -413,12 +413,12 @@ void SAuiTabArt::DrawTab(wxDC& dc,
 			true);
 
 		text_offset = bitmap_offset + page.bitmap.GetWidth();
-		text_offset += 4; // bitmap padding
+		text_offset += SM(4); // bitmap padding
 
 	}
 	else
 	{
-		text_offset = tab_x + 8;
+		text_offset = tab_x + SM(8);
 	}
 
 	dc.SetTextForeground((page.active && bluetab) ? wxColor(0,0,0) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
@@ -429,7 +429,7 @@ void SAuiTabArt::DrawTab(wxDC& dc,
 	// draw tab text
 	dc.DrawText(draw_text,
 		text_offset,
-		drawn_tab_yoff + (drawn_tab_height) / 2 - (texty / 2) - 0);
+		drawn_tab_yoff + (drawn_tab_height) / 2 - (texty / 2) - SM(1));
 
 	// draw focus rectangle
 	if (page.active && (wnd->FindFocus() == wnd))
@@ -465,13 +465,15 @@ void SAuiTabArt::DrawTab(wxDC& dc,
 		if (m_flags & wxAUI_NB_BOTTOM)
 			offsetY = 1;
 
-		wxRect rect(tab_x + tab_width - close_button_width - 3,
-			offsetY + (tab_height / 2) - (bmp.GetHeight() / 2),
+		wxRect rect(tab_x + tab_width - close_button_width - SM(3),
+			offsetY + (tab_height / 2) - SM((bmp.GetHeight() / 2)),
 			close_button_width,
 			tab_height);
 
 		IndentPressedBitmap(&rect, close_button_state);
 
+		int xofs = (SM(bmp.GetWidth()) - bmp.GetWidth()) / 2;
+		int yofs = (SM(bmp.GetHeight()) - bmp.GetHeight()) / 2;
 		if (close_button_state == wxAUI_BUTTON_STATE_HOVER ||
 			close_button_state == wxAUI_BUTTON_STATE_PRESSED)
 		{
@@ -489,12 +491,12 @@ void SAuiTabArt::DrawTab(wxDC& dc,
 			bmp = m_activeCloseBmp;
 			//dc.DrawBitmap(bmp, rect.x + 1, rect.y, true);
 			//dc.DrawBitmap(bmp, rect.x - 1, rect.y, true);
-			dc.DrawBitmap(bmp, rect.x, rect.y, true);
+			dc.DrawBitmap(bmp, rect.x + xofs, rect.y + yofs, true);
 		}
 		else
 		{
 			bmp = m_disabledCloseBmp;
-			dc.DrawBitmap(bmp, rect.x, rect.y, true);
+			dc.DrawBitmap(bmp, rect.x + xofs, rect.y + yofs, true);
 		}
 
 		*out_button_rect = rect;
@@ -526,18 +528,18 @@ wxSize SAuiTabArt::GetTabSize(wxDC& dc,
 
 	// if close buttons are enabled, add space for one
 	if (m_closeButtons)
-		tab_width += m_activeCloseBmp.GetWidth();
+		tab_width += SM(m_activeCloseBmp.GetWidth());
 
 	// if there's a bitmap, add space for it
 	if (bitmap.IsOk())
 	{
 		tab_width += bitmap.GetWidth();
-		tab_width += 3; // right side bitmap padding
+		tab_width += SM(3); // right side bitmap padding
 		tab_height = wxMax(tab_height, bitmap.GetHeight());
 	}
 
 	// add padding
-	tab_width += 16;
+	tab_width += SM(16);
 	tab_height += 10;
 
 	if (m_flags & wxAUI_NB_TAB_FIXED_WIDTH)
@@ -547,7 +549,7 @@ wxSize SAuiTabArt::GetTabSize(wxDC& dc,
 
 	*x_extent = tab_width;
 
-	return wxSize(tab_width, tab_height);
+	return wxSize(tab_width, SM(tab_height));
 }
 
 void SAuiTabArt::SetSelectedFont(const wxFont& font)
@@ -576,8 +578,8 @@ SAuiDockArt::SAuiDockArt()
 	if (Global::win_version_major >= 10)
 		m_sashBrush = wxBrush(col_w10_bg);
 
-	m_captionSize = 19;
-	m_sashSize = 4;
+	m_captionSize = SM(19);
+	m_sashSize = SM(4);
 }
 
 SAuiDockArt::~SAuiDockArt()

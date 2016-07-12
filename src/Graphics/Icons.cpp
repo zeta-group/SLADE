@@ -170,6 +170,16 @@ namespace Icons
 			}
 		}
 
+		// Generate any missing large icons
+		for (unsigned a = 0; a < icons.size(); a++)
+		{
+			if (!icons[a].image_large.IsOk())
+			{
+				icons[a].image_large = icons[a].image.Copy();
+				icons[a].image_large.Rescale(32, 32, wxIMAGE_QUALITY_BICUBIC);
+			}
+		}
+
 		return true;
 	}
 }
