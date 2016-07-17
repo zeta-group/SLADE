@@ -40,11 +40,6 @@
 #include "UI/SAuiTabArt.h"
 #include "UI/STabCtrl.h"
 #include "UI/UndoManagerHistoryPanel.h"
-#include <wx/dialog.h>
-#include <wx/radiobut.h>
-#include <wx/statbox.h>
-#include <wx/menu.h>
-#include <wx/msgdlg.h>
 
 
 /*******************************************************************
