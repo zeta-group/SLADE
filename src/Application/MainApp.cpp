@@ -195,23 +195,23 @@ public:
 			->exportFile(appPath("STFDEAD0.png", DIR_TEMP));
 		wxImage img;
 		img.LoadFile(appPath("STFDEAD0.png", DIR_TEMP));
-		img.Rescale(img.GetWidth(), img.GetHeight(), wxIMAGE_QUALITY_NEAREST);
+		img.Rescale(SM(img.GetWidth()), SM(img.GetHeight()), wxIMAGE_QUALITY_NEAREST);
 		wxStaticBitmap* picture = new wxStaticBitmap(this, -1, wxBitmap(img));
-		hbox->Add(picture, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxTOP|wxBOTTOM, 10);
+		hbox->Add(picture, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxTOP|wxBOTTOM, SM(10));
 
 		// Add general crash message
 		string message = "SLADE has crashed unexpectedly. To help fix the problem that caused this crash, "
 			"please (optionally) enter a short description of what you were doing at the time "
 			"of the crash, and click the 'Send Crash Report' button.";
 		wxStaticText* label = new wxStaticText(this, -1, message);
-		hbox->Add(label, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 10);
-		label->Wrap(480 - 20 - picture->GetSize().x);
+		hbox->Add(label, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, SM(10));
+		label->Wrap(SM(480) - SM(20) - picture->GetSize().x);
 
 		// Add description text area
-		text_description = new wxTextCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxSize(-1, 100), wxTE_MULTILINE);
-		sizer->Add(new wxStaticText(this, -1, "Description:"), 0, wxLEFT|wxRIGHT, 10);
-		sizer->AddSpacer(2);
-		sizer->Add(text_description, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 10);
+		text_description = new wxTextCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxSize(-1, SM(100)), wxTE_MULTILINE);
+		sizer->Add(new wxStaticText(this, -1, "Description:"), 0, wxLEFT|wxRIGHT, SM(10));
+		sizer->AddSpacer(SM(2));
+		sizer->Add(text_description, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, SM(10));
 
 		// SLADE info
 		trace = S_FMT("Version: %s\n", Global::version);
@@ -242,9 +242,9 @@ public:
 		text_stack = new wxTextCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY|wxHSCROLL);
 		text_stack->SetValue(trace);
 		text_stack->SetFont(wxFont(8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
-		sizer->Add(new wxStaticText(this, -1, "Crash Information:"), 0, wxLEFT|wxRIGHT, 10);
-		sizer->AddSpacer(2);
-		sizer->Add(text_stack, 1, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 10);
+		sizer->Add(new wxStaticText(this, -1, "Crash Information:"), 0, wxLEFT|wxRIGHT, SM(10));
+		sizer->AddSpacer(SM(2));
+		sizer->Add(text_stack, 1, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, SM(10));
 
 		// Dump stack trace to a file (just in case)
 		wxFile file(appPath("slade3_crash.log", DIR_USER), wxFile::write);
@@ -258,25 +258,25 @@ public:
 		string privacy = "Sending a crash report will only send the information displayed above, "
 						"along with a copy of the logs for this session.";
 		label = new wxStaticText(this, -1, privacy);
-		label->Wrap(480);
-		sizer->Add(label, 0, wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxRIGHT|wxBOTTOM, 10);
+		label->Wrap(SM(480));
+		sizer->Add(label, 0, wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxRIGHT|wxBOTTOM, SM(10));
 
 		// Add 'Copy Stack Trace' button
 		hbox = new wxBoxSizer(wxHORIZONTAL);
-		sizer->Add(hbox, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 6);
+		sizer->Add(hbox, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, SM(6));
 		btn_copy_trace = new wxButton(this, -1, "Copy Stack Trace");
 		hbox->AddStretchSpacer();
-		hbox->Add(btn_copy_trace, 0, wxLEFT|wxRIGHT|wxBOTTOM, 4);
+		hbox->Add(btn_copy_trace, 0, wxLEFT|wxRIGHT|wxBOTTOM, SM(4));
 		btn_copy_trace->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &SLADECrashDialog::onBtnCopyTrace, this);
 
 		// Add 'Exit SLADE' button
 		btn_exit = new wxButton(this, -1, "Exit SLADE");
-		hbox->Add(btn_exit, 0, wxLEFT|wxRIGHT|wxBOTTOM, 4);
+		hbox->Add(btn_exit, 0, wxLEFT|wxRIGHT|wxBOTTOM, SM(4));
 		btn_exit->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &SLADECrashDialog::onBtnExit, this);
 
 		// Add 'Send Crash Report' button
 		btn_send = new wxButton(this, -1, "Send Crash Report");
-		hbox->Add(btn_send, 0, wxLEFT|wxRIGHT|wxBOTTOM, 4);
+		hbox->Add(btn_send, 0, wxLEFT|wxRIGHT|wxBOTTOM, SM(4));
 		btn_send->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &SLADECrashDialog::onBtnSend, this);
 
 		Bind(wxEVT_THREAD, &SLADECrashDialog::onThreadUpdate, this);
@@ -284,7 +284,7 @@ public:
 
 		// Setup layout
 		Layout();
-		SetInitialSize(wxSize(500, 600));
+		SetInitialSize(wxSize(SM(500), SM(600)));
 		CenterOnParent();
 	}
 
