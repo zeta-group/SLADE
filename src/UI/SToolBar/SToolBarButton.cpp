@@ -74,20 +74,20 @@ SToolBarButton::SToolBarButton(wxWindow* parent, string action, string icon, boo
 	{
 		string name = this->action->getText();
 		name.Replace("&", "");
-		name_width = GetTextExtent(name).GetWidth() + 2;
+		name_width = GetTextExtent(name).GetWidth() + SM(2);
 	}
 
 	// Set size
-	int size = toolbar_size + 6;
+	int size = SM(toolbar_size) + SM(6);
 	SetSizeHints(size+name_width, size, size+name_width, size);
 	SetMinSize(wxSize(size+name_width, size));
 	SetSize(size+name_width, size);
 
 	// Load icon
 	if (icon.IsEmpty())
-		this->icon = Icons::getIcon(Icons::GENERAL, this->action->getIconName(), toolbar_size > 16);
+		this->icon = Icons::getIcon(Icons::GENERAL, this->action->getIconName(), SM(toolbar_size) > 16);
 	else
-		this->icon = Icons::getIcon(Icons::GENERAL, icon, toolbar_size > 16);
+		this->icon = Icons::getIcon(Icons::GENERAL, icon, SM(toolbar_size) > 16);
 
 	// Add shortcut to help text if it exists
 	string sc = this->action->getShortcutText();
@@ -131,10 +131,10 @@ SToolBarButton::SToolBarButton(wxWindow* parent, string action_id, string action
 	this->show_name = show_name;
 
 	// Determine width of name text if shown
-	int name_width = show_name ? GetTextExtent(action_name).GetWidth() + 2 : 0;
+	int name_width = show_name ? GetTextExtent(action_name).GetWidth() + SM(2) : 0;
 
 	// Set size
-	int size = toolbar_size + 6;
+	int size = SM(toolbar_size) + SM(6);
 	SetSizeHints(size+name_width, size, size+name_width, size);
 	SetMinSize(wxSize(size+name_width, size));
 	SetSize(size+name_width, size);
@@ -204,7 +204,7 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 	{
 		name.Replace("&", "");
 		wxSize name_size = GetTextExtent(name);
-		name_width = name_size.GetWidth() + 2;
+		name_width = name_size.GetWidth() + SM(2);
 		name_height = name_size.y;
 	}
 
@@ -225,7 +225,7 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 			col_trans.Set(col_trans.Red(), col_trans.Green(), col_trans.Blue(), 80);
 			gc->SetBrush(col_trans);
 			gc->SetPen(wxPen(Drawing::darkColour(col_toggle, 5.0f)));
-			gc->DrawRectangle(1, 1, toolbar_size+4+name_width, toolbar_size+4);
+			gc->DrawRectangle(SM(1), SM(1), SM(toolbar_size)+SM(4)+name_width, SM(toolbar_size)+SM(4));
 		}
 		else
 		{
@@ -233,7 +233,13 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 			col_trans.Set(col_trans.Red(), col_trans.Green(), col_trans.Blue(), 80);
 			gc->SetBrush(col_trans);
 			gc->SetPen(wxPen(col_hilight));
-			gc->DrawRoundedRectangle(1, 1, toolbar_size+4+name_width, toolbar_size+4, 2);
+			gc->DrawRoundedRectangle(
+				SM(1),
+				SM(1),
+				SM(toolbar_size)+SM(4)+name_width,
+				SM(toolbar_size)+SM(4),
+				SM(2)
+			);
 		}
 	}
 
@@ -254,7 +260,7 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 			col_trans.Set(col_trans.Red(), col_trans.Green(), col_trans.Blue(), 80);
 			gc->SetBrush(col_trans);
 			gc->SetPen(wxPen(col_hilight));
-			gc->DrawRectangle(1, 1, toolbar_size+4+name_width, toolbar_size+4);
+			gc->DrawRectangle(SM(1), SM(1), SM(toolbar_size)+SM(4)+name_width, SM(toolbar_size)+SM(4));
 		}
 		else
 		{
@@ -262,7 +268,13 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 			col_trans.Set(col_trans.Red(), col_trans.Green(), col_trans.Blue(), 80);
 			gc->SetBrush(col_trans);
 			gc->SetPen(wxPen(col_hilight));
-			gc->DrawRoundedRectangle(1, 1, toolbar_size+4+name_width, toolbar_size+4, 2);
+			gc->DrawRoundedRectangle(
+				SM(1),
+				SM(1),
+				SM(toolbar_size)+SM(4)+name_width,
+				SM(toolbar_size)+SM(4),
+				SM(2)
+			);
 		}
 	}
 
@@ -279,18 +291,18 @@ void SToolBarButton::onPaint(wxPaintEvent& e)
 			wxColor::MakeGrey(&r, &g, &b);
 
 			// Draw disabled icon
-			gc->DrawBitmap(icon.ConvertToDisabled(r), 3, 3, toolbar_size, toolbar_size);
+			gc->DrawBitmap(icon.ConvertToDisabled(r), SM(3), SM(3), SM(toolbar_size), SM(toolbar_size));
 		}
 
 		// Otherwise draw normal icon
 		else
-			gc->DrawBitmap(icon, 3, 3, toolbar_size, toolbar_size);
+			gc->DrawBitmap(icon, SM(3), SM(3), SM(toolbar_size), SM(toolbar_size));
 	}
 
 	if (show_name)
 	{
 		int top = ((double)GetSize().y * 0.5) - ((double)name_height * 0.5);
-		dc.DrawText(name, toolbar_size + 5, top);
+		dc.DrawText(name, SM(toolbar_size) + SM(5), top);
 	}
 
 	delete gc;

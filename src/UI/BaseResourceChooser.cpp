@@ -49,7 +49,7 @@ EXTERN_CVAR(Int, base_resource)
  * BaseResourceChooser class constructor
  *******************************************************************/
 BaseResourceChooser::BaseResourceChooser(wxWindow* parent, bool load_change)
-	: wxChoice(parent, -1, wxDefaultPosition, wxSize(128, -1))
+	: wxChoice(parent, -1, wxDefaultPosition, wxSize(SM(128), -1))
 {
 	// Init Variables
 	this->load_change = load_change;
