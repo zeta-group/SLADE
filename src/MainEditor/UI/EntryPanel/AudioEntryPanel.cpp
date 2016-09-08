@@ -94,7 +94,7 @@ AudioEntryPanel::AudioEntryPanel(wxWindow* parent) : EntryPanel(parent, "audio")
 #endif
 
 	// Setup sizer
-	wxGridBagSizer* sizer_gb = new wxGridBagSizer(4, 4);
+	wxGridBagSizer* sizer_gb = new wxGridBagSizer(SM(4), SM(4));
 	sizer_main->AddStretchSpacer();
 #ifndef __WXOSX__
 	if (media_ctrl) sizer_main->Add(media_ctrl, 0);
@@ -135,9 +135,9 @@ AudioEntryPanel::AudioEntryPanel(wxWindow* parent) : EntryPanel(parent, "audio")
 
 	// Add volume slider
 	sizer_gb->Add(new wxStaticText(this, -1, "Volume:"), wxGBPosition(1, 7), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
-	slider_volume = new wxSlider(this, -1, 0, 0, 100, wxDefaultPosition, wxSize(128, -1));
+	slider_volume = new wxSlider(this, -1, 0, 0, 100, wxDefaultPosition, wxSize(SM(128), -1));
 	slider_volume->SetValue(snd_volume);
-	sizer_gb->Add(slider_volume, wxGBPosition(1, 8));
+	sizer_gb->Add(slider_volume, wxGBPosition(1, 8), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
 
 	// Set volume
 	sound->setVolume(snd_volume);

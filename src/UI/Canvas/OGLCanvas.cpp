@@ -204,11 +204,12 @@ void OGLCanvas::drawCheckeredBackground()
 	// Draw background
 	frect_t rect(0, 0, GetSize().x, GetSize().y);
 	OpenGL::setColour(COL_WHITE);
+	double scale = 0.0625 / Global::ppi_scale;
 	glBegin(GL_QUADS);
-	glTexCoord2d(rect.x1()*0.0625, rect.y1()*0.0625);	glVertex2d(rect.x1(), rect.y1());
-	glTexCoord2d(rect.x1()*0.0625, rect.y2()*0.0625);	glVertex2d(rect.x1(), rect.y2());
-	glTexCoord2d(rect.x2()*0.0625, rect.y2()*0.0625);	glVertex2d(rect.x2(), rect.y2());
-	glTexCoord2d(rect.x2()*0.0625, rect.y1()*0.0625);	glVertex2d(rect.x2(), rect.y1());
+	glTexCoord2d(rect.x1()*scale, rect.y1()*scale);	glVertex2d(rect.x1(), rect.y1());
+	glTexCoord2d(rect.x1()*scale, rect.y2()*scale);	glVertex2d(rect.x1(), rect.y2());
+	glTexCoord2d(rect.x2()*scale, rect.y2()*scale);	glVertex2d(rect.x2(), rect.y2());
+	glTexCoord2d(rect.x2()*scale, rect.y1()*scale);	glVertex2d(rect.x2(), rect.y1());
 	glEnd();
 
 	// Disable textures

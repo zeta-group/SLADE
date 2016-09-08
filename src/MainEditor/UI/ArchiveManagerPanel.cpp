@@ -42,6 +42,7 @@
 #include "TextureXEditor/TextureXEditor.h"
 #include "UI/SplashWindow.h"
 #include "UI/STabCtrl.h"
+#include "UI/WxStuff.h"
 
 
 /*******************************************************************
@@ -265,7 +266,7 @@ ArchiveManagerPanel::ArchiveManagerPanel(wxWindow* parent, STabCtrl* nb_archives
 	asked_save_unchanged = false;
 
 	// Create main sizer
-	wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* vbox = new wxBoxSizerScaled(wxVERTICAL);
 	SetSizer(vbox);
 
 	// Create/setup tabs
@@ -288,7 +289,7 @@ ArchiveManagerPanel::ArchiveManagerPanel(wxWindow* parent, STabCtrl* nb_archives
 
 	// Create/setup bookmarks tab
 	wxPanel* panel_bm = new wxPanel(stc_tabs);
-	wxBoxSizer* box_bm = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* box_bm = new wxBoxSizerScaled(wxVERTICAL);
 	panel_bm->SetSizer(box_bm);
 	box_bm->Add(new wxStaticText(panel_bm, -1, "Bookmarks:"), 0, wxEXPAND | wxALL, 4);
 	list_bookmarks = new ListView(panel_bm, -1);
@@ -344,7 +345,7 @@ ArchiveManagerPanel::~ArchiveManagerPanel()
 void ArchiveManagerPanel::createArchivesPanel()
 {
 	panel_archives = new wxPanel(panel_am, -1);
-	wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* vbox = new wxBoxSizerScaled(wxVERTICAL);
 	panel_archives->SetSizer(vbox);
 	vbox->Add(new wxStaticText(panel_archives, -1, "Open Archives:"), 0, wxEXPAND);
 	list_archives = new ListView(panel_archives, -1);
@@ -357,18 +358,19 @@ void ArchiveManagerPanel::createArchivesPanel()
 void ArchiveManagerPanel::createRecentPanel()
 {
 	panel_rf = new wxPanel(panel_am, -1);
-	wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* vbox = new wxBoxSizerScaled(wxVERTICAL);
 	panel_rf->SetSizer(vbox);
 	vbox->Add(new wxStaticText(panel_rf, -1, "Recent Files:"), 0, wxEXPAND);
 	list_recent = new ListView(panel_rf, -1);
 	vbox->Add(list_recent, 1, wxEXPAND|wxTOP, 4);
 
 	// Setup image list
-	wxImageList* list = new wxImageList(16, 16, false, 0);
-	list->Add(Icons::getIcon(Icons::ENTRY, "archive"));
-	list->Add(Icons::getIcon(Icons::ENTRY, "wad"));
-	list->Add(Icons::getIcon(Icons::ENTRY, "zip"));
-	list->Add(Icons::getIcon(Icons::ENTRY, "folder"));
+	wxImageList* list = new wxImageList(SM(16), SM(16), false, 0);
+	bool large = Global::ppi_scale > 1.25;
+	list->Add(Icons::getIcon(Icons::ENTRY, "archive", large));
+	list->Add(Icons::getIcon(Icons::ENTRY, "wad", large));
+	list->Add(Icons::getIcon(Icons::ENTRY, "zip", large));
+	list->Add(Icons::getIcon(Icons::ENTRY, "folder", large));
 	list_recent->SetImageList(list, wxIMAGE_LIST_SMALL);
 }
 
@@ -378,7 +380,7 @@ void ArchiveManagerPanel::createRecentPanel()
 void ArchiveManagerPanel::layoutNormal()
 {
 	// Layout archives tab vertically
-	wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* vbox = new wxBoxSizerScaled(wxVERTICAL);
 	panel_am->SetSizer(vbox);
 
 	vbox->Add(panel_archives, 1, wxEXPAND|wxALL, 4);
@@ -391,7 +393,7 @@ void ArchiveManagerPanel::layoutNormal()
 void ArchiveManagerPanel::layoutHorizontal()
 {
 	// Layout archives tab horizontally
-	wxBoxSizer* hbox = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizerScaled* hbox = new wxBoxSizerScaled(wxHORIZONTAL);
 	panel_am->SetSizer(hbox);
 
 	hbox->Add(panel_archives, 1, wxEXPAND|wxALL, 4);

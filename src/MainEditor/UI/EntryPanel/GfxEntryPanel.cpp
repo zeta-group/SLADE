@@ -119,21 +119,22 @@ GfxEntryPanel::GfxEntryPanel(wxWindow* parent)
 	gfx_canvas->setViewType(GFXVIEW_DEFAULT);
 	gfx_canvas->allowDrag(true);
 	gfx_canvas->allowScroll(true);
+	gfx_canvas->setScale(Global::ppi_scale);
 
 	// Offsets
 	spin_xoffset = new wxSpinCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS|wxTE_PROCESS_ENTER, SHRT_MIN, SHRT_MAX, 0);
 	spin_yoffset = new wxSpinCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS|wxTE_PROCESS_ENTER, SHRT_MIN, SHRT_MAX, 0);
-	spin_xoffset->SetMinSize(wxSize(64, -1));
-	spin_yoffset->SetMinSize(wxSize(64, -1));
+	spin_xoffset->SetMinSize(wxSize(SM(64), -1));
+	spin_yoffset->SetMinSize(wxSize(SM(64), -1));
 	sizer_bottom->Add(new wxStaticText(this, -1, "Offsets:"), 0, wxALIGN_CENTER_VERTICAL, 0);
-	sizer_bottom->Add(spin_xoffset, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 4);
-	sizer_bottom->Add(spin_yoffset, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 4);
+	sizer_bottom->Add(spin_xoffset, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, SM(4));
+	sizer_bottom->Add(spin_yoffset, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, SM(4));
 
 	// Gfx (offset) type
 	string offset_types[] ={ "Auto", "Graphic", "Sprite", "HUD" };
 	choice_offset_type = new wxChoice(this, -1, wxDefaultPosition, wxDefaultSize, 4, offset_types);
 	choice_offset_type->SetSelection(0);
-	sizer_bottom->Add(choice_offset_type, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 4);
+	sizer_bottom->Add(choice_offset_type, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, SM(4));
 
 	// Auto offset
 	btn_auto_offset = new wxBitmapButton(this, -1, Icons::getIcon(Icons::GENERAL, "offset"));
@@ -146,12 +147,12 @@ GfxEntryPanel::GfxEntryPanel(wxWindow* parent)
 	cb_arc = new wxCheckBox(this, -1, "Aspect Ratio Correction");
 	cb_arc->SetValue(gfx_arc);
 	sizer_bottom->Add(cb_arc, 0, wxEXPAND, 0);
-	sizer_bottom->AddSpacer(8);
+	sizer_bottom->AddSpacer(SM(8));
 
 	// Tile checkbox
 	cb_tile = new wxCheckBox(this, -1, "Tile");
 	sizer_bottom->Add(cb_tile, 0, wxEXPAND, 0);
-	sizer_bottom->AddSpacer(8);
+	sizer_bottom->AddSpacer(SM(8));
 
 	// Image selection buttons
 	btn_nextimg = new wxBitmapButton(this, -1, Icons::getIcon(Icons::GENERAL, "right"));
@@ -949,7 +950,8 @@ void GfxEntryPanel::onZoomChanged(wxCommandEvent& e)
 	label_current_zoom->SetLabel(S_FMT("%d%%", zoom_percent));
 
 	// Zoom gfx canvas and update
-	gfx_canvas->setScale((double)zoom_percent * 0.01);
+	double zoom = (double)zoom_percent * 0.01;
+	gfx_canvas->setScale(SM(zoom));
 	gfx_canvas->Refresh();
 }
 

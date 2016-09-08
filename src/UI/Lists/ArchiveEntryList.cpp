@@ -89,13 +89,14 @@ EXTERN_CVAR(Bool, list_font_monospace)
 	setupColumns();
 
 	// Setup entry icons
-	wxImageList* image_list = new wxImageList(16, 16, false, 0);
+	wxImageList* image_list = new wxImageList(SM(16), SM(16), false, 0);
 
 	wxArrayString et_icon_list = EntryType::getIconList();
+	bool large = Global::ppi_scale > 1.25;
 	for (size_t a = 0; a < et_icon_list.size(); a++)
 	{
-		if (image_list->Add(Icons::getIcon(Icons::ENTRY, et_icon_list[a])) < 0)
-			image_list->Add(Icons::getIcon(Icons::ENTRY, "default"));
+		if (image_list->Add(Icons::getIcon(Icons::ENTRY, et_icon_list[a], large)) < 0)
+			image_list->Add(Icons::getIcon(Icons::ENTRY, "default", large));
 	}
 
 	SetImageList(image_list, wxIMAGE_LIST_SMALL);

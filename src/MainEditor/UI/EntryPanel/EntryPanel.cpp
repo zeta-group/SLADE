@@ -34,6 +34,7 @@
 #include "MainEditor/UI/ArchivePanel.h"
 #include "UI/SToolBar/SToolBar.h"
 #include "UI/SToolBar/SToolBarButton.h"
+#include "UI/WxStuff.h"
 
 
 /*******************************************************************
@@ -59,12 +60,12 @@ EntryPanel::EntryPanel(wxWindow* parent, string id)
 	menu_custom = NULL;
 	undo_manager = NULL;
 
-	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* sizer = new wxBoxSizerScaled(wxVERTICAL);
 	SetSizer(sizer);
 
 	// Create & set sizer & border
 	frame = new wxStaticBox(this, -1, "Entry Contents");
-	wxStaticBoxSizer* framesizer = new wxStaticBoxSizer(frame, wxVERTICAL);
+	wxStaticBoxSizerScaled* framesizer = new wxStaticBoxSizerScaled(frame, wxVERTICAL);
 	sizer->Add(framesizer, 1, wxEXPAND|wxALL, 4);
 	Show(false);
 
@@ -82,9 +83,9 @@ EntryPanel::EntryPanel(wxWindow* parent, string id)
 	toolbar->enableGroup("Entry", false);
 
 	// Setup sizer positions
-	sizer_top = new wxBoxSizer(wxHORIZONTAL);
-	sizer_bottom = new wxBoxSizer(wxHORIZONTAL);
-	sizer_main = new wxBoxSizer(wxVERTICAL);
+	sizer_top = new wxBoxSizerScaled(wxHORIZONTAL);
+	sizer_bottom = new wxBoxSizerScaled(wxHORIZONTAL);
+	sizer_main = new wxBoxSizerScaled(wxVERTICAL);
 	framesizer->Add(sizer_top, 0, wxEXPAND|wxALL, 4);
 	framesizer->Add(sizer_main, 1, wxEXPAND|wxLEFT|wxRIGHT, 4);
 	framesizer->Add(sizer_bottom, 0, wxEXPAND|wxALL, 4);

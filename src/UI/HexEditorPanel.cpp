@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "HexEditorPanel.h"
 #include "Utility/CodePages.h"
+#include "UI/WxStuff.h"
 
 
 
@@ -252,13 +253,13 @@ double HexTable::getDoubleValue(uint32_t offset)
 HexEditorPanel::HexEditorPanel(wxWindow* parent) : wxPanel(parent, -1)
 {
 	// Setup layout
-	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizerScaled* sizer = new wxBoxSizerScaled(wxHORIZONTAL);
 	SetSizer(sizer);
 
 	// 'Show As'
-	wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizerScaled* vbox = new wxBoxSizerScaled(wxVERTICAL);
 	sizer->Add(vbox, 0, wxEXPAND|wxALL, 4);
-	wxBoxSizer* hbox = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizerScaled* hbox = new wxBoxSizerScaled(wxHORIZONTAL);
 	vbox->Add(hbox, 0, wxEXPAND|wxBOTTOM, 4);
 
 	// Hex
@@ -282,22 +283,23 @@ HexEditorPanel::HexEditorPanel(wxWindow* parent) : wxPanel(parent, -1)
 	vbox->Add(grid_hex, 0, wxEXPAND);
 
 	// Setup hex grid
-	grid_hex->SetDefaultRowSize(26, true);
-	grid_hex->SetDefaultColSize(26, true);
+	grid_hex->SetDefaultRowSize(SM(26), true);
+	grid_hex->SetDefaultColSize(SM(26), true);
 	grid_hex->HideColLabels();
 	grid_hex->HideRowLabels();
 	grid_hex->EnableEditing(false);
 	grid_hex->DisableDragGridSize();
 	grid_hex->SetDefaultCellAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
 	grid_hex->SetTable(table_hex);
-	grid_hex->SetInitialSize(wxSize(27*hex_grid_width+8, -1));
+	double width = 27*hex_grid_width+8;
+	grid_hex->SetInitialSize(wxSize(SM(width), -1));
 
 	// Info frames
-	vbox = new wxBoxSizer(wxVERTICAL);
+	vbox = new wxBoxSizerScaled(wxVERTICAL);
 	sizer->Add(vbox, 1, wxEXPAND|wxALL);
 
 	wxStaticBox* frame = new wxStaticBox(this, -1, "Values (General)");
-	wxStaticBoxSizer* framesizer = new wxStaticBoxSizer(frame, wxVERTICAL);
+	wxStaticBoxSizerScaled* framesizer = new wxStaticBoxSizerScaled(frame, wxVERTICAL);
 	vbox->Add(framesizer, 0, wxEXPAND|wxALL, 4);
 
 	label_offset = new wxStaticText(this, -1, "Offset:");
@@ -310,7 +312,7 @@ HexEditorPanel::HexEditorPanel(wxWindow* parent) : wxPanel(parent, -1)
 	framesizer->Add(label_ascii, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 4);
 
 	frame = new wxStaticBox(this, -1, "Values (Little Endian)");
-	framesizer = new wxStaticBoxSizer(frame, wxVERTICAL);
+	framesizer = new wxStaticBoxSizerScaled(frame, wxVERTICAL);
 	vbox->Add(framesizer, 0, wxEXPAND|wxALL, 4);
 
 	label_short_le = new wxStaticText(this, -1, "Signed Short:");
@@ -331,7 +333,7 @@ HexEditorPanel::HexEditorPanel(wxWindow* parent) : wxPanel(parent, -1)
 	//framesizer->Add(label_double_le, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 4);
 
 	frame = new wxStaticBox(this, -1, "Values (Big Endian)");
-	framesizer = new wxStaticBoxSizer(frame, wxVERTICAL);
+	framesizer = new wxStaticBoxSizerScaled(frame, wxVERTICAL);
 	vbox->Add(framesizer, 0, wxEXPAND|wxALL, 4);
 
 	label_short_be = new wxStaticText(this, -1, "Signed Short:");

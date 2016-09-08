@@ -262,6 +262,17 @@ wxBitmap Icons::getIcon(int type, string name, bool large, bool log_missing)
 	return wxNullBitmap;
 }
 
+/* Icons::getIcon
+ * Returns the icon matching [name] of [type] as a wxBitmap (for
+ * toolbars etc), or an empty bitmap if no icon was found. If [type]
+ * is less than 0, try all icon types. Determines icon size from
+ * global DPI scale
+ *******************************************************************/
+wxBitmap Icons::getIcon(int type, string name)
+{
+	return getIcon(type, name, (Global::ppi_scale > 1.25), true);
+}
+
 /* Icons::exportIconPNG
  * Exports icon [name] of [type] to a png image file at [path]
  *******************************************************************/
