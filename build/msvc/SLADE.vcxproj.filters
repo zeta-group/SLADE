@@ -1371,6 +1371,9 @@
     <ClCompile Include="_CreatePCH.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\UI\TextEditor\Lexer.cpp">
+      <Filter>UI\Text Editor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -1707,15 +1710,6 @@
     <ClInclude Include="..\..\src\Dialogs\TranslationEditorDialog.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\glew\glew.h">
-      <Filter>External\GLEW</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\glew\glxew.h">
-      <Filter>External\GLEW</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\mus2mid\mus2mid.h">
-      <Filter>External\Mus2Mid</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\External\dumb\internal\dumb.h">
       <Filter>External\DUMB\internal</Filter>
     </ClInclude>
@@ -1802,9 +1796,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Utility\MemChunk.h">
       <Filter>Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\glew\wglew.h">
-      <Filter>External\GLEW</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\General\Clipboard.h">
       <Filter>General</Filter>
@@ -2378,6 +2369,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\common2.h" />
+    <ClInclude Include="..\..\src\External\glew\glxew.h">
+      <Filter>External\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\glew\glew.h">
+      <Filter>External\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\glew\wglew.h">
+      <Filter>External\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\mus2mid\mus2mid.h">
+      <Filter>External\Mus2Mid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\UI\TextEditor\Lexer.h">
+      <Filter>UI\Text Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="slade.ico" />

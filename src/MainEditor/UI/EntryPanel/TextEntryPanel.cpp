@@ -29,7 +29,9 @@
  *******************************************************************/
 #include "Main.h"
 #include "TextEntryPanel.h"
+#include "Archive/ArchiveManager.h"
 #include "MainApp.h"
+#include "MapEditor/GameConfiguration/GameConfiguration.h"
 
 
 /*******************************************************************
@@ -143,9 +145,7 @@ bool TextEntryPanel::loadEntry(ArchiveEntry* entry)
 
 	// Level markers use FraggleScript
 	if (entry->getType() == EntryType::mapMarkerType())
-	{
 		tl = TextLanguage::getLanguage("fragglescript");
-	}
 
 	// From entry language hint
 	if (entry->exProps().propertyExists("TextLanguage"))
@@ -159,15 +159,6 @@ bool TextEntryPanel::loadEntry(ArchiveEntry* entry)
 	{
 		string lang_id = entry->getType()->extraProps()["text_language"];
 		tl = TextLanguage::getLanguage(lang_id);
-	}
-
-	// Or, from entry's parent directory
-	if (!tl)
-	{
-		// ZDoom DECORATE (within 'actors' or 'decorate' directories)
-		if (S_CMPNOCASE(wxString("/actors/"), entry->getPath().Left(8)) ||
-		        S_CMPNOCASE(wxString("/decorate/"), entry->getPath().Left(10)))
-			tl = TextLanguage::getLanguage("decorate");
 	}
 
 	// Load language
@@ -219,6 +210,15 @@ bool TextEntryPanel::saveEntry()
 	// Set text if unknown
 	if (entry->getType() == EntryType::unknownType())
 		entry->setType(EntryType::getType("text"));
+
+	// Update DECORATE definitions if decorate
+	if (text_area->getLanguage() && text_area->getLanguage()->getId() == "decorate")
+	{
+		theGameConfiguration->clearDecorateDefs();
+		theGameConfiguration->parseDecorateDefs(theArchiveManager->baseResourceArchive());
+		for (int i = 0; i < theArchiveManager->numArchives(); ++i)
+			theGameConfiguration->parseDecorateDefs(theArchiveManager->getArchive(i));
+	}
 
 	// Update variables
 	setModified(false);
