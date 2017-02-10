@@ -4089,7 +4089,6 @@ void MapEditor::changeOffset3d(int amount, bool x)
 	// Go through items
 	vector<int> done;
 	bool changed = false;
-	bool udmf_ext = (map.currentFormat() == MAP_UDMF && theGameConfiguration->udmfNamespace() == "zdoom");
 	for (unsigned a = 0; a < items.size(); a++)
 	{
 		// Wall
@@ -4141,40 +4140,43 @@ void MapEditor::changeOffset3d(int amount, bool x)
 			changed = true;
 		}
 
-		// Flat (UDMF+ZDoom only)
-		else if (udmf_ext)
+		// Flat (UDMF only)
+		else
 		{
 			MapSector* sector = map.getSector(items[a].index);
 
-			if (items[a].type == SEL_FLOOR)
+			if (theGameConfiguration->udmfFlatPanning())
 			{
-				if (x)
+				if (items[a].type == SEL_FLOOR)
 				{
-					double offset = sector->floatProperty("xpanningfloor");
-					sector->setFloatProperty("xpanningfloor", offset + amount);
-				}
-				else
-				{
-					double offset = sector->floatProperty("ypanningfloor");
-					sector->setFloatProperty("ypanningfloor", offset + amount);
-				}
+					if (x)
+					{
+						double offset = sector->floatProperty("xpanningfloor");
+						sector->setFloatProperty("xpanningfloor", offset + amount);
+					}
+					else
+					{
+						double offset = sector->floatProperty("ypanningfloor");
+						sector->setFloatProperty("ypanningfloor", offset + amount);
+					}
 
-				changed = true;
-			}
-			else if (items[a].type == SEL_CEILING)
-			{
-				if (x)
-				{
-					double offset = sector->floatProperty("xpanningceiling");
-					sector->setFloatProperty("xpanningceiling", offset + amount);
+					changed = true;
 				}
-				else
+				else if (items[a].type == SEL_CEILING)
 				{
-					double offset = sector->floatProperty("ypanningceiling");
-					sector->setFloatProperty("ypanningceiling", offset + amount);
-				}
+					if (x)
+					{
+						double offset = sector->floatProperty("xpanningceiling");
+						sector->setFloatProperty("xpanningceiling", offset + amount);
+					}
+					else
+					{
+						double offset = sector->floatProperty("ypanningceiling");
+						sector->setFloatProperty("ypanningceiling", offset + amount);
+					}
 
-				changed = true;
+					changed = true;
+				}
 			}
 		}
 	}
@@ -4466,7 +4468,7 @@ void MapEditor::resetOffsets3d()
 		}
 
 		// Reset scaling
-		if (theGameConfiguration->udmfNamespace() == "zdoom")
+		if (theMapEditor->currentMapDesc().format == MAP_UDMF && theGameConfiguration->udmfTextureScaling())
 		{
 			if (walls[a].type == SEL_SIDE_TOP)
 			{
@@ -4487,7 +4489,7 @@ void MapEditor::resetOffsets3d()
 	}
 
 	// Go through flats
-	if (theGameConfiguration->udmfNamespace() == "zdoom")
+	if (theMapEditor->currentMapDesc().format == MAP_UDMF)
 	{
 		for (unsigned a = 0; a < flats.size(); a++)
 		{
@@ -4501,11 +4503,18 @@ void MapEditor::resetOffsets3d()
 				plane = "ceiling";
 
 			// Reset offsets, scale, and rotation
-			sector->setFloatProperty("xpanning" + plane, 0);
-			sector->setFloatProperty("ypanning" + plane, 0);
-			sector->setFloatProperty("xscale" + plane, 1);
-			sector->setFloatProperty("yscale" + plane, 1);
-			sector->setFloatProperty("rotation" + plane, 0);
+			if (theGameConfiguration->udmfFlatPanning())
+			{
+				sector->setFloatProperty("xpanning" + plane, 0);
+				sector->setFloatProperty("ypanning" + plane, 0);
+			}
+			if (theGameConfiguration->udmfFlatScaling())
+			{
+				sector->setFloatProperty("xscale" + plane, 1);
+				sector->setFloatProperty("yscale" + plane, 1);
+			}
+			if (theGameConfiguration->udmfFlatRotation())
+				sector->setFloatProperty("rotation" + plane, 0);
 		}
 	}
 
@@ -4513,7 +4522,8 @@ void MapEditor::resetOffsets3d()
 	endUndoRecord();
 
 	// Editor message
-	if (theGameConfiguration->udmfNamespace() == "zdoom")
+	if (theMapEditor->currentMapDesc().format == MAP_UDMF && (theGameConfiguration->udmfFlatScaling() ||
+		theGameConfiguration->udmfSideScaling() || theGameConfiguration->udmfTextureScaling()))
 		addEditorMessage("Offsets and scaling reset");
 	else
 		addEditorMessage("Offsets reset");
@@ -4842,19 +4852,23 @@ void MapEditor::changeScale3d(double amount, bool x)
 	for (unsigned a = 0; a < items.size(); a++)
 	{
 		// Wall
-		if (items[a].type >= SEL_SIDE_TOP && items[a].type <= SEL_SIDE_BOTTOM)
+		if (items[a].type >= SEL_SIDE_TOP && items[a].type <= SEL_SIDE_BOTTOM &&
+			(theGameConfiguration->udmfSideScaling() || theGameConfiguration->udmfTextureScaling()))
 		{
 			MapSide* side = map.getSide(items[a].index);
 
 			// Build property string (offset[x/y]_[top/mid/bottom])
 			string ofs = "scalex";
 			if (!x) ofs = "scaley";
-			if (items[a].type == SEL_SIDE_BOTTOM)
-				ofs += "_bottom";
-			else if (items[a].type == SEL_SIDE_TOP)
-				ofs += "_top";
-			else
-				ofs += "_mid";
+			if (theGameConfiguration->udmfTextureScaling())
+			{
+				if (items[a].type == SEL_SIDE_BOTTOM)
+					ofs += "_bottom";
+				else if (items[a].type == SEL_SIDE_TOP)
+					ofs += "_top";
+				else
+					ofs += "_mid";
+			}
 
 			// Change the offset
 			double scale = side->floatProperty(ofs);
@@ -4862,8 +4876,8 @@ void MapEditor::changeScale3d(double amount, bool x)
 				side->setFloatProperty(ofs, scale + amount);
 		}
 
-		// Flat (UDMF+ZDoom only)
-		else
+		// Flat (UDMF only)
+		else if (theGameConfiguration->udmfFlatScaling())
 		{
 			MapSector* sector = map.getSector(items[a].index);
 
@@ -5037,11 +5051,8 @@ bool MapEditor::handleKeyBind(string key, fpoint2_t position)
 	// --- 3d mode keybinds ---
 	else if (key.StartsWith("me3d_") && edit_mode == MODE_3D)
 	{
-		// Check for extended udmf properties
-		bool ext = false;
-		if (theMapEditor->currentMapDesc().format == MAP_UDMF &&
-				S_CMPNOCASE(theGameConfiguration->udmfNamespace(), "zdoom"))
-			ext = true;
+		// Check is UDMF
+		bool is_udmf = map.currentFormat() == MAP_UDMF;
 
 		// Clear selection
 		if (key == "me3d_clear_selection")
@@ -5053,7 +5064,7 @@ bool MapEditor::handleKeyBind(string key, fpoint2_t position)
 		// Toggle linked light levels
 		else if (key == "me3d_light_toggle_link")
 		{
-			if (!ext)
+			if (!is_udmf || !theGameConfiguration->udmfFlatLighting())
 				addEditorMessage("Unlinked light levels not supported in this game configuration");
 			else
 			{
@@ -5068,7 +5079,7 @@ bool MapEditor::handleKeyBind(string key, fpoint2_t position)
 		// Toggle linked offsets
 		else if (key == "me3d_wall_toggle_link_ofs")
 		{
-			if (!ext)
+			if (!is_udmf || !theGameConfiguration->udmfTextureOffsets())
 				addEditorMessage("Unlinked wall offsets not supported in this game configuration");
 			else
 			{
@@ -5113,14 +5124,14 @@ bool MapEditor::handleKeyBind(string key, fpoint2_t position)
 		else if (key == "me3d_thing_down8")	changeThingZ3d(-8);
 
 		// Wall/Flat scale changes
-		else if (key == "me3d_scalex_up_l" && ext) changeScale3d(1, true);
-		else if (key == "me3d_scalex_up_s" && ext) changeScale3d(0.1, true);
-		else if (key == "me3d_scalex_down_l" && ext) changeScale3d(-1, true);
-		else if (key == "me3d_scalex_down_s" && ext) changeScale3d(-0.1, true);
-		else if (key == "me3d_scaley_up_l" && ext) changeScale3d(1, false);
-		else if (key == "me3d_scaley_up_s" && ext) changeScale3d(0.1, false);
-		else if (key == "me3d_scaley_down_l" && ext) changeScale3d(-1, false);
-		else if (key == "me3d_scaley_down_s" && ext) changeScale3d(-0.1, false);
+		else if (key == "me3d_scalex_up_l" && is_udmf) changeScale3d(1, true);
+		else if (key == "me3d_scalex_up_s" && is_udmf) changeScale3d(0.1, true);
+		else if (key == "me3d_scalex_down_l" && is_udmf) changeScale3d(-1, true);
+		else if (key == "me3d_scalex_down_s" && is_udmf) changeScale3d(-0.1, true);
+		else if (key == "me3d_scaley_up_l" && is_udmf) changeScale3d(1, false);
+		else if (key == "me3d_scaley_up_s" && is_udmf) changeScale3d(0.1, false);
+		else if (key == "me3d_scaley_down_l" && is_udmf) changeScale3d(-1, false);
+		else if (key == "me3d_scaley_down_s" && is_udmf) changeScale3d(-0.1, false);
 
 		// Auto-align
 		else if (key == "me3d_wall_autoalign_x")
@@ -5201,7 +5212,7 @@ void MapEditor::updateStatusText()
 		mode += S_FMT(" (%lu selected)", selection.size());
 	}
 
-	theMapEditor->SetStatusText(mode, 1);
+	theMapEditor->CallAfter(&MapEditorWindow::SetStatusText, mode, 1);
 
 	// Grid
 	string grid;
@@ -5215,7 +5226,7 @@ void MapEditor::updateStatusText()
 	else
 		grid += " (Snapping OFF)";
 
-	theMapEditor->SetStatusText(grid, 2);
+	theMapEditor->CallAfter(&MapEditorWindow::SetStatusText, grid, 2);
 }
 
 #pragma region UNDO / REDO

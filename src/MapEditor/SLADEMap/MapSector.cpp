@@ -192,14 +192,13 @@ void MapSector::setStringProperty(string key, string value)
  *******************************************************************/
 void MapSector::setFloatProperty(string key, double value)
 {
-	// Check if flat offset/scale/rotation is changing (if UDMF + ZDoom)
-	if (parent_map->currentFormat() == MAP_UDMF && S_CMPNOCASE(parent_map->udmfNamespace(), "zdoom"))
+	// Check if flat offset/scale/rotation is changing (if UDMF)
+	if (parent_map->currentFormat() == MAP_UDMF)
 	{
-		if (key == "xpanningfloor" || key == "ypanningfloor" ||
-		        key == "xpanningceiling" || key == "ypanningceiling" ||
-		        key == "xscalefloor" || key == "yscalefloor" ||
-		        key == "xscaleceiling" || key == "yscaleceiling" ||
-		        key == "rotationfloor" || key == "rotationceiling")
+		if ((theGameConfiguration->udmfFlatPanning() && (key == "xpanningfloor" || key == "ypanningfloor")) ||
+			(theGameConfiguration->udmfFlatScaling() && (key == "xscalefloor" || key == "yscalefloor" ||
+			 key == "xscaleceiling" || key == "yscaleceiling")) || 
+			(theGameConfiguration->udmfFlatRotation() && (key == "rotationfloor" || key == "rotationceiling")))
 			polygon.setTexture(NULL);	// Clear texture to force update
 	}
 
@@ -462,8 +461,8 @@ bool MapSector::getVertices(vector<MapObject*>& list)
  *******************************************************************/
 uint8_t MapSector::getLight(int where)
 {
-	// Check for UDMF+ZDoom namespace
-	if (parent_map->currentFormat() == MAP_UDMF && S_CMPNOCASE(parent_map->udmfNamespace(), "zdoom"))
+	// Check for UDMF + flat lighting
+	if (parent_map->currentFormat() == MAP_UDMF && theGameConfiguration->udmfFlatLighting())
 	{
 		// Get general light level
 		int l = light;
@@ -523,10 +522,8 @@ void MapSector::changeLight(int amount, int where)
 	else if (ll + amount < 0)
 		amount = -ll;
 
-	// Check for UDMF+ZDoom namespace
-	bool separate = false;
-	if (parent_map->currentFormat() == MAP_UDMF && S_CMPNOCASE(parent_map->udmfNamespace(), "zdoom"))
-		separate = true;
+	// Check for UDMF + flat lighting independent from the sector
+	bool separate = parent_map->currentFormat() == MAP_UDMF && theGameConfiguration->udmfFlatLighting();
 
 	// Change light level by amount
 	if (where == 1 && separate)
@@ -577,12 +574,20 @@ rgba_t MapSector::getColour(int where, bool fullbright)
 		}
 	}
 
-	// Check for UDMF+ZDoom namespace
-	if ((parent_map->currentFormat() == MAP_UDMF && S_CMPNOCASE(parent_map->udmfNamespace(), "zdoom")))
+	// Check for UDMF
+	if (parent_map->currentFormat() == MAP_UDMF && (theGameConfiguration->udmfSectorColor() ||
+		theGameConfiguration->udmfFlatLighting()))
 	{
 		// Get sector light colour
-		int intcol = MapObject::intProperty("lightcolor");
-		wxColour wxcol(intcol);
+		wxColour wxcol;
+		if(theGameConfiguration->udmfSectorColor())
+		{
+			int intcol = MapObject::intProperty("lightcolor");
+			wxcol = wxColour(intcol);
+		}
+		else
+			wxcol = wxColour(255, 255, 255, 255);
+		
 
 		// Ignore light level if fullbright
 		if (fullbright)
@@ -591,24 +596,27 @@ rgba_t MapSector::getColour(int where, bool fullbright)
 		// Get sector light level
 		int ll = light;
 
-		// Get specific light level
-		if (where == 1)
+		if (theGameConfiguration->udmfFlatLighting())
 		{
-			// Floor
-			int fl = MapObject::intProperty("lightfloor");
-			if (boolProperty("lightfloorabsolute"))
-				ll = fl;
-			else
-				ll += fl;
-		}
-		else if (where == 2)
-		{
-			// Ceiling
-			int cl = MapObject::intProperty("lightceiling");
-			if (boolProperty("lightceilingabsolute"))
-				ll = cl;
-			else
-				ll += cl;
+			// Get specific light level
+			if(where == 1)
+			{
+				// Floor
+				int fl = MapObject::intProperty("lightfloor");
+				if(boolProperty("lightfloorabsolute"))
+					ll = fl;
+				else
+					ll += fl;
+			}
+			else if(where == 2)
+			{
+				// Ceiling
+				int cl = MapObject::intProperty("lightceiling");
+				if(boolProperty("lightceilingabsolute"))
+					ll = cl;
+				else
+					ll += cl;
+			}
 		}
 
 		// Clamp light level
@@ -654,7 +662,7 @@ rgba_t MapSector::getFogColour()
 	}
 
 	// udmf
-	if (parent_map->currentFormat() == MAP_UDMF && S_CMPNOCASE(parent_map->udmfNamespace(), "zdoom"))
+	if (parent_map->currentFormat() == MAP_UDMF && theGameConfiguration->udmfSectorFog())
 	{
 		int intcol = MapObject::intProperty("fadecolor");
 
