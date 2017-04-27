@@ -477,7 +477,7 @@ string appPath(string filename, int dir)
 		if (temp_location == 0)
 			dir_temp = wxStandardPaths::Get().GetTempDir().Append(sep).Append("SLADE3");
 		else if (temp_location == 1)
-			dir_temp = dir_temp = dir_app + sep + "temp";
+			dir_temp = dir_app + sep + "temp";
 		else
 			dir_temp = temp_location_custom;
 
@@ -613,6 +613,8 @@ bool MainApp::initDirectories()
 	return true;
 }
 
+#include <iostream>     // std::cout, std::ios
+#include <sstream>      // std::ostringstream
 /* MainApp::initLogFile
  * Sets up the SLADE log file
  *******************************************************************/
@@ -737,18 +739,53 @@ void MainApp::initActions()
 	new SAction("arch_run", "Run Archive", "run", "Run the current archive", "Ctrl+Shift+R");
 
 	// GfxEntryPanel
+	int group_gfx_mode = SAction::newGroup();
 	new SAction("pgfx_mirror", "Mirror", "mirror", "Mirror the graphic horizontally");
 	new SAction("pgfx_flip", "Flip", "flip", "Flip the graphic vertically");
 	new SAction("pgfx_rotate", "Rotate", "rotate", "Rotate the graphic");
-	new SAction("pgfx_translate", "Colour Remap", "remap", "Remap a range of colours in the graphic to another range (paletted gfx only)");
+	new SAction("pgfx_remap", "Colour Remap", "remap", "Remap a range of colours in the graphic to another range (paletted gfx only)");
 	new SAction("pgfx_colourise", "Colourise", "colourise", "Colourise the graphic");
 	new SAction("pgfx_tint", "Tint", "tint", "Tint the graphic by a colour/amount");
 	new SAction("pgfx_alph", "alPh Chunk", "", "Add/Remove alPh chunk to/from the PNG", "", SAction::CHECK);
 	new SAction("pgfx_trns", "tRNS Chunk", "", "Add/Remove tRNS chunk to/from the PNG", "", SAction::CHECK);
 	new SAction("pgfx_extract", "Extract All", "", "Extract all images in this entry to separate PNGs");
-	new SAction("pgfx_crop", "Crop", "settings", "Crop the graphic");
+	new SAction("pgfx_crop", "Crop", "crop", "Crop the graphic");
 	new SAction("pgfx_convert", "Convert to...", "convert", "Open the Gfx Conversion Dialog for the entry");
 	new SAction("pgfx_pngopt", "Optimize PNG", "pngopt", "Optimize PNG entry");
+	new SAction("pgfx_settrans", "Set Translation", "gfx_translation", "Select translation for drawing tool");
+	new SAction("pgfx_drag", "Drag offsets", "gfx_drag", "Drag image to change its offsets", "", SAction::RADIO, -1, group_gfx_mode);
+	new SAction("pgfx_draw", "Draw pixels", "gfx_draw", "Draw on the image", "", SAction::RADIO, -1, group_gfx_mode);
+	new SAction("pgfx_erase", "Erase pixels", "gfx_erase", "Erase pixels from the image", "", SAction::RADIO, -1, group_gfx_mode);
+	new SAction("pgfx_magic", "Translate pixels", "gfx_translate", "Apply translation to pixels of the image", "", SAction::RADIO, -1, group_gfx_mode);
+	new SAction("pgfx_setbrush", "Set brush", "brush_sq_1", "Choose which brush to use");
+	// Brushes submenu
+	new SAction("pgfx_brush_sq_1", "Square 1x1", "brush_sq_1");
+	new SAction("pgfx_brush_sq_3", "Square 3x3", "brush_sq_3");
+	new SAction("pgfx_brush_sq_5", "Square 5x5", "brush_sq_5");
+	new SAction("pgfx_brush_sq_7", "Square 7x7", "brush_sq_7");
+	new SAction("pgfx_brush_sq_9", "Square 9x9", "brush_sq_9");
+	new SAction("pgfx_brush_ci_5", "Circle 5x5", "brush_ci_5");
+	new SAction("pgfx_brush_ci_7", "Circle 7x7", "brush_ci_7");
+	new SAction("pgfx_brush_ci_9", "Circle 9x9", "brush_ci_9");
+	new SAction("pgfx_brush_di_3", "Diamond 3x3", "brush_di_3");
+	new SAction("pgfx_brush_di_5", "Diamond 5x5", "brush_di_5");
+	new SAction("pgfx_brush_di_7", "Diamond 7x7", "brush_di_7");
+	new SAction("pgfx_brush_di_9", "Diamond 9x9", "brush_di_9");
+	new SAction("pgfx_brush_pa_a", "Dither Pattern A", "brush_pa_a");
+	new SAction("pgfx_brush_pa_b", "Dither Pattern B", "brush_pa_b");
+	new SAction("pgfx_brush_pa_c", "Dither Pattern C", "brush_pa_c");
+	new SAction("pgfx_brush_pa_d", "Dither Pattern D", "brush_pa_d");
+	new SAction("pgfx_brush_pa_e", "Dither Pattern E", "brush_pa_e");
+	new SAction("pgfx_brush_pa_f", "Dither Pattern F", "brush_pa_f");
+	new SAction("pgfx_brush_pa_g", "Dither Pattern G", "brush_pa_g");
+	new SAction("pgfx_brush_pa_h", "Dither Pattern H", "brush_pa_h");
+	new SAction("pgfx_brush_pa_i", "Dither Pattern I", "brush_pa_i");
+	new SAction("pgfx_brush_pa_j", "Dither Pattern J", "brush_pa_j");
+	new SAction("pgfx_brush_pa_k", "Dither Pattern K", "brush_pa_k");
+	new SAction("pgfx_brush_pa_l", "Dither Pattern L", "brush_pa_l");
+	new SAction("pgfx_brush_pa_m", "Dither Pattern M", "brush_pa_m");
+	new SAction("pgfx_brush_pa_n", "Dither Pattern N", "brush_pa_n");
+	new SAction("pgfx_brush_pa_o", "Dither Pattern O", "brush_pa_o");
 
 	// ArchiveEntryList
 	new SAction("aelt_sizecol", "Size", "", "Show the size column", "", SAction::CHECK);
@@ -925,6 +962,8 @@ bool MainApp::singleInstanceCheck()
 
 			connection->Disconnect();
 		}
+
+		delete client;
 
 		return false;
 	}

@@ -54,6 +54,7 @@
  * VARIABLES
  *******************************************************************/
 CVAR(Bool, archive_load_data, false, CVAR_SAVE)
+CVAR(Bool, backup_archives, true, CVAR_SAVE)
 bool Archive::save_backup = true;
 
 
@@ -137,7 +138,7 @@ int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 		{
 			if (entries[a].get() == entry)
 			{
-				entry->index_guess = (int)a;
+				entry->index_guess = a;
 				return (int)a;
 			}
 		}
@@ -146,7 +147,7 @@ int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 		{
 			if (entries[a].get() == entry)
 			{
-				entry->index_guess = (int)a;
+				entry->index_guess = a;
 				return (int)a;
 			}
 		}
@@ -154,7 +155,7 @@ int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 		{
 			if (entries[a].get() == entry)
 			{
-				entry->index_guess = (int)a;
+				entry->index_guess = a;
 				return (int)a;
 			}
 		}
@@ -234,6 +235,21 @@ ArchiveEntry::SPtr ArchiveTreeNode::getEntryShared(string name, bool cut_ext)
 	return nullptr;
 }
 
+/* ArchiveTreeNode::getEntryShared
+ * Returns a shared pointer to [entry] in this directory, or null if
+ * no entries match
+ *******************************************************************/
+ArchiveEntry::SPtr ArchiveTreeNode::getEntryShared(ArchiveEntry* entry)
+{
+	// Find entry
+	for (auto& e : entries)
+		if (entry == e.get())
+			return e;
+
+	// Not in this ArchiveTreeNode
+	return nullptr;
+}
+
 /* ArchiveTreeNode::numEntries
  * Returns the number of entries in this directory
  *******************************************************************/
@@ -307,9 +323,56 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry* entry, unsigned index)
 	return true;
 }
 
+/* ArchiveTreeNode::addEntry
+ * Adds [entry] to this directory at [index], or at the end if
+ * [index] is out of bounds
+ *******************************************************************/
+bool ArchiveTreeNode::addEntry(ArchiveEntry::SPtr& entry, unsigned index)
+{
+	// Check entry
+	if (!entry)
+		return false;
+
+	// Check index
+	if (index >= entries.size())
+	{
+		// 'Invalid' index, add to end of list
+
+		// Link entry
+		if (entries.size() > 0)
+		{
+			entries.back()->next = entry.get();
+			entry->prev = entries.back().get();
+		}
+		entry->next = nullptr;
+
+		// Add it to end
+		entries.push_back(ArchiveEntry::SPtr(entry));
+	}
+	else
+	{
+		// Link entry
+		if (index > 0)
+		{
+			entries[index-1]->next = entry.get();
+			entry->prev = entries[index-1].get();
+		}
+		entries[index]->prev = entry.get();
+		entry->next = entries[index].get();
+
+		// Add it at index
+		entries.insert(entries.begin() + index, ArchiveEntry::SPtr(entry));
+	}
+
+	// Set entry's parent to this node
+	entry->parent = this;
+
+	return true;
+}
+
 /* ArchiveTreeNode::removeEntry
- * Removes the entry at [index] in this directory (but doesn't delete
- * it). Returns false if [index] was out of bounds, true otherwise
+ * Removes the entry at [index] in this directory . Returns false if
+ * [index] was out of bounds, true otherwise
  *******************************************************************/
 bool ArchiveTreeNode::removeEntry(unsigned index)
 {
@@ -693,7 +756,8 @@ public:
 			if (dir && cb_tree)
 				dir->merge(cb_tree->getTree(), 0, 0);
 
-			dir->getDirEntry()->setState(0);
+			if (dir)
+				dir->getDirEntry()->setState(0);
 
 			return !!dir;
 		}
@@ -997,7 +1061,7 @@ bool Archive::save(string filename)
 			// No filename is given, but the archive has a filename, so overwrite it (and make a backup)
 
 			// Create backup
-			if (wxFileName::FileExists(this->filename) && save_backup)
+			if (backup_archives && wxFileName::FileExists(this->filename) && save_backup)
 			{
 				// Copy current file contents to new backup file
 				string bakfile = this->filename + ".bak";
@@ -1375,7 +1439,7 @@ ArchiveEntry* Archive::addNewEntry(string name, string add_namespace)
  * Removes [entry] from the archive. If [delete_entry] is true, the
  * entry will also be deleted. Returns true if the removal succeeded
  *******************************************************************/
-bool Archive::removeEntry(ArchiveEntry* entry, bool delete_entry)
+bool Archive::removeEntry(ArchiveEntry* entry)
 {
 	// Abort if read only
 	if (read_only)
@@ -1420,8 +1484,8 @@ bool Archive::removeEntry(ArchiveEntry* entry, bool delete_entry)
 		announce("entry_removed", mc);
 
 		// Delete if necessary
-		if (delete_entry)
-			delete entry;
+		//if (delete_entry)
+		//	delete entry;
 
 		// Update variables etc
 		setModified(true);
@@ -1553,7 +1617,8 @@ bool Archive::moveEntry(ArchiveEntry* entry, unsigned position, ArchiveTreeNode*
 		dir = dir_root;
 
 	// Remove the entry from its current dir
-	removeEntry(entry, false);
+	auto sptr = dir->getEntryShared(dir->entryIndex(entry)); // Get a shared pointer so it isn't deleted
+	removeEntry(entry);
 
 	// Add it to the destination dir
 	addEntry(entry, position, dir);

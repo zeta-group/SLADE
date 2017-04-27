@@ -117,7 +117,7 @@ void GameConfiguration::setDefaults()
 	udmf_texture_offsets = udmf_slopes = udmf_flat_lighting = udmf_flat_panning =
 	udmf_flat_rotation = udmf_flat_scaling = udmf_line_transparency = udmf_sector_color =
 	udmf_sector_fog = udmf_side_lighting = udmf_side_midtex_wrapping = udmf_side_scaling =
-	udmf_texture_scaling = false;
+	udmf_texture_scaling = udmf_thing_scaling = udmf_thing_rotation = false;
 }
 
 /* GameConfiguration::udmfNamespace
@@ -978,6 +978,8 @@ void GameConfiguration::readGameSection(ParseTreeNode* node_game, bool port_sect
 		READ_BOOL(udmf_side_scaling, udmf_side_scaling); // UDMF per-sidedef scaling
 		READ_BOOL(udmf_texture_scaling, udmf_texture_scaling); // UDMF per-texture scaling
 		READ_BOOL(udmf_texture_offsets, udmf_texture_offsets); // UDMF per-texture offsets
+		READ_BOOL(udmf_thing_scaling, udmf_thing_scaling); // UDMF per-thing scaling
+		READ_BOOL(udmf_thing_rotation, udmf_thing_rotation); // UDMF per-thing pitch and yaw rotation
 
 		// Defaults section
 		else if (S_CMPNOCASE(node->getName(), "defaults"))
@@ -1710,8 +1712,8 @@ bool GameConfiguration::thingBasicFlagSet(string flag, MapThing* thing, int map_
 	// Get current flags
 	unsigned long flags = thing->intProperty("flags");
 
-	// ZDoom uses Hexen-style flags
-	bool hexen = (currentGame() == "hexen") || (currentPort() == "zdoom");
+	// Hexen-style flags in Hexen-format maps
+	bool hexen = map_format == MAP_HEXEN;
 
 	// Easy Skill
 	if (flag == "skill2" || flag == "skill1")
@@ -2176,6 +2178,10 @@ bool GameConfiguration::parseDecorateDefs(Archive* archive)
 						else if (S_CMPNOCASE(token, "//$Colour"))
 							found_props["colour"] = tz.getLine();
 
+						// Obsolete thing
+						else if (S_CMPNOCASE(token, "//$Obsolete"))
+							found_props["obsolete"] = true;
+
 						// Translation
 						else if (S_CMPNOCASE(token, "translation"))
 						{
@@ -2421,6 +2427,7 @@ bool GameConfiguration::parseDecorateDefs(Archive* archive)
 							tt->colour.r = 0xDA; tt->colour.g = 0xA5; tt->colour.b = 0x20; break;
 						}
 					}
+					if (found_props["obsolete"].hasValue()) tt->flags |= THING_OBSOLETE;
 				}
 			}
 		}
@@ -2491,7 +2498,7 @@ bool GameConfiguration::parseDecorateDefs(Archive* archive)
 				else if (S_CMPNOCASE(token, "Translation1"))
 					found_props["translation"] = S_FMT("doom%d", tz.getInteger());
 			}
-			while (token != "}");
+			while (token != "}" && !token.empty());
 
 			// Add only if a DoomEdNum is present
 			if (type > 0)
