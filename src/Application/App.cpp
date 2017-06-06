@@ -54,6 +54,7 @@
 #include "UI/TextEditor/TextStyle.h"
 #include "UI/SBrush.h"
 #include "Utility/Tokenizer.h"
+#include "Utility/StringUtils.h"
 
 
 // ----------------------------------------------------------------------------
@@ -87,6 +88,57 @@ namespace App
 CVAR(Int, temp_location, 0, CVAR_SAVE)
 CVAR(String, temp_location_custom, "", CVAR_SAVE)
 CVAR(Bool, setup_wizard_run, false, CVAR_SAVE)
+
+
+// ----------------------------------------------------------------------------
+//
+// Global Functions (from Main.h)
+//
+// ----------------------------------------------------------------------------
+
+
+// ----------------------------------------------------------------------------
+// formatString
+//
+// Formats [str] using c-style (printf, etc.) formatting
+// ----------------------------------------------------------------------------
+string formatString(const string fmt, ...)
+{
+	std::vector<char> str(100, '\0');
+	va_list ap;
+
+	while (true)
+	{
+		va_start(ap, fmt);
+		auto n = vsnprintf(str.data(), str.size(), fmt.c_str(), ap);
+		va_end(ap);
+
+		if ((n > -1) && (size_t(n) < str.size()))
+			return str.data();
+
+		if (n > -1)
+			str.resize(n + 1);
+		else
+			str.resize(str.size() * 2);
+	}
+}
+
+// ----------------------------------------------------------------------------
+// stringEqualNoCase
+//
+// Returns true if both strings are equal, ignoring case
+// ----------------------------------------------------------------------------
+bool stringEqualNoCase(string left, string right)
+{
+	if (left.length() == right.length())
+	{
+		transform(left.begin(), left.end(), left.begin(), ::toupper);
+		transform(right.begin(), right.end(), right.begin(), ::toupper);
+		return left == right;
+	}
+
+	return false;
+}
 
 
 // ----------------------------------------------------------------------------
@@ -172,13 +224,14 @@ namespace App
 		while (!tz.atEnd())
 		{
 			// If we come across a 'cvars' token, read in the cvars section
-			if (!token.Cmp("cvars"))
+			//if (!token.Cmp("cvars"))
+			if (token == "cvars")
 			{
 				token = tz.getToken();	// Skip '{'
 
 										// Keep reading name/value pairs until we hit the ending '}'
 				string cvar_name = tz.getToken();
-				while (cvar_name.Cmp("}") && !tz.atEnd())
+				while (cvar_name == "}" && !tz.atEnd())
 				{
 					string cvar_val = tz.getToken();
 					read_cvar(cvar_name, cvar_val);
@@ -187,14 +240,14 @@ namespace App
 			}
 
 			// Read base resource archive paths
-			if (!token.Cmp("base_resource_paths"))
+			if (token == "base_resource_paths")
 			{
 				// Skip {
 				token = wxString::FromUTF8(UTF8(tz.getToken()));
 
 				// Read paths until closing brace found
 				token = tz.getToken();
-				while (token.Cmp("}") && !tz.atEnd())
+				while (token == "}" && !tz.atEnd())
 				{
 					theArchiveManager->addBaseResourcePath(token);
 					token = wxString::FromUTF8(UTF8(tz.getToken()));
@@ -433,7 +486,7 @@ bool App::init()
 	// argv[0] is normally the executable itself (i.e. SLADE.exe)
 	// and opening it as an archive should not be attempted...
 	for (int a = 1; a < wxTheApp->argc; a++)
-		theArchiveManager->openArchive(wxTheApp->argv[a]);
+		theArchiveManager->openArchive((string)wxTheApp->argv[a]);
 
 	// Hide splash screen
 	UI::hideSplash();
@@ -482,7 +535,7 @@ void App::saveConfigFile()
 	for (size_t a = 0; a < theArchiveManager->numBaseResourcePaths(); a++)
 	{
 		string path = theArchiveManager->getBaseResourcePath(a);
-		path.Replace("\\", "/");
+		StringUtils::replace(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
@@ -492,7 +545,7 @@ void App::saveConfigFile()
 	for (int a = theArchiveManager->numRecentFiles() - 1; a >= 0; a--)
 	{
 		string path = theArchiveManager->recentFile(a);
-		path.Replace("\\", "/");
+		StringUtils::replace(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
@@ -563,11 +616,11 @@ void App::exit(bool save_config)
 	// Clear temp folder
 	wxDir temp;
 	temp.Open(App::path("", App::Dir::Temp));
-	string filename = wxEmptyString;
+	wxString filename;
 	bool files = temp.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
 	while (files)
 	{
-		if (!wxRemoveFile(App::path(filename, App::Dir::Temp)))
+		if (!wxRemoveFile(App::path((string)filename, App::Dir::Temp)))
 			LOG_WARNING(1, "Warning: Could not clean up temporary file \"%s\"", filename);
 		files = temp.GetNext(&filename);
 	}
@@ -617,7 +670,7 @@ string App::path(string filename, Dir dir)
 		{
 			if (!wxMkdir(dir_temp))
 			{
-				Log::warning(S_FMT("Unable to create temp directory \"%s\"", dir_temp));
+				Log::warning(S_FMT("Unable to create temp directory \"%s\"", dir_temp).c_str());
 				temp_fail_count++;
 				return path(filename, dir);
 			}

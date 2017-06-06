@@ -28,10 +28,12 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 // String stuff
-typedef wxString string;
-#define S_FMT wxString::Format
-#define S_CMP(s1, s2) s1.Cmp(s2) == 0
-#define S_CMPNOCASE(s1, s2) s1.CmpNoCase(s2) == 0
+//typedef wxString string;
+typedef std::string string;
+string formatString(const string fmt, ...);
+bool stringEqualNoCase(string left, string right);
+#define S_FMT formatString
+#define S_CMPNOCASE(s1, s2) stringEqualNoCase(s1, s2)
 
 // Macro to convert a wxString to a c string
 #define CHR(s) (static_cast<const char*>((s).ToAscii()))

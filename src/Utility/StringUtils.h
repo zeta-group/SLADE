@@ -21,4 +21,10 @@ namespace StringUtils
 
 	void	processIncludes(string filename, string& out);
 	void	processIncludes(ArchiveEntry* entry, string& out, bool use_res = true);
+
+	void		replace(string& str, const string& from, const string& to);
+	inline void	makeLower(string& str) { transform(str.begin(), str.end(), str.begin(), ::tolower); }
+	inline void	makeUpper(string& str) { transform(str.begin(), str.end(), str.begin(), ::toupper); }
+	string		asLower(string str);
+	string		asUpper(string str);
 }

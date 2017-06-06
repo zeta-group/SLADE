@@ -52,10 +52,10 @@
 // ----------------------------------------------------------------------------
 string StringUtils::escapedString(const string& str, bool swap_backslash)
 {
-	string escaped = str;
+	auto escaped = str;
 
-	escaped.Replace(SLASH_BACK, swap_backslash ? SLASH_FORWARD : ESCAPED_SLASH_BACK);
-	escaped.Replace(QUOTE_DOUBLE, ESCAPED_QUOTE_DOUBLE);
+	replace(escaped, SLASH_BACK, swap_backslash ? SLASH_FORWARD : ESCAPED_SLASH_BACK);
+	replace(escaped, QUOTE_DOUBLE, ESCAPED_QUOTE_DOUBLE);
 
 	return escaped;
 }
@@ -94,7 +94,7 @@ void StringUtils::processIncludes(string filename, string& out)
 			processIncludes(path + fn, out);
 		}
 		else
-			out.Append(line + "\n");
+			out.append(line + "\n");
 
 		line = file.GetNextLine();
 	}
@@ -174,11 +174,33 @@ void StringUtils::processIncludes(ArchiveEntry* entry, string& out, bool use_res
 				);
 		}
 		else
-			out.Append(line + "\n");
+			out.append(line + "\n");
 
 		line = file.GetNextLine();
 	}
 
 	// Delete temp file
 	wxRemoveFile(filename);
+}
+
+void StringUtils::replace(string& str, const string& from, const string& to)
+{
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != string::npos)
+	{
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();
+	}
+}
+
+string StringUtils::asLower(string str)
+{
+	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	return str;
+}
+
+string StringUtils::asUpper(string str)
+{
+	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	return str;
 }
