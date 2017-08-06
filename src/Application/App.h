@@ -12,6 +12,8 @@ namespace App
 	long			runTimer();
 	bool			isExiting();
 	ArchiveManager&	archiveManager();
+	sol::table		config();
+	sol::table		config(const char* section);
 
 	bool	init(vector<string>& args);
 	void	saveConfigFile();

@@ -88,7 +88,8 @@ public:
 };
 
 void dump_cvars();
-void save_cvars(wxFile& file);
+void save_cvars();
+void load_cvars();
 void read_cvar(string name, string value);
 CVar* get_cvar(string name);
 void get_cvar_list(vector<string>& list);

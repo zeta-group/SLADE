@@ -30,11 +30,9 @@
 //
 // ----------------------------------------------------------------------------
 #include "Main.h"
-#define SOL_CHECK_ARGUMENTS 1
 #include "Archive/ArchiveManager.h"
 #include "Archive/Formats/All.h"
 #include "Dialogs/ExtMessageDialog.h"
-#include "External/sol/sol.hpp"
 #include "Game/Configuration.h"
 #include "Game/ThingType.h"
 #include "General/Console/Console.h"
@@ -165,7 +163,10 @@ void processError(sol::protected_function_result& result)
 // ----------------------------------------------------------------------------
 bool Lua::init()
 {
-	lua.open_libraries(sol::lib::base, sol::lib::string);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table);
+
+	// Create config table
+	lua.create_named_table("config");
 
 	// Register namespaces
 	registerAppNamespace(lua);
@@ -180,6 +181,16 @@ bool Lua::init()
 	registerGameTypes(lua);
 
 	return true;
+}
+
+void Lua::initLibs()
+{
+	auto lib_dir = App::archiveManager().programResourceArchive()->getDir("scripts/lib");
+	if (!lib_dir)
+		return;
+
+	for (auto& entry : lib_dir->entries())
+		lua.require_script(CHR(entry->getName(true)), std::string{(const char*)entry->getData(), entry->getSize()});
 }
 
 // ----------------------------------------------------------------------------
@@ -233,13 +244,19 @@ void Lua::showErrorDialog(wxWindow* parent, const string& title, const string& m
 //
 // Runs a lua script [program]
 // ----------------------------------------------------------------------------
-bool Lua::run(string program)
+bool Lua::run(string program, bool sandbox)
 {
 	resetError();
 	script_start_time = wxDateTime::Now().GetTicks();
 
-	sol::environment sandbox(lua, sol::create, lua.globals());
-	auto result = lua.script(CHR(program), sandbox, sol::simple_on_error);
+	sol::protected_function_result result;
+	if (sandbox)
+	{
+		sol::environment env_sandbox(lua, sol::create, lua.globals());
+		result = lua.script(CHR(program), env_sandbox, sol::simple_on_error);
+	}
+	else
+		result = lua.script(CHR(program), sol::simple_on_error);
 	lua.collect_garbage();
 
 	if (!result.valid())
@@ -262,13 +279,19 @@ bool Lua::run(string program)
 //
 // Runs a lua script from a text file [filename]
 // ----------------------------------------------------------------------------
-bool Lua::runFile(string filename)
+bool Lua::runFile(string filename, bool sandbox)
 {
 	resetError();
 	script_start_time = wxDateTime::Now().GetTicks();
 
-	sol::environment sandbox(lua, sol::create, lua.globals());
-	auto result = lua.script_file(CHR(filename), sandbox, sol::simple_on_error);
+	sol::protected_function_result result;
+	if (sandbox)
+	{
+		sol::environment env_sandbox(lua, sol::create, lua.globals());
+		result = lua.script_file(CHR(filename), env_sandbox, sol::simple_on_error);
+	}
+	else
+		result = lua.script_file(CHR(filename), sol::simple_on_error);
 	lua.collect_garbage();
 
 	if (!result.valid())
@@ -360,6 +383,22 @@ wxWindow* Lua::currentWindow()
 void Lua::setCurrentWindow(wxWindow* window)
 {
 	current_window = window;
+}
+
+string Lua::serializeTable(const string& table_name)
+{
+	return serializeTable(lua.get<sol::table>(table_name));
+}
+
+string Lua::serializeTable(sol::table table)
+{
+	static sol::table options = lua.create_table_with(
+		"comment", false,
+		"numformat", "%.4g"
+	);
+
+	sol::function f = lua["serpent"]["block"];
+	return f(table, options);
 }
 
 

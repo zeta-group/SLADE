@@ -138,6 +138,10 @@
 // Freeimage
 #include <FreeImage.h>
 
+// Sol2
+#define SOL_CHECK_ARGUMENTS 1
+#include "External/sol/sol.hpp"
+
 // C++
 #include <map>
 #include <vector>

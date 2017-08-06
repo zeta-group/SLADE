@@ -164,6 +164,11 @@ namespace App
 	// ------------------------------------------------------------------------
 	void readConfigFile()
 	{
+		// Load config.lua
+		bool cfg_loaded = Lua::runFile(App::path("config.lua", App::Dir::User), false);
+		if (cfg_loaded)
+			load_cvars();
+
 		// Open SLADE.cfg
 		Tokenizer tz;
 		if (!tz.openFile(App::path("slade3.cfg", App::Dir::User)))
@@ -174,11 +179,11 @@ namespace App
 		while (!tz.atEnd())
 		{
 			// If we come across a 'cvars' token, read in the cvars section
-			if (!token.Cmp("cvars"))
+			if (!token.Cmp("cvars") && !cfg_loaded)
 			{
 				token = tz.getToken();	// Skip '{'
 
-										// Keep reading name/value pairs until we hit the ending '}'
+				// Keep reading name/value pairs until we hit the ending '}'
 				string cvar_name = tz.getToken();
 				while (cvar_name.Cmp("}") && !tz.atEnd())
 				{
@@ -362,6 +367,34 @@ bool App::isExiting()
 }
 
 // ----------------------------------------------------------------------------
+// App::config
+//
+// Returns the lua config table
+// ----------------------------------------------------------------------------
+sol::table App::config()
+{
+	return Lua::state()["config"];
+}
+
+// ----------------------------------------------------------------------------
+// App::config
+//
+// Returns the lua config table for [section].
+// This is the same as config()[[section]], except that it will create the
+// section table if it doesn't already exist
+// ----------------------------------------------------------------------------
+sol::table App::config(const char* section)
+{
+	sol::table config_table = Lua::state()["config"];
+	if (!config_table[section].valid())
+	{
+		Log::info(S_FMT("Creating config table %s", section));
+		config_table[section] = Lua::state().create_table();
+	}
+	return config_table[section];
+}
+
+// ----------------------------------------------------------------------------
 // App::init
 //
 // Application initialisation
@@ -378,6 +411,9 @@ bool App::init(vector<string>& args)
 
 	// Init log
 	Log::init();
+
+	// Init lua
+	Lua::init();
 
 	// Process the command line arguments
 	vector<string> paths_to_open = processCommandLine(args);
@@ -403,12 +439,11 @@ bool App::init(vector<string>& args)
 		return false;
 	}
 
+	Lua::initLibs();
+
 	// Init SActions
 	SAction::initWxId(26000);
 	SAction::initActions();
-
-	// Init lua
-	Lua::init();
 
 	// Show splash screen
 	UI::showSplash("Starting up...");
@@ -521,7 +556,7 @@ void App::saveConfigFile()
 	file.Write(" *****************************************************/\n\n");
 
 	// Write cvars
-	save_cvars(file);
+	save_cvars();
 
 	// Write base resource archive paths
 	file.Write("\nbase_resource_paths\n{\n");
@@ -531,6 +566,8 @@ void App::saveConfigFile()
 		path.Replace("\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
+	//config()["base_resource_paths"] =
+	//	sol::as_table_t<vector<std::string>>(StringUtils::toStdStringVector(archive_manager.baseResourcePaths()));
 	file.Write("}\n");
 
 	// Write recent files list (in reverse to keep proper order when reading back)
@@ -541,6 +578,8 @@ void App::saveConfigFile()
 		path.Replace("\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
+	//config()["recent_files"] =
+	//	sol::as_table_t<vector<std::string>>(StringUtils::toStdStringVector(archive_manager.recentFiles()));
 	file.Write("}\n");
 
 	// Write keybinds
@@ -564,6 +603,14 @@ void App::saveConfigFile()
 
 	// Close configuration file
 	file.Write("\n// End Configuration File\n\n");
+
+	// Write config table to config.lua
+	wxFile config_file;
+	if (config_file.Open(App::path("config.lua", App::Dir::User), wxFile::write))
+	{
+		config_file.Write("config = " + Lua::serializeTable("config"));
+		config_file.Close();
+	}
 }
 
 // ----------------------------------------------------------------------------

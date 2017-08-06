@@ -29,6 +29,7 @@
  * INCLUDES
  *******************************************************************/
 #include "Main.h"
+#include "App.h"
 
 
 /*******************************************************************
@@ -103,48 +104,68 @@ void get_cvar_list(vector<string>& list)
 }
 
 /* save_cvars
- * Saves cvars to a config file
+ * Saves cvars to the 'cvars' config table
  *******************************************************************/
-void save_cvars(wxFile& file)
+void save_cvars()
 {
-	uint32_t max_size = 0;
-	for (uint32_t c = 0; c < n_cvars; c++)
-	{
-		if (cvars[c]->name.size() > max_size)
-			max_size = cvars[c]->name.size();
-	}
-
-	file.Write("cvars\n{\n");
+	auto cv_table = App::config("cvars");
 
 	for (uint32_t c = 0; c < n_cvars; c++)
 	{
 		if (cvars[c]->flags & CVAR_SAVE)
 		{
-			file.Write(S_FMT("\t%s ", cvars[c]->name));
-
-			int spaces = max_size - cvars[c]->name.size();
-			for (int a = 0; a < spaces; a++) file.Write(" ");
-
 			if (cvars[c]->type == CVAR_INTEGER)
-				file.Write(S_FMT("%d\n", cvars[c]->GetValue().Int));
+				cv_table[CHR(cvars[c]->name)] = cvars[c]->GetValue().Int;
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				file.Write(S_FMT("%d\n", cvars[c]->GetValue().Bool));
+				cv_table[CHR(cvars[c]->name)] = cvars[c]->GetValue().Bool;
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				file.Write(S_FMT("%1.5f\n", cvars[c]->GetValue().Float));
+				cv_table[CHR(cvars[c]->name)] = cvars[c]->GetValue().Float;
 
 			if (cvars[c]->type == CVAR_STRING)
 			{
 				string value = ((CStringCVar*)cvars[c])->value;
 				value.Replace("\\", "/");
 				value.Replace("\"", "\\\"");
-				file.Write(S_FMT("\"%s\"\n", value), wxConvUTF8);
+				cv_table[CHR(cvars[c]->name)] = CHR(value);
 			}
 		}
 	}
+}
 
-	file.Write("}\n\n");
+void load_cvars()
+{
+	auto cv_table = App::config("cvars");
+
+	for (uint32_t c = 0; c < n_cvars; c++)
+	{
+		// Ignore if not saved
+		if (!(cvars[c]->flags & CVAR_SAVE))
+			continue;
+
+		// Ignore if not in config
+		if (cv_table[CHR(cvars[c]->name)] == sol::nil)
+		{
+			Log::info(S_FMT("CVar %s not found in config file, using default value", CHR(cvars[c]->name)));
+			continue;
+		}
+
+		if (cvars[c]->type == CVAR_INTEGER)
+			*((CIntCVar*)cvars[c]) = (int)cv_table[CHR(cvars[c]->name)];
+
+		if (cvars[c]->type == CVAR_BOOLEAN)
+			*((CBoolCVar*)cvars[c]) = (bool)cv_table[CHR(cvars[c]->name)];
+
+		if (cvars[c]->type == CVAR_FLOAT)
+			*((CFloatCVar*)cvars[c]) = (double)cv_table[CHR(cvars[c]->name)];
+
+		if (cvars[c]->type == CVAR_STRING)
+		{
+			std::string val = cv_table[CHR(cvars[c]->name)];
+			*((CStringCVar*)cvars[c]) = val;
+		}
+	}
 }
 
 /* read_cvar

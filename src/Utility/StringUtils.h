@@ -21,4 +21,6 @@ namespace StringUtils
 
 	void	processIncludes(string filename, string& out);
 	void	processIncludes(ArchiveEntry* entry, string& out, bool use_res = true);
+
+	vector<std::string>	toStdStringVector(const vector<string>& vec);
 }

@@ -182,3 +182,11 @@ void StringUtils::processIncludes(ArchiveEntry* entry, string& out, bool use_res
 	// Delete temp file
 	wxRemoveFile(filename);
 }
+
+vector<std::string> StringUtils::toStdStringVector(const vector<string>& vec)
+{
+	vector<std::string> ret;
+	for (auto& str : vec)
+		ret.push_back(CHR(str));
+	return ret;
+}
