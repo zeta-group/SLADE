@@ -2168,6 +2168,7 @@
     <ClInclude Include="..\..\src\Scripting\Export\Archive.h" />
     <ClInclude Include="..\..\src\Scripting\Export\Game.h" />
     <ClInclude Include="..\..\src\Scripting\Export\General.h" />
+    <ClInclude Include="..\..\src\Scripting\Export\Graphics.h" />
     <ClInclude Include="..\..\src\Scripting\Export\MapEditor.h" />
     <ClInclude Include="..\..\src\Scripting\Lua.h" />
     <ClInclude Include="..\..\src\Scripting\ScriptManager.h" />

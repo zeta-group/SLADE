@@ -2624,6 +2624,9 @@
     <ClInclude Include="..\..\src\Game\ZScript.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Scripting\Export\Graphics.h">
+      <Filter>Scripting\Export</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="slade.ico" />

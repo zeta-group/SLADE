@@ -40,6 +40,9 @@
 #include "General/Console/Console.h"
 #include "General/Misc.h"
 #include "General/UI.h"
+#include "Graphics/Palette/Palette.h"
+#include "Graphics/Palette/PaletteManager.h"
+#include "Graphics/Translation.h"
 #include "Lua.h"
 #include "MainEditor/MainEditor.h"
 #include "MapEditor/MapEditContext.h"
@@ -111,6 +114,7 @@ namespace Lua
 #include "Export/Game.h"
 #include "Export/General.h"
 #include "Export/MapEditor.h"
+#include "Export/Graphics.h"
 
 // ----------------------------------------------------------------------------
 // Lua::resetError
@@ -218,12 +222,23 @@ bool Lua::init()
 	registerSplashWindowNamespace(lua);
 	registerGameNamespace(lua);
 	registerArchivesNamespace(lua);
+	registerGraphicsNamespace(lua);
 
 	// Register types
 	registerMiscTypes(lua);
 	registerArchiveTypes(lua);
 	registerMapEditorTypes(lua);
 	registerGameTypes(lua);
+	registerGraphicsTypes(lua);
+
+	// Add to package.path for libraries
+	std::string script = "package.path = package.path .. \";";
+	string path = App::path("scripts/libs/", App::Dir::User);
+	path.Replace("\\", "/");
+	script += CHR(path);
+	script += "?.lua\"";
+	Log::info(script.c_str());
+	lua.script(script, sol::simple_on_error);
 
 	return true;
 }

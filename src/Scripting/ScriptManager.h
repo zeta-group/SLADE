@@ -10,7 +10,6 @@ namespace ScriptManager
 	{
 		Editor,
 		Custom,
-		Global,
 		Archive,
 		Entry,
 		Map,
