@@ -2,10 +2,10 @@
 class SIFHalfLifeTex : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Sanitize index if needed
 		index %= info.numimages;
@@ -45,7 +45,7 @@ protected:
 		}
 
 		// Create image
-		image.create(info.width, info.height, PALMASK, &palette, index, info.numimages);
+		image.create(info.width, info.height, SImage::PixelFormat::PalMask, &palette, index, info.numimages);
 		image.fillAlpha(255);
 
 		// Fill data with pixel data
@@ -63,7 +63,7 @@ public:
 	}
 	~SIFHalfLifeTex() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_hlt")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -71,15 +71,15 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image info
 		info.width = READ_L32(mc.getData(), 16) >> index;
 		info.height = READ_L32(mc.getData(), 20) >> index;
 		info.numimages = 4;
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -89,15 +89,15 @@ public:
 class SIFSCSprite : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get width & height
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 		if (info.format != id)
 			return false;
 
 		// Create image
-		image.create(info.width, info.height, PALMASK);
+		image.create(info.width, info.height, SImage::PixelFormat::PalMask);
 
 		// Format has no offsets, so just set them automatically
 		image.setXOffset(info.width/2);
@@ -142,7 +142,7 @@ public:
 	}
 	~SIFSCSprite() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_scsprite")->isThisFormat(mc) >= EDF_UNLIKELY)
 			return true;
@@ -150,10 +150,10 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
 		int size = mc.getSize();
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image width
 		info.width = READ_L16(mc, 2);
@@ -186,7 +186,7 @@ public:
 		}
 
 		// Set other properties
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -199,7 +199,7 @@ public:
 class SIFSCGfx : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Setup variables
 		patch_header_t header;
@@ -210,7 +210,7 @@ protected:
 		int offset_y = wxINT16_SWAP_ON_BE(header.top);
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 
@@ -240,7 +240,7 @@ public:
 	}
 	~SIFSCGfx() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_scgfx")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -248,9 +248,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		patch_header_t header;
@@ -259,9 +259,9 @@ public:
 		// Set info
 		info.width = wxINT16_SWAP_ON_BE(header.width);
 		info.height = wxINT16_SWAP_ON_BE(header.height);
-		info.offset_x = wxINT16_SWAP_ON_BE(header.left);
-		info.offset_y = wxINT16_SWAP_ON_BE(header.top);
-		info.colformat = PALMASK;
+		info.offset.x = wxINT16_SWAP_ON_BE(header.left);
+		info.offset.y = wxINT16_SWAP_ON_BE(header.top);
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -272,7 +272,7 @@ public:
 class SIFSCWall : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Determine width and height
 		int height = data[0]*4;
@@ -281,7 +281,7 @@ protected:
 			return false;
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 
 		// Read pixel data
 		uint8_t* img_data = imageData(image);
@@ -318,7 +318,7 @@ public:
 	}
 	~SIFSCWall() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_scwall")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -326,14 +326,14 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image properties
 		info.height = mc[0]*4;
 		info.width = 64;
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -343,17 +343,17 @@ public:
 class SIFAnaMip : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Check data
 		if (data.getSize() < unsigned(4 + (info.width * info.height)))
 			return false;
 
 		// Create image
-		image.create(info.width, info.height, PALMASK);
+		image.create(info.width, info.height, SImage::PixelFormat::PalMask);
 		image.fillAlpha(255);
 
 		// Read data
@@ -371,7 +371,7 @@ public:
 	}
 	~SIFAnaMip() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_mipimage")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -379,14 +379,14 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image info
 		info.width = READ_L16(mc.getData(), 0);
 		info.height = READ_L16(mc.getData(), 2);
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		// Technically false, as there are multiple mipmap levels.
@@ -400,7 +400,7 @@ public:
 class SIFBuildTile : public SIFormat
 {
 private:
-	unsigned getTileInfo(SImage::info_t& info, MemChunk& mc, int index)
+	unsigned getTileInfo(SImage::Info& info, MemChunk& mc, int index)
 	{
 		// Get tile info
 		uint32_t firsttile = wxUINT32_SWAP_ON_BE(((uint32_t*)mc.getData())[2]);
@@ -440,26 +440,26 @@ private:
 		info.height = READ_L16(mc.getData(), y_offs);
 
 		// Setup remaining info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		// Offsets are signed bytes, so they need a cast
-		info.offset_x = (int8_t)mc[o_offs+1];
-		info.offset_y = (int8_t)mc[o_offs+2];
+		info.offset.x = (int8_t)mc[o_offs+1];
+		info.offset.y = (int8_t)mc[o_offs+2];
 
 		// Offsets are not computed from the same reference point, so convert them
-		info.offset_x += (info.width>>1);
-		info.offset_y += info.height;
+		info.offset.x += (info.width>>1);
+		info.offset.y += info.height;
 
 		// Return beginning of tile pixel data
 		return datastart;
 	}
 
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get info and data start
-		SImage::info_t info;
+		SImage::Info info;
 		unsigned datastart = getTileInfo(info, data, index);
 
 		// Check
@@ -467,7 +467,7 @@ protected:
 			return false;
 
 		// Create image (swapped width/height because column-major)
-		image.create(info.height, info.width, PALMASK, nullptr, index, info.numimages);
+		image.create(info.height, info.width, SImage::PixelFormat::PalMask, nullptr, index, info.numimages);
 
 		// Read data
 		uint8_t* img_data = imageData(image);
@@ -488,8 +488,8 @@ protected:
 		image.mirror(true);
 
 		// Set offsets
-		image.setXOffset(info.offset_x);
-		image.setYOffset(info.offset_y);
+		image.setXOffset(info.offset.x);
+		image.setYOffset(info.offset.y);
 
 		return true;
 	}
@@ -503,7 +503,7 @@ public:
 	}
 	~SIFBuildTile() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_arttile")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -511,9 +511,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get info
 		getTileInfo(info, mc, index);
@@ -525,7 +525,7 @@ public:
 class SIFHeretic2M8 : public SIFormat
 {
 private:
-	unsigned getLevelInfo(SImage::info_t& info, MemChunk& mc, int index)
+	unsigned getLevelInfo(SImage::Info& info, MemChunk& mc, int index)
 	{
 		// Check size
 		if (mc.getSize() < 1040)
@@ -539,7 +539,7 @@ private:
 		// Set other info
 		info.width = READ_L32(mc, ((index+9)<<2));
 		info.height = READ_L32(mc, ((index+25)<<2));
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.has_palette = true;
 		info.format = id;
 
@@ -548,10 +548,10 @@ private:
 	}
 
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get miplevel info and offset
-		SImage::info_t info;
+		SImage::Info info;
 		unsigned datastart = getLevelInfo(info, data, index);
 
 		// Check
@@ -588,7 +588,7 @@ public:
 	}
 	~SIFHeretic2M8() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_m8")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -596,9 +596,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		getLevelInfo(info, mc, index);
 
@@ -609,7 +609,7 @@ public:
 class SIFHeretic2M32 : public SIFormat
 {
 private:
-	unsigned getLevelInfo(SImage::info_t& info, MemChunk& mc, int index)
+	unsigned getLevelInfo(SImage::Info& info, MemChunk& mc, int index)
 	{
 		// Check size
 		if (mc.getSize() < 968)
@@ -623,7 +623,7 @@ private:
 		// Set other info
 		info.width = READ_L32(mc, ((index+129)<<2));
 		info.height = READ_L32(mc, ((index+145)<<2));
-		info.colformat = RGBA;
+		info.colformat = SImage::PixelFormat::RGBA;
 		info.format = id;
 
 		// Return offset to mip level
@@ -631,10 +631,10 @@ private:
 	}
 
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get miplevel info and offset
-		SImage::info_t info;
+		SImage::Info info;
 		unsigned datastart = getLevelInfo(info, data, index);
 
 		// Check
@@ -660,7 +660,7 @@ public:
 	}
 	~SIFHeretic2M32() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_m32")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -668,9 +668,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		getLevelInfo(info, mc, index);
 
@@ -681,10 +681,10 @@ public:
 class SIFWolfPic : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Check data
 		if (data.getSize() != 4 + info.width*info.height)
@@ -721,7 +721,7 @@ public:
 	}
 	~SIFWolfPic() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_wolfpic")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -729,16 +729,16 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read dimensions
 		info.width = READ_L16(mc.getData(), 0);
 		info.height = READ_L16(mc.getData(), 2);
 
 		// Setup other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -748,10 +748,10 @@ public:
 class SIFWolfSprite : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Create image
 		image.create(info);
@@ -788,7 +788,7 @@ public:
 	}
 	~SIFWolfSprite() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_wolfsprite")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -796,9 +796,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read dimensions
 		uint8_t leftpix, rightpix;
@@ -808,9 +808,9 @@ public:
 		info.height = 64;
 
 		// Setup other info
-		info.offset_x = 32 - leftpix;
-		info.offset_y = info.height;
-		info.colformat = PALMASK;
+		info.offset.x = 32 - leftpix;
+		info.offset.y = info.height;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;

@@ -1,37 +1,39 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    SImageFormats.cpp
- * Description: SImage class - Encapsulates a paletted or 32bit image.
- *              Handles loading/saving different formats, palette
- *              conversions, offsets, and a bunch of other stuff
- *
- *				This file contains the load/save functions for font
- *              formats (see SIF*.h for image formats)
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    SImageFormats.cpp
+// Description: SImage class - Encapsulates a paletted or 32bit image. Handles
+//              loading/saving different formats, palette conversions, offsets,
+//              and a bunch of other stuff
+//
+//              This file contains the load/save functions for font formats
+//              (see SIF*.h for image formats)
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// ----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// Includes
+//
+// ----------------------------------------------------------------------------
 #include "Main.h"
 #include "SImage.h"
 #undef BOOL
@@ -39,22 +41,27 @@
 #include "SIFormat.h"
 
 
-/*******************************************************************
- * FONT FORMATS
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// Font Formats
+//
+// ----------------------------------------------------------------------------
 
-/* SImage::loadFont0
- * Loads a Doom alpha HUFONT lump and displays it as a picture.
- * Why "font0" when it has no FON0 header? Because alpha. ;)
- * The format used is simple:
- * Offset | Length | Type | Name
- *  0x000 |      2 | ui16 | image height (one value for all chars)
- *  0x002 |  256*1 | ui08 | characterwidth (one value per char)
- *  0x102 |  256*2 | ui16 | characteroffset (one value per char)
- *  0x302 |    x*1 | ui08 | pixel color index (one value per pixel)
- * So, total size - 302 % value @ 0x00 must be null.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+
+// ----------------------------------------------------------------------------
+// SImage::loadFont0
+//
+// Loads a Doom alpha HUFONT lump and displays it as a picture.
+// Why "font0" when it has no FON0 header? Because alpha. ;)
+// The format used is simple:
+// Offset | Length | Type | Name
+//  0x000 |      2 | ui16 | image height (one value for all chars)
+//  0x002 |  256*1 | ui08 | characterwidth (one value per char)
+//  0x102 |  256*2 | ui16 | characteroffset (one value per char)
+//  0x302 |    x*1 | ui08 | pixel color index (one value per pixel)
+// So, total size - 302 % value @ 0x00 must be null.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadFont0(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -64,42 +71,42 @@ bool SImage::loadFont0(const uint8_t* gfx_data, int size)
 	if (size <= 0x302)
 		return false;
 
-	offset_x = offset_y = 0;
-	height = READ_L16(gfx_data, 0);
+	offset_ = { 0, 0 };
+	size_.y = READ_L16(gfx_data, 0);
 
 	size_t datasize = size - 0x302;
-	if (datasize % height)
+	if (datasize % size_.y)
 		return false;
 
-	width = datasize / height;
+	size_.x = datasize / size_.y;
 
 	clearData();
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// Create new picture and mask
 	const uint8_t* r = gfx_data + 0x302;
-	data = new uint8_t[datasize];
-	mask = new uint8_t[datasize];
-	memset(mask, 0xFF, datasize);
+	data_ = new uint8_t[datasize];
+	mask_ = new uint8_t[datasize];
+	memset(mask_, 0xFF, datasize);
 
 	// Data is in column-major format, convert to row-major
 	size_t p = 0;
 	for (size_t i = 0; i < datasize; ++i)
 	{
-		data[p] = r[i];
+		data_[p] = r[i];
 
 		// Index 0 is transparent
-		if (data[p] == 0)
-			mask[p] = 0;
+		if (data_[p] == 0)
+			mask_[p] = 0;
 
 		// Move to next column
-		p+=width;
+		p+=size_.x;
 
 		// Move to next row
 		if (p >= datasize)
@@ -113,14 +120,15 @@ bool SImage::loadFont0(const uint8_t* gfx_data, int size)
 	return true;
 }
 
-/* SImage::loadFont1
- * Loads a ZDoom FON1 lump and displays it as a picture.
- * Graphically-speaking, a FON1 lump is a column of 256 characters,
- * each width*height as indicated by the header. Of course,
- * it would be better to convert that into a 16x16 grid, which
- * would be a lot more legible...
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadFont1
+//
+// Loads a ZDoom FON1 lump and displays it as a picture.
+// Graphically-speaking, a FON1 lump is a column of 256 characters, each
+// width*height as indicated by the header. Of course, it would be better to
+// convert that into a 16x16 grid, which would be a lot more legible...
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadFont1(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -129,27 +137,27 @@ bool SImage::loadFont1(const uint8_t* gfx_data, int size)
 
 	// Check/setup size
 	size_t charwidth = gfx_data[4]+256*gfx_data[5];
-	width = charwidth;
+	size_.x = charwidth;
 	size_t charheight = gfx_data[6]+256*gfx_data[7];
-	height = charheight<<8;
+	size_.y = charheight<<8;
 
 	// Setup variables
-	offset_x = offset_y = 0;
-	has_palette = false;
-	type = PALMASK;
+	offset_ = { 0, 0 };
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// Clear current data if it exists
 	clearData();
-	format = nullptr;
+	format_ = nullptr;
 
 	// Read raw pixel data
-	data = new uint8_t[width*height];
-	mask = new uint8_t[width*height];
-	memset(mask, 0xFF, width*height);
+	data_ = new uint8_t[size_.x*size_.y];
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0xFF, size_.x*size_.y);
 
 	// Since gfx_data is a const pointer, we can't work on it.
 	uint8_t* tempdata = new uint8_t[size];
@@ -159,8 +167,8 @@ bool SImage::loadFont1(const uint8_t* gfx_data, int size)
 	// We'll use wandering pointers. The original pointer is kept for cleanup.
 	uint8_t* read = tempdata + 8;
 	uint8_t* readend = tempdata + size - 1;
-	uint8_t* dest  = data;
-	uint8_t* destend = dest + width*height;
+	uint8_t* dest  = data_;
+	uint8_t* destend = dest + size_.x*size_.y;
 
 	uint8_t code = 0; size_t length = 0;
 
@@ -185,19 +193,21 @@ bool SImage::loadFont1(const uint8_t* gfx_data, int size)
 	}
 	delete[] tempdata;
 	// Add transparency to mask
-	for (size_t i = 0; i < (unsigned)(width*height); ++i)
-		if (data[i] == 0)
-			mask[i] = 0x00;
+	for (size_t i = 0; i < (unsigned)(size_.x*size_.y); ++i)
+		if (data_[i] == 0)
+			mask_[i] = 0x00;
 
 	// Announce change and return success
 	announce("image_changed");
 	return true;
 }
 
-/* SImage::loadFont2
- * Loads a ZDoom FON2 lump and displays it as a picture.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadFont2
+//
+// Loads a ZDoom FON2 lump and displays it as a picture.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 struct Font2Char
 {
 	uint16_t width;
@@ -221,24 +231,24 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 	clearData();
 
 	// Initializes some stuff
-	offset_x = offset_y = 0;
-	has_palette = true;
-	type = PALMASK;
-	format = nullptr;
+	offset_ = { 0, 0 };
+	has_palette_ = true;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	if (size < sizeof(Font2Header))
 		return false;
 
 	const Font2Header* header = (Font2Header*) gfx_data;
-	width = 0;
-	height = wxUINT16_SWAP_ON_BE(header->charheight);
+	size_.x = 0;
+	size_.y = wxUINT16_SWAP_ON_BE(header->charheight);
 
 	// We can't deal with a null height, of course
-	if (height == 0)
+	if (size_.y == 0)
 		return false;
 
 	const uint8_t* p = gfx_data + sizeof(Font2Header);
@@ -254,7 +264,7 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 	{
 		chars[i].width = wxUINT16_SWAP_ON_BE(*(uint16_t*)p);
 		// Let's increase the total width
-		width+=chars[i].width+1;
+		size_.x+=chars[i].width+1;
 		// The width information is enumerated for each character only if they are
 		// not constant width. Regardless, move the read pointer away after the last.
 		if (!(header->constantw) || (i == numchars - 1))
@@ -268,12 +278,12 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 		color.r = *p++;
 		color.g = *p++;
 		color.b = *p++;
-		palette.setColour(i, color);
+		palette_.setColour(i, color);
 	}
 
 	// 0 is transparent, last is border color, the rest of the palette entries should
 	// be increasingly bright
-	palette.setTransIndex(0);
+	palette_.setTransIndex(0);
 
 	// The picture data follows, using the same RLE as FON1 and IMGZ.
 	for (size_t i = 0; i < numchars; ++i)
@@ -282,7 +292,7 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 		// may be skipped; they are given a width of 0.
 		if (chars[i].width)
 		{
-			size_t numpixels = chars[i].width * height;
+			size_t numpixels = chars[i].width * size_.y;
 			chars[i].data = new uint8_t[numpixels];
 			uint8_t* d = chars[i].data;
 			uint8_t code = 0; size_t length = 0;
@@ -323,16 +333,16 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 	}
 
 	// Now let's assemble all characters together in a single picture.
-	if (!width)
+	if (!size_.x)
 		return false;
 
 	// Clear current data if it exists
 	clearData();
 
-	data = new uint8_t[width*height];
-	memset(data, header->palsize, width*height);
-	uint8_t* d = data;
-	for (size_t i = 0; i < (unsigned)height; ++i)
+	data_ = new uint8_t[size_.x*size_.y];
+	memset(data_, header->palsize, size_.x*size_.y);
+	uint8_t* d = data_;
+	for (size_t i = 0; i < (unsigned)size_.y; ++i)
 	{
 		for (size_t j = 0; j < numchars; ++j)
 		{
@@ -353,22 +363,24 @@ bool SImage::loadFont2(const uint8_t* gfx_data, int size)
 	delete[] chars;
 
 	// Now transparency for the mask
-	mask = new uint8_t[width*height];
-	memset(mask, 0xFF, width*height);
-	for (size_t i = 0; i < (unsigned)(width*height); ++i)
-		if (data[i] == 0)
-			mask[i] = 0;
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0xFF, size_.x*size_.y);
+	for (size_t i = 0; i < (unsigned)(size_.x*size_.y); ++i)
+		if (data_[i] == 0)
+			mask_[i] = 0;
 
 	// Announce change and return success
 	announce("image_changed");
 	return true;
 }
 
-/* SImage::loadBMF
- * Loads a byte map font lump and displays it as a picture.
- * Specs for the format are here: http://bmf.wz.cz/bmf-format.htm
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadBMF
+//
+// Loads a byte map font lump and displays it as a picture.
+// Specs for the format are here: http://bmf.wz.cz/bmf-format.htm
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 struct BMFChar
 {
 	uint8_t which; // 0
@@ -435,22 +447,22 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 
 	// Clean up old data and set up variables
 	clearData();
-	type = PALMASK;
-	has_palette = true;
-	format = nullptr;
+	pixel_format_ = PixelFormat::PalMask;
+	has_palette_ = true;
+	format_ = nullptr;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	const uint8_t* ofs = gfx_data+17;
 
 	// Setup palette -- it's a 6-bit palette (63 max) so we have to convert it to 8-bit.
 	// Palette index 0 is used as the transparent color and not described at all.
-	palette.setColour(0, rgba_t(0, 0, 0, 0));
+	palette_.setColour(0, rgba_t(0, 0, 0, 0));
 	for (size_t i = 0; i < mf.pal_size; ++i)
 	{
-		palette.setColour(i+1, rgba_t((ofs[(i*3)]<<2)+(ofs[(i*3)]>>4),
+		palette_.setColour(i+1, rgba_t((ofs[(i*3)]<<2)+(ofs[(i*3)]>>4),
 		                              (ofs[(i*3)+1]<<2)+(ofs[(i*3)]>>4), (ofs[(i*3)+2]<<2)+(ofs[(i*3)+2]>>4), 255));
 	}
 
@@ -481,7 +493,7 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 	// Let's create each character's data and compute the total size
 	mf.chars = new BMFChar[mf.num_chars];
 	int miny = ofs[4], maxy = ofs[2];
-	width = ofs[5] + ofs[3];
+	size_.x = ofs[5] + ofs[3];
 	for (size_t i = 0; i < mf.num_chars; ++i)
 	{
 		mf.chars[i].which = ofs[0];
@@ -511,17 +523,17 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 				miny = mf.chars[i].offsy;
 			if (maxy < mf.chars[i].height)
 				maxy = mf.chars[i].height;
-			width += mf.add_space + mf.chars[i].shift;
+			size_.x += mf.add_space + mf.chars[i].shift;
 		}
 	}
-	height = maxy - miny;
+	size_.y = maxy - miny;
 
 	// Create new fully transparent image
-	size_t pixela = 0, pixelb = 0, pixels = width * height;
-	data = new uint8_t[pixels];
-	mask = new uint8_t[pixels];
-	memset(data, 0x00, pixels);
-	memset(mask, 0x00, pixels);
+	size_t pixela = 0, pixelb = 0, pixels = size_.x * size_.y;
+	data_ = new uint8_t[pixels];
+	mask_ = new uint8_t[pixels];
+	memset(data_, 0x00, pixels);
+	memset(mask_, 0x00, pixels);
 
 	// Start processing each character, painting it on the empty canvas
 	int startx = (mf.chars[0].offsy < 0 ? 0 : mf.chars[0].offsy);
@@ -538,13 +550,13 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 					// Source pixel
 					pixela = v*mc->width + u;
 					// Destination pixel
-					pixelb = (starty+v+mc->offsy)*width+startx+u+mc->offsx;
+					pixelb = (starty+v+mc->offsy)*size_.x+startx+u+mc->offsx;
 					// Only paint if appropriate
 					if ((mc->cdata + pixela < eod) && (mc->cdata + pixela < mf.chars[i+1].cdata - 6) &&
 					        mc->cdata[pixela] && pixelb < pixels)
 					{
-						data[pixelb] = mc->cdata[pixela];
-						mask[pixelb] = 0xFF;
+						data_[pixelb] = mc->cdata[pixela];
+						mask_[pixelb] = 0xFF;
 					}
 				}
 			}
@@ -556,10 +568,12 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 	return true;
 }
 
-/* SImage::loadFontM
- * Loads a monochrome, monospaced font and displays it as a picture.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadFontM
+//
+// Loads a monochrome, monospaced font and displays it as a picture.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadFontM(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -567,53 +581,55 @@ bool SImage::loadFontM(const uint8_t* gfx_data, int size)
 		return false;
 
 	// Setup variables
-	offset_x = offset_y = 0;
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
+	offset_ = { 0, 0 };
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	size_t charwidth = 8;
 	size_t charheight = size>>8;
-	width = charwidth;
-	height = charheight << 8;
+	size_.x = charwidth;
+	size_.y = charheight << 8;
 
-	if (width * height != size * 8)
+	if (size_.x * size_.y != size * 8)
 		return false;
 
 	// reset data
 	clearData();
-	data = new uint8_t[width*height];
-	memset(data, 0xFF, width*height);
-	mask = new uint8_t[width*height];
-	memset(mask, 0x00, width*height);
+	data_ = new uint8_t[size_.x*size_.y];
+	memset(data_, 0xFF, size_.x*size_.y);
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0x00, size_.x*size_.y);
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	//Each pixel is described as a single bit, either on or off
 	for (size_t i = 0; i < (unsigned)size; ++i)
 	{
 		for (size_t p = 0; p < 8; ++p)
-			mask[(i*8)+p] = ((gfx_data[i]>>(7-p)) & 1) * 255;
+			mask_[(i*8)+p] = ((gfx_data[i]>>(7-p)) & 1) * 255;
 	}
 	// Announce change and return success
 	announce("image_changed");
 	return true;
 }
 
-/* SImage::loadWolfFont
- * Loads a Wolf3D-format font.
- * The format used is simple, basically like the Doom alpha HUFONT,
- * except not in the same order:
- * Offset | Length | Type | Name
- *  0x000 |      2 | ui16 | image height (one value for all chars)
- *  0x002 |  256*2 | ui16 | characteroffset (one value per char)
- *  0x202 |  256*1 | ui08 | characterwidth (one value per char)
- *  0x302 |    x*1 | ui08 | pixel color index (one value per pixel)
- * So, total size - 302 % value @ 0x00 must be null.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadWolfFont
+//
+// Loads a Wolf3D-format font.
+// The format used is simple, basically like the Doom alpha HUFONT, except not
+// in the same order:
+// Offset | Length | Type | Name
+//  0x000 |      2 | ui16 | image height (one value for all chars)
+//  0x002 |  256*2 | ui16 | characteroffset (one value per char)
+//  0x202 |  256*1 | ui08 | characterwidth (one value per char)
+//  0x302 |    x*1 | ui08 | pixel color index (one value per pixel)
+// So, total size - 302 % value @ 0x00 must be null.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadWolfFont(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -623,30 +639,30 @@ bool SImage::loadWolfFont(const uint8_t* gfx_data, int size)
 	if (size <= 0x302)
 		return false;
 
-	offset_x = offset_y = 0;
-	height = READ_L16(gfx_data, 0);
+	offset_ = { 0, 0 };
+	size_.y = READ_L16(gfx_data, 0);
 
 	size_t datasize = size - 0x302;
-	if (datasize % height)
+	if (datasize % size_.y)
 		return false;
 
-	width = datasize / height;
+	size_.x = datasize / size_.y;
 
 	clearData();
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// Create new picture and mask
 	const uint8_t* r = gfx_data + 0x302;
-	data = new uint8_t[datasize];
-	mask = new uint8_t[datasize];
-	memset(mask, 0xFF, datasize);
-	memcpy(data, r, datasize);
+	data_ = new uint8_t[datasize];
+	mask_ = new uint8_t[datasize];
+	memset(mask_, 0xFF, datasize);
+	memcpy(data_, r, datasize);
 
 	size_t p = 0; // Previous width
 	size_t w = 0; // This character's width
@@ -657,15 +673,15 @@ bool SImage::loadWolfFont(const uint8_t* gfx_data, int size)
 		w = gfx_data[c + 0x202]; // Get this character's width
 		if (!w) continue;
 		size_t o = READ_L16(gfx_data, ((c<<1)+2));
-		for (size_t i = 0; i < w * height; ++i)
+		for (size_t i = 0; i < w * size_.y; ++i)
 		{
 			// Compute source and destination offsets
 			size_t s = o + i;
-			size_t d = ((i/w) * width) + (i%w) + p;
-			data[d] = gfx_data[s];
+			size_t d = ((i/w) * size_.x) + (i%w) + p;
+			data_[d] = gfx_data[s];
 			// Index 0 is transparent
-			if (data[d] == 0)
-				mask[d] = 0;
+			if (data_[d] == 0)
+				mask_[d] = 0;
 		}
 	}
 	// Announce change and return success
@@ -673,15 +689,16 @@ bool SImage::loadWolfFont(const uint8_t* gfx_data, int size)
 	return true;
 }
 
-
-/* SImage::loadJediFNT
- * Loads a Jedi Engine-format bitmap font.
- * The header tells the height and which are the first and last
- * characters described. Then the character data consists of a
- * single byte of data for the width of that character, followed
- * by a list of columns. The characters are listed in order.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadJediFNT
+//
+// Loads a Jedi Engine-format bitmap font.
+// The header tells the height and which are the first and last characters
+// described. Then the character data consists of a single byte of data for the
+// width of that character, followed by a list of columns. The characters are
+// listed in order.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadJediFNT(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -693,11 +710,11 @@ bool SImage::loadJediFNT(const uint8_t* gfx_data, int size)
 
 	// The character data is presented as a list of columns
 	// preceded by a byte for
-	offset_x = offset_y = 0;
+	offset_ = { 0, 0 };
 
 	// Since the format is column-major, we'll use our usual cheat of
 	// inverting height and width to build the picture, then rotating it.
-	width = gfx_data[4];
+	size_.x = gfx_data[4];
 
 	// First and last characters
 	uint8_t firstc = gfx_data[8];
@@ -705,27 +722,27 @@ bool SImage::loadJediFNT(const uint8_t* gfx_data, int size)
 	uint8_t numchr = 1 + lastc - firstc;
 
 	// Go through each character to compute the total width (pre-rotation height)
-	height = 0;
+	size_.y = 0;
 	size_t wo = 32; // Offset to width of next character
 	for (uint8_t i = 0; i < numchr; ++i)
 	{
-		height += gfx_data[wo];
-		wo += 1 + (width * gfx_data[wo]);
+		size_.y += gfx_data[wo];
+		wo += 1 + (size_.x * gfx_data[wo]);
 	}
 
 	clearData();
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// Create new picture and mask
-	data = new uint8_t[width * height];
-	mask = new uint8_t[width * height];
-	memset(mask, 0xFF, width * height);
+	data_ = new uint8_t[size_.x * size_.y];
+	mask_ = new uint8_t[size_.x * size_.y];
+	memset(mask_, 0xFF, size_.x * size_.y);
 
 	// Run through each character and add the pixel data
 	wo = 32;
@@ -733,15 +750,15 @@ bool SImage::loadJediFNT(const uint8_t* gfx_data, int size)
 	for (uint8_t i = 0; i < numchr; ++i)
 	{
 		uint8_t numcols = gfx_data[wo++];
-		memcpy(data + (col * width), gfx_data + wo, numcols * width);
+		memcpy(data_ + (col * size_.x), gfx_data + wo, numcols * size_.x);
 		col += numcols;
-		wo += width * numcols;
+		wo += size_.x * numcols;
 	}
 
 	// Make index 0 transparent
-	for (int i = 0; i < width * height; ++i)
-		if (data[i] == 0)
-			mask[i] = 0;
+	for (int i = 0; i < size_.x * size_.y; ++i)
+		if (data_[i] == 0)
+			mask_[i] = 0;
 
 	// Convert from column-major to row-major
 	rotate(90);
@@ -751,14 +768,16 @@ bool SImage::loadJediFNT(const uint8_t* gfx_data, int size)
 	return true;
 }
 
-/* SImage::loadJediFONT
- * Loads a Jedi Engine-format monochrome font.
- * Contrarily to what the DF specs claim, the first two int16
- * values are not the first and last characters as in the FNT
- * format; instead, they are the first character and the number
- * of characters! They're also mistaken about character width.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadJediFONT
+//
+// Loads a Jedi Engine-format monochrome font.
+// Contrarily to what the DF specs claim, the first two int16 values are not
+// the first and last characters as in the FNT format; instead, they are the
+// first character and the number of characters! They're also mistaken about
+// character width.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadJediFONT(const uint8_t* gfx_data, int size)
 {
 	// Check data
@@ -768,42 +787,42 @@ bool SImage::loadJediFONT(const uint8_t* gfx_data, int size)
 	int numchr = READ_L16(gfx_data, 2);
 
 	// Setup variables
-	offset_x = offset_y = 0;
-	height = READ_L16(gfx_data, 6) * numchr;
-	width = READ_L16(gfx_data, 4);
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
+	offset_ = { 0, 0 };
+	size_.y = READ_L16(gfx_data, 6) * numchr;
+	size_.x = READ_L16(gfx_data, 4);
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
 
 	// reset data
 	clearData();
-	data = new uint8_t[width*height];
-	memset(data, 0xFF, width*height);
-	mask = new uint8_t[width*height];
-	memset(mask, 0x00, width*height);
+	data_ = new uint8_t[size_.x*size_.y];
+	memset(data_, 0xFF, size_.x*size_.y);
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0x00, size_.x*size_.y);
 
 	// Technically each character is its own image, though.
-	numimages = 1;
-	imgindex = 0;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// We don't care about the character widths since
 	// technically it's always eight anyway. The offset
 	// to graphic data corresponds to 12 (header size)
 	// plus one byte by character for width.
 	int o = 12 + numchr;
-	int bpc = width / 8;
+	int bpc = size_.x / 8;
 
 	//Each pixel is described as a single bit, either on or off
-	for (int i = 0; i < height; ++i)
+	for (int i = 0; i < size_.y; ++i)
 	{
-		for (int p = 0; p < width; ++p)
+		for (int p = 0; p < size_.x; ++p)
 		{
 			switch (bpc)
 			{
-			case 1: mask[(i*width)+p] = ((gfx_data[o+i]>>(7-p)) & 1) * 255; break;
-			case 2: mask[(i*width)+p] = ((READ_B16(gfx_data, o+(i*2))>>(15-p)) & 1) * 255; break;
-			case 3: mask[(i*width)+p] = ((READ_B24(gfx_data, o+(i*3))>>(23-p)) & 1) * 255; break;
-			case 4: mask[(i*width)+p] = ((READ_B32(gfx_data, o+(i*4))>>(31-p)) & 1) * 255; break;
+			case 1: mask_[(i*size_.x)+p] = ((gfx_data[o+i]>>(7-p)) & 1) * 255; break;
+			case 2: mask_[(i*size_.x)+p] = ((READ_B16(gfx_data, o+(i*2))>>(15-p)) & 1) * 255; break;
+			case 3: mask_[(i*size_.x)+p] = ((READ_B24(gfx_data, o+(i*3))>>(23-p)) & 1) * 255; break;
+			case 4: mask_[(i*size_.x)+p] = ((READ_B32(gfx_data, o+(i*4))>>(31-p)) & 1) * 255; break;
 			default: clearData(); Global::error = "Jedi FONT: Weird word width"; return false;
 			}
 		}
@@ -813,12 +832,13 @@ bool SImage::loadJediFONT(const uint8_t* gfx_data, int size)
 	return true;
 }
 
-/* SImage::loadJaguarSprite
- * Loads a Jaguar Doom sprite. This needs manual handling because
- * the data is split in two separate lumps, one with the header and
- * the other with raw pixel data. So we need to have access to both.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadJaguarSprite
+// Loads a Jaguar Doom sprite. This needs manual handling because the data is
+// split in two separate lumps, one with the header and the other with raw
+// pixel data. So we need to have access to both.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t* gfx_data, int size)
 {
 	if (header == nullptr || gfx_data == nullptr || hdr_size < 16 || size == 0)
@@ -829,43 +849,43 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 
 	// Setup variables
 	int16_t ofsx, ofsy;
-	width	 = READ_B16(header, 0);
-	height	 = READ_B16(header, 2);
+	size_.x	 = READ_B16(header, 0);
+	size_.y	 = READ_B16(header, 2);
 	ofsx	 = READ_B16(header, 4);
 	ofsy	 = READ_B16(header, 6);
-	offset_x = ofsx; offset_y = ofsy;
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
-	numimages = 1;
-	imgindex = 0;
+	offset_ = { (int)ofsx, (int)ofsy };
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// reset data
 	clearData();
-	data = new uint8_t[width*height];
-	memset(data, 0x00, width*height);
-	mask = new uint8_t[width*height];
-	memset(mask, 0x00, width*height);
+	data_ = new uint8_t[size_.x*size_.y];
+	memset(data_, 0x00, size_.x*size_.y);
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0x00, size_.x*size_.y);
 
 	// Read column offsets
-	if (hdr_size < (8 + (width * 6)))
+	if (hdr_size < (8 + (size_.x * 6)))
 	{
-		Global::error = S_FMT("Invalid Jaguar sprite: header too small (%d) for column offsets (%d)", hdr_size, (8 + (width * 6)));
+		Global::error = S_FMT("Invalid Jaguar sprite: header too small (%d) for column offsets (%d)", hdr_size, (8 + (size_.x * 6)));
 		return false;
 	}
-	vector<uint16_t> col_offsets(width);
-	for (int w = 0; w < width; ++w)
+	vector<uint16_t> col_offsets(size_.x);
+	for (int w = 0; w < size_.x; ++w)
 	{
 		col_offsets[w] = READ_B16(header, 8+2*w);
 	}
-	if (hdr_size < (4 + col_offsets[width - 1]))
+	if (hdr_size < (4 + col_offsets[size_.x - 1]))
 	{
-		Global::error = S_FMT("Invalid Jaguar sprite: header too small (%d) for post offsets (%d)", hdr_size, 4 + col_offsets[width - 1]);
+		Global::error = S_FMT("Invalid Jaguar sprite: header too small (%d) for post offsets (%d)", hdr_size, 4 + col_offsets[size_.x - 1]);
 		return false;
 	}
 
 	// Okay, so it's finally time to read some pixel data
-	for (int w = 0; w < width; ++w)
+	for (int w = 0; w < size_.x; ++w)
 	{
 		int post_p = col_offsets[w];
 		// Process all posts in the column
@@ -882,9 +902,9 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 			// Copy pixels
 			for (int p = 0; p < len; ++p)
 			{
-				size_t pos = w + width * (top + p);
-				data[pos] = gfx_data[pixel_p + p];
-				mask[pos] = 0xFF;
+				size_t pos = w + size_.x * (top + p);
+				data_[pos] = gfx_data[pixel_p + p];
+				mask_[pos] = 0xFF;
 			}
 			post_p +=4;
 		}
@@ -895,11 +915,13 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 	return true;
 }
 
-/* SImage::loadJaguarTexture
- * Loads a Jaguar Doom texture. This needs manual handling because
- * the dimensions are contained in the TEXTURE1 lump instead.
- * Returns false if the image data was invalid, true otherwise.
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SImage::loadJaguarTexture
+//
+// Loads a Jaguar Doom texture. This needs manual handling because the
+// dimensions are contained in the TEXTURE1 lump instead.
+// Returns false if the image data was invalid, true otherwise.
+// ----------------------------------------------------------------------------
 bool SImage::loadJaguarTexture(const uint8_t* gfx_data, int size, int i_width, int i_height)
 {
 	// Check data
@@ -910,21 +932,21 @@ bool SImage::loadJaguarTexture(const uint8_t* gfx_data, int size, int i_width, i
 	}
 
 	// Setup variables
-	offset_x = offset_y = 0;
-	width = i_height;	// Format is column-major
-	height = i_width;	// We'll rotate them afterwards
-	has_palette = false;
-	type = PALMASK;
-	format = nullptr;
-	numimages = 1;
-	imgindex = 0;
+	offset_ = { 0, 0 };
+	size_.x = i_height;	// Format is column-major
+	size_.y = i_width;	// We'll rotate them afterwards
+	has_palette_ = false;
+	pixel_format_ = PixelFormat::PalMask;
+	format_ = nullptr;
+	num_images_ = 1;
+	img_index_ = 0;
 
 	// reset data
 	clearData();
-	data = new uint8_t[width*height];
-	memcpy(data, gfx_data, width*height);
-	mask = new uint8_t[width*height];
-	memset(mask, 0xFF, width*height);
+	data_ = new uint8_t[size_.x*size_.y];
+	memcpy(data_, gfx_data, size_.x*size_.y);
+	mask_ = new uint8_t[size_.x*size_.y];
+	memset(mask_, 0xFF, size_.x*size_.y);
 
 	// rotate and mirror image
 	rotate(90);

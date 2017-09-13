@@ -811,8 +811,8 @@ bool CTexture::parseDefine(Tokenizer& tz)
 		SImage image;
 		if (image.open(entry->getMCData()))
 		{
-			width = image.getWidth();
-			height = image.getHeight();
+			width = image.width();
+			height = image.height();
 			scale_x = (double)width / (double)def_width;
 			scale_y = (double)height / (double)def_height;
 		}
@@ -943,16 +943,16 @@ bool CTexture::toImage(SImage& image, Archive* parent, Palette* pal, bool force_
 	image.resize(width, height);
 
 	// Add patches
-	SImage p_img(PALMASK);
-	si_drawprops_t dp;
+	SImage p_img(SImage::PixelFormat::PalMask);
+	SImage::DrawProps dp;
 	dp.src_alpha = false;
 	if (defined)
 	{
 		CTPatchEx* patch = (CTPatchEx*)patches[0];
 		if (!loadPatchImage(0, p_img, parent, pal))
 			return false;
-		width = p_img.getWidth();
-		height = p_img.getHeight();
+		width = p_img.width();
+		height = p_img.height();
 		image.resize(width, height);
 		scale_x = (double)width / (double)def_width;
 		scale_y = (double)height / (double)def_height;
@@ -997,7 +997,7 @@ bool CTexture::toImage(SImage& image, Archive* parent, Palette* pal, bool force_
 				p_img.rotate(patch->getRotation());
 
 			// Setup transparency blending
-			dp.blend = NORMAL;
+			dp.blend = SImage::BlendType::Normal;
 			dp.alpha = 1.0f;
 			dp.src_alpha = false;
 			if (patch->getStyle() == "CopyAlpha" || patch->getStyle() == "Overlay")
@@ -1006,22 +1006,22 @@ bool CTexture::toImage(SImage& image, Archive* parent, Palette* pal, bool force_
 				dp.alpha = patch->getAlpha();
 			else if (patch->getStyle() == "Add")
 			{
-				dp.blend = ADD;
+				dp.blend = SImage::BlendType::Add;
 				dp.alpha = patch->getAlpha();
 			}
 			else if (patch->getStyle() == "Subtract")
 			{
-				dp.blend = SUBTRACT;
+				dp.blend = SImage::BlendType::Subtract;
 				dp.alpha = patch->getAlpha();
 			}
 			else if (patch->getStyle() == "ReverseSubtract")
 			{
-				dp.blend = REVERSE_SUBTRACT;
+				dp.blend = SImage::BlendType::ReverseSubtract;
 				dp.alpha = patch->getAlpha();
 			}
 			else if (patch->getStyle() == "Modulate")
 			{
-				dp.blend = MODULATE;
+				dp.blend = SImage::BlendType::Modulate;
 				dp.alpha = patch->getAlpha();
 			}
 

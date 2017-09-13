@@ -2,7 +2,7 @@
 class SIFImgz : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		int width, height, offset_x, offset_y;
 
@@ -14,7 +14,7 @@ protected:
 		offset_y = wxINT16_SWAP_ON_BE(header->top);
 
 		// Create image
-		image.create(width, height, ALPHAMAP);
+		image.create(width, height, SImage::PixelFormat::AlphaMap);
 		uint8_t* img_data = imageData(image);
 
 		if (!header->compression)
@@ -65,7 +65,7 @@ public:
 	}
 	~SIFImgz() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_imgz")->isThisFormat(mc))
 			return true;
@@ -73,9 +73,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get width & height
 		imgz_header_t* header = (imgz_header_t*)mc.getData();
@@ -83,7 +83,7 @@ public:
 		info.height = wxINT16_SWAP_ON_BE(header->height);
 
 		// Other image info
-		info.colformat = ALPHAMAP;
+		info.colformat = SImage::PixelFormat::AlphaMap;
 		info.format = "imgz";
 
 		return info;

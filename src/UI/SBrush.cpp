@@ -79,9 +79,9 @@ SBrush::SBrush(string name)
 		LOG_MESSAGE(2, "couldn't load image data for icons/general/%s.png", icon);
 		return;
 	}
-	image->convertAlphaMap(SImage::ALPHA);
-	cx = image->getWidth() >> 1;
-	cy = image->getHeight() >> 1;
+	image->convertAlphaMap(SImage::AlphaSource::Alpha);
+	cx = image->width() >> 1;
+	cy = image->height() >> 1;
 
 	theBrushManager->add(this);
 }
@@ -96,8 +96,8 @@ uint8_t SBrush::getPixel(int x, int y)
 {
 	x += cx;
 	y += cy;
-	if (image && x >= 0 && x < image->getWidth() && y >= 0 && y < image->getHeight())
-		return image->getPixelIndex((unsigned)x, (unsigned)y);
+	if (image && x >= 0 && x < image->width() && y >= 0 && y < image->height())
+		return image->paletteIndexAt((unsigned)x, (unsigned)y);
 	return 0;
 }
 

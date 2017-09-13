@@ -328,12 +328,8 @@ void CTextureCanvas::drawTexture()
 		// Generate if needed
 		if (!tex_preview.isLoaded())
 		{
-			// Determine image type
-			SIType type = PALMASK;
-			if (blend_rgba) type = RGBA;
-
 			// CTexture -> temp Image -> GLTexture
-			SImage temp(type);
+			SImage temp(blend_rgba ? SImage::PixelFormat::RGBA : SImage::PixelFormat::PalMask);
 			texture->toImage(temp, parent, &palette, blend_rgba);
 			tex_preview.loadImage(&temp, &palette);
 		}
@@ -437,7 +433,7 @@ void CTextureCanvas::drawPatch(int num, bool outside)
 	// Load the patch as an opengl texture if it isn't already
 	if (!patch_textures[num]->isLoaded())
 	{
-		SImage temp(PALMASK);
+		SImage temp(SImage::PixelFormat::PalMask);
 		if (texture->loadPatchImage(num, temp, parent, &palette))
 		{
 			// Load the image as a texture

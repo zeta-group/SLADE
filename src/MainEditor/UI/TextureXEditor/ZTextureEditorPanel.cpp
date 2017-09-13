@@ -1030,7 +1030,7 @@ void ZTextureEditorPanel::onBtnEditTranslation(wxCommandEvent& e)
 		trans.addRange(TRANS_PALETTE, 0);
 
 	// Create patch image
-	SImage image(PALMASK);
+	SImage image(SImage::PixelFormat::PalMask);
 	tex_canvas->getTexture()->loadPatchImage(selection[0], image, tx_editor->getArchive(), tex_canvas->getPalette());
 
 	// Open translation editor dialog

@@ -107,9 +107,14 @@ struct chunk_size_t
  * colour format if possible. Returns false if the conversion failed,
  * true otherwise
  *******************************************************************/
-bool EntryOperations::gfxConvert(ArchiveEntry* entry, string target_format, SIFormat::convert_options_t opt, int target_colformat)
+bool EntryOperations::gfxConvert(
+	ArchiveEntry* entry,
+	string target_format,
+	SIFormat::convert_options_t opt,
+	SImage::PixelFormat target_colformat)
 {
 	// Init variables
+	using PF = SImage::PixelFormat;
 	SImage image;
 
 	// Get target image format
@@ -118,11 +123,11 @@ bool EntryOperations::gfxConvert(ArchiveEntry* entry, string target_format, SIFo
 		return false;
 
 	// Check format and target colour type are compatible
-	if (target_colformat >= 0 && !fmt->canWriteType((SIType)target_colformat))
+	if (target_colformat != PF::Any && !fmt->canWriteType(target_colformat))
 	{
-		if (target_colformat == RGBA)
+		if (target_colformat == PF::RGBA)
 			LOG_MESSAGE(1, "Format \"%s\" cannot be written as RGBA data", fmt->getName());
-		else if (target_colformat == PALMASK)
+		else if (target_colformat == PF::PalMask)
 			LOG_MESSAGE(1, "Format \"%s\" cannot be written as paletted data", fmt->getName());
 
 		return false;
@@ -142,9 +147,9 @@ bool EntryOperations::gfxConvert(ArchiveEntry* entry, string target_format, SIFo
 		fmt->convertWritable(image, opt);
 
 	// Now we apply the target colour format (if any)
-	if (target_colformat == PALMASK)
+	if (target_colformat == PF::PalMask)
 		image.convertPaletted(opt.pal_target, opt.pal_current);
-	else if (target_colformat == RGBA)
+	else if (target_colformat == PF::RGBA)
 		image.convertRGBA(opt.pal_current);
 
 	// Finally, write new image data back to the entry
@@ -1058,8 +1063,8 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		CTexture* ntex = new CTexture(zdtextures);
 		ntex->setName(name);
 		ntex->addPatch(name, 0, 0);
-		ntex->setWidth(image.getWidth());
-		ntex->setHeight(image.getHeight());
+		ntex->setWidth(image.width());
+		ntex->setHeight(image.height());
 
 		// Setup texture scale
 		if (tx.getFormat() == TXF_TEXTURES)

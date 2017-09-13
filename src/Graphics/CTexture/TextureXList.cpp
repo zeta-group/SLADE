@@ -862,7 +862,7 @@ bool TextureXList::findErrors()
 					SImage img;
 					img.open(patch->getMCData());
 					size_t start = MAX(0, textures[a]->patches[i]->xOffset());
-					size_t end = MIN(textures[a]->getWidth(), img.getWidth() + start);
+					size_t end = MIN(textures[a]->getWidth(), img.width() + start);
 					for (size_t c = start; c < end; ++c)
 						columns[c] = true;
 				}

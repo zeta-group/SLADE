@@ -74,10 +74,10 @@ class GfxConvDialog : public SDialog
 private:
 	struct conv_format_t
 	{
-		SIFormat*	format;
-		int			coltype;
+		SIFormat*			format;
+		SImage::PixelFormat	coltype;
 
-		conv_format_t(SIFormat* format = nullptr, int coltype = RGBA)
+		conv_format_t(SIFormat* format = nullptr, SImage::PixelFormat coltype = SImage::PixelFormat::RGBA)
 		{
 			this->format = format;
 			this->coltype = coltype;

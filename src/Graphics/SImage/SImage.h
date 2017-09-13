@@ -1,35 +1,7 @@
-
-#ifndef __SIMAGE_H__
-#define	__SIMAGE_H__
+#pragma once
 
 #include "Graphics/Palette/Palette.h"
 #include "General/ListenerAnnouncer.h"
-
-enum SIType
-{
-	PALMASK,	// 2 bytes per pixel: palette index and alpha value
-	RGBA,		// 4 bytes per pixel: RGBA
-	ALPHAMAP,	// 1 byte per pixel: alpha
-};
-
-enum SIBlendType
-{
-	NORMAL,				// Normal blend
-	ADD,				// Additive blend
-	SUBTRACT,			// Subtractive blend
-	REVERSE_SUBTRACT,	// Reverse-subtractive blend
-	MODULATE,			// 'Modulate' blend
-};
-
-// Simple struct to hold pixel drawing properties
-struct si_drawprops_t
-{
-	SIBlendType	blend;		// The blending mode
-	float		alpha;
-	bool		src_alpha;	// Whether to respect source pixel alpha
-
-	si_drawprops_t() { blend = NORMAL; alpha = 1.0f; src_alpha = true; }
-};
 
 class Translation;
 class SIFormat;
@@ -37,88 +9,99 @@ class SIFormat;
 class SImage : public Announcer
 {
 	friend class SIFormat;
-private:
-	int			width;
-	int			height;
-	uint8_t*	data;
-	uint8_t*	mask;
-	SIType		type;
-	Palette	palette;
-	bool		has_palette;
-	int			offset_x;
-	int			offset_y;
-	SIFormat*	format;
-
-	// For multi-image files
-	int			imgindex;
-	int			numimages;
-
-	// Internal functions
-	void	clearData(bool clear_mask = true);
 
 public:
-	enum
+	// Alpha map generation sources
+	enum class AlphaSource
 	{
-		// Alpha map generation sources
-		BRIGHTNESS = 0,
-		ALPHA,
+		Brightness,
+		Alpha,
 	};
 
-	struct info_t
+	enum class PixelFormat
 	{
-		int		width;
-		int		height;
-		int		colformat;
-		string	format;
-		int		numimages;
-		int		imgindex;
-		int		offset_x;
-		int		offset_y;
-		bool	has_palette;
+		PalMask,	// 2 bytes per pixel: palette index and alpha value
+		RGBA,		// 4 bytes per pixel: RGBA
+		AlphaMap,	// 1 byte per pixel: alpha
+		Any			// For conversion, don't use for an actual SImage
+	};
 
-		info_t()
+	enum class BlendType
+	{
+		Normal,				// Normal blend
+		Add,				// Additive blend
+		Subtract,			// Subtractive blend
+		ReverseSubtract,	// Reverse-subtractive blend
+		Modulate,			// 'Modulate' blend
+	};
+
+	// Simple struct to hold pixel drawing properties
+	struct DrawProps
+	{
+		BlendType	blend;		// The blending mode
+		float		alpha;
+		bool		src_alpha;	// Whether to respect source pixel alpha
+
+		DrawProps() { blend = BlendType::Normal; alpha = 1.0f; src_alpha = true; }
+	};
+
+	struct Info
+	{
+		int			width;
+		int			height;
+		PixelFormat	colformat;
+		string		format;
+		int			numimages;
+		int			imgindex;
+		point2_t	offset;
+		bool		has_palette;
+
+		Info()
 		{
-			width = height = offset_x = offset_y = imgindex = 0;
-			colformat = RGBA;
+			width = height = offset.x = offset.y = imgindex = 0;
+			colformat = PixelFormat::RGBA;
 			numimages = 1;
 			has_palette = false;
 		}
 	};
 
-	SImage(SIType type = RGBA);
+	SImage(PixelFormat type = PixelFormat::RGBA);
+	SImage(int width, int height, PixelFormat pixel_format, Palette* pal = nullptr, int index = 0, int numimages = 1)
+		: SImage(pixel_format)
+		{ create(width, height, pixel_format, pal, index, numimages); }
 	virtual ~SImage();
 
-	bool			isValid() { return (width > 0 && height > 0 && data); }
+	bool	isValid() { return (size_.x > 0 && size_.y > 0 && data_); }
 
-	SIType			getType() { return type; }
-	bool			getRGBAData(MemChunk& mc, Palette* pal = nullptr);
-	bool			getRGBData(MemChunk& mc, Palette* pal = nullptr);
-	bool			getIndexedData(MemChunk& mc);
-	int				getWidth() { return width; }
-	int				getHeight() { return height; }
-	int				getIndex() { return imgindex; }
-	int				getSize() { return numimages; }
-	bool			hasPalette() { return has_palette; }
-	Palette*	getPalette() { return &palette; }
-	point2_t		offset() { return point2_t(offset_x, offset_y); }
-	unsigned		getStride();
-	uint8_t			getBpp();
-	rgba_t			getPixel(unsigned x, unsigned y, Palette* pal = nullptr);
-	uint8_t			getPixelIndex(unsigned x, unsigned y);
-	SIFormat*		getFormat() { return format; }
-	info_t			getInfo();
+	PixelFormat	pixelFormat() { return pixel_format_; }
+	bool		getRGBAData(MemChunk& mc, Palette* pal = nullptr);
+	bool		getRGBData(MemChunk& mc, Palette* pal = nullptr);
+	bool		getIndexedData(MemChunk& mc);
+	int			width() { return size_.x; }
+	int			height() { return size_.y; }
+	int			getIndex() { return img_index_; }
+	int			getSize() { return num_images_; }
+	bool		hasPalette() { return has_palette_; }
+	Palette*	palette() { return &palette_; }
+	point2_t	offset() { return offset_; }
+	unsigned	stride();
+	uint8_t		bytesPerPixel();
+	rgba_t		colourAt(unsigned x, unsigned y, Palette* pal = nullptr);
+	uint8_t		paletteIndexAt(unsigned x, unsigned y);
+	SIFormat*	format() { return format_; }
+	Info		info();
 
-	void			setXOffset(int offset);
-	void			setYOffset(int offset);
-	void			setPalette(Palette* pal) { palette.copyPalette(pal); has_palette = true; }
-
-	void			setWidth(int w);
-	void			setHeight(int h);
+	void	setOffset(point2_t offset);
+	void	setXOffset(int offset);
+	void	setYOffset(int offset);
+	void	setPalette(Palette* pal) { palette_.copyPalette(pal); has_palette_ = true; }
+	void	setWidth(int w);
+	void	setHeight(int h);
 
 	// Misc
 	void	clear();
-	void	create(int width, int height, SIType type, Palette* pal = nullptr, int index = 0, int numimages = 1);
-	void	create(info_t info, Palette* pal = nullptr);
+	void	create(int width, int height, PixelFormat type, Palette* pal = nullptr, int index = 0, int numimages = 1);
+	void	create(Info info, Palette* pal = nullptr);
 	void	fillAlpha(uint8_t alpha = 0);
 	short	findUnusedColour();
 	bool	validFlatSize();
@@ -142,7 +125,7 @@ public:
 	// Conversion stuff
 	bool	convertRGBA(Palette* pal = nullptr);
 	bool	convertPaletted(Palette* pal_target, Palette* pal_current = nullptr);
-	bool	convertAlphaMap(int alpha_source = BRIGHTNESS, Palette* pal = nullptr);
+	bool	convertAlphaMap(AlphaSource alpha_source = AlphaSource::Brightness, Palette* pal = nullptr);
 	bool	maskFromColour(rgba_t colour, Palette* pal = nullptr);
 	bool	maskFromBrightness(Palette* pal = nullptr);
 	bool	cutoffMask(uint8_t threshold);
@@ -155,15 +138,30 @@ public:
 	bool	mirror(bool vert);
 	bool	crop(long x1, long y1, long x2, long y2);
 	bool	resize(int nwidth, int nheight);
-	bool	setImageData(uint8_t* ndata, int nwidth, int nheight, SIType ntype);
+	bool	setImageData(uint8_t* ndata, int nwidth, int nheight, PixelFormat ntype);
 	bool	applyTranslation(Translation* tr, Palette* pal = nullptr, bool truecolor = false);
 	bool	applyTranslation(string tr, Palette* pal = nullptr, bool truecolor = false);
-	bool	drawPixel(int x, int y, rgba_t colour, si_drawprops_t& properties, Palette* pal);
-	bool	drawImage(SImage& img, int x, int y, si_drawprops_t& properties, Palette* pal_src = nullptr, Palette* pal_dest = nullptr);
+	bool	drawPixel(int x, int y, rgba_t colour, DrawProps& properties, Palette* pal);
+	bool	drawImage(SImage& img, int x, int y, DrawProps& properties, Palette* pal_src = nullptr, Palette* pal_dest = nullptr);
 	bool	colourise(rgba_t colour, Palette* pal = nullptr, int start = -1, int stop = -1);
 	bool	tint(rgba_t colour, float amount, Palette* pal = nullptr, int start = -1, int stop = -1);
 	bool	adjust();
 	bool	mirrorpad();
-};
 
-#endif //__SIMAGE_H__
+private:
+	point2_t	size_;
+	uint8_t*	data_;
+	uint8_t*	mask_;
+	PixelFormat	pixel_format_;
+	Palette		palette_;
+	bool		has_palette_;
+	point2_t	offset_;
+	SIFormat*	format_;
+
+	// For multi-image files
+	int	img_index_;
+	int	num_images_;
+
+	// Internal functions
+	void	clearData(bool clear_mask = true);
+};

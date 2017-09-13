@@ -951,7 +951,7 @@ void MapPreviewCanvas::createImage(ArchiveEntry& ae, int width, int height)
 		glDeleteFramebuffersEXT( 1, &fboID );
 	}
 	SImage img;
-	img.setImageData(ImageBuffer, width, height, RGBA);
+	img.setImageData(ImageBuffer, width, height, SImage::PixelFormat::RGBA);
 	img.mirror(true);
 	MemChunk mc;
 	SIFormat::getFormat("png")->saveImage(img, mc);

@@ -230,7 +230,7 @@ bool GfxEntryPanel::saveEntry()
 	if (image_data_modified)
 	{
 		SImage* image = getImage();
-		SIFormat* format = image->getFormat();
+		SIFormat* format = image->format();
 
 		string error = "";
 		ok = false;
@@ -404,7 +404,7 @@ bool GfxEntryPanel::extractAll()
 		Misc::loadImageFromEntry(getImage(), entry, i);
 
 		// Only process images that actually contain some pixels
-		if (getImage()->getWidth() && getImage()->getHeight())
+		if (getImage()->width() && getImage()->height())
 		{
 			ArchiveEntry* newimg = parent->addNewEntry(newname, index+pos+1, entry->getParentDir());
 			if (newimg == nullptr) return false;
@@ -490,7 +490,7 @@ void GfxEntryPanel::refresh()
 		gfx_canvas->resetOffsets();
 
 	// Setup custom menu
-	if (getImage()->getType() == RGBA)
+	if (getImage()->pixelFormat() == SImage::PixelFormat::RGBA)
 		menu_custom->Enable(MENU_GFXEP_TRANSLATE, false);
 	else
 		menu_custom->Enable(MENU_GFXEP_TRANSLATE, true);
@@ -507,10 +507,10 @@ string GfxEntryPanel::statusString()
 {
 	// Setup status string
 	SImage* image = getImage();
-	string status = S_FMT("%dx%d", image->getWidth(), image->getHeight());
+	string status = S_FMT("%dx%d", image->width(), image->height());
 
 	// Colour format
-	if (image->getType() == RGBA)
+	if (image->pixelFormat() == SImage::PixelFormat::RGBA)
 		status += ", 32bpp";
 	else
 		status += ", 8bpp";
@@ -573,8 +573,8 @@ int GfxEntryPanel::detectOffsetType()
 	if (is_png && img->offset().x == 0 && img->offset().y == 0)
 		return GFXVIEW_DEFAULT;
 
-	int width = img->getWidth();
-	int height = img->getHeight();
+	int width = img->width();
+	int height = img->height();
 	int left = -img->offset().x;
 	int right = left + width;
 	int top = -img->offset().y;
@@ -1205,7 +1205,7 @@ void GfxEntryPanel::onBtnAutoOffset(wxCommandEvent& e)
 	{
 		// Calculate new offsets
 		point2_t offsets = dlg.calculateOffsets(spin_xoffset->GetValue(), spin_yoffset->GetValue(),
-			gfx_canvas->getImage()->getWidth(), gfx_canvas->getImage()->getHeight());
+			gfx_canvas->getImage()->width(), gfx_canvas->getImage()->height());
 
 		// Change offsets
 		spin_xoffset->SetValue(offsets.x);
@@ -1303,7 +1303,7 @@ CONSOLE_COMMAND (rotate, 1, true)
 		meep->getImage()->rotate(angle);
 		meep->refresh();
 		MemChunk mc;
-		if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+		if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 			bar->importMemChunk(mc);
 	}
 }
@@ -1346,7 +1346,7 @@ CONSOLE_COMMAND (mirror, 1, true)
 		meep->getImage()->mirror(vertical);
 		meep->refresh();
 		MemChunk mc;
-		if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+		if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 			bar->importMemChunk(mc);
 	}
 }
@@ -1379,7 +1379,7 @@ CONSOLE_COMMAND (crop, 4, true)
 			meep->getImage()->crop(x1, y1, x2, y2);
 			meep->refresh();
 			MemChunk mc;
-			if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+			if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 				bar->importMemChunk(mc);
 		}
 	}
@@ -1410,7 +1410,7 @@ CONSOLE_COMMAND(adjust, 0, true)
 		meep->getImage()->adjust();
 		meep->refresh();
 		MemChunk mc;
-		if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+		if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 			bar->importMemChunk(mc);
 	}
 }
@@ -1440,7 +1440,7 @@ CONSOLE_COMMAND(mirrorpad, 0, true)
 		meep->getImage()->mirrorpad();
 		meep->refresh();
 		MemChunk mc;
-		if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+		if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 			bar->importMemChunk(mc);
 	}
 }
@@ -1470,7 +1470,7 @@ CONSOLE_COMMAND(imgconv, 0, true)
 		meep->getImage()->imgconv();
 		meep->refresh();
 		MemChunk mc;
-		if (meep->getImage()->getFormat()->saveImage(*meep->getImage(), mc))
+		if (meep->getImage()->format()->saveImage(*meep->getImage(), mc))
 			bar->importMemChunk(mc);
 	}
 }

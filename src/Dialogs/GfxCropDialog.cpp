@@ -49,7 +49,7 @@ CropCanvas::CropCanvas(wxWindow* parent, SImage* image, Palette* palette) :
 	{
 		texture = std::make_unique<GLTexture>();
 		texture->loadImage(image, palette);
-		crop_rect.set(0, 0, image->getWidth(), image->getHeight());
+		crop_rect.set(0, 0, image->width(), image->height());
 	}
 
 	SetInitialSize(wxSize(220, 220));
@@ -131,8 +131,8 @@ GfxCropDialog::GfxCropDialog(wxWindow* parent, SImage* image, Palette* palette) 
 	// Set max crop size
 	if (image)
 	{
-		max_width = image->getWidth();
-		max_height = image->getHeight();
+		max_width = image->width();
+		max_height = image->height();
 	}
 	else
 		max_width = max_height = 0;
@@ -205,7 +205,7 @@ GfxCropDialog::GfxCropDialog(wxWindow* parent, SImage* image, Palette* palette) 
 	);
 	text_right = new NumberTextCtrl(frame);
 	text_right->SetWindowStyleFlag(wxTE_PROCESS_ENTER);
-	text_right->setNumber(image->getWidth());
+	text_right->setNumber(image->width());
 	gb_sizer->Add(text_right, wxGBPosition(2, 1), wxDefaultSpan, wxEXPAND);
 
 	// Bottom
@@ -217,7 +217,7 @@ GfxCropDialog::GfxCropDialog(wxWindow* parent, SImage* image, Palette* palette) 
 	);
 	text_bottom = new NumberTextCtrl(frame);
 	text_bottom->SetWindowStyleFlag(wxTE_PROCESS_ENTER);
-	text_bottom->setNumber(image->getHeight());
+	text_bottom->setNumber(image->height());
 	gb_sizer->Add(text_bottom, wxGBPosition(3, 1), wxDefaultSpan, wxEXPAND);
 
 	gb_sizer->AddGrowableCol(1);

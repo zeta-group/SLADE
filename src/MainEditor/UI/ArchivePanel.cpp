@@ -1625,7 +1625,7 @@ bool ArchivePanel::importEntry()
 						ok = false;
 				}
 				// Warn if the offsets couldn't be written
-				if (ok && si.getFormat() && !si.getFormat()->writeOffset(si, selection[a], offset))
+				if (ok && si.format() && !si.format()->writeOffset(si, selection[a], offset))
 					LOG_MESSAGE(1, "Old offset information [%d, %d] couldn't be "
 					             "preserved in the new image format for image %s.",
 					             offset.x, offset.y, selection[a]->getName());
@@ -1892,7 +1892,7 @@ bool ArchivePanel::gfxRemap()
 	vector<ArchiveEntry*> selection = entry_list->getSelectedEntries();
 
 	// Create preview image (just use first selected entry)
-	SImage image(PALMASK);
+	SImage image(SImage::PixelFormat::PalMask);
 	Misc::loadImageFromEntry(&image, selection[0]);
 
 	// Create translation editor dialog
@@ -1926,7 +1926,7 @@ bool ArchivePanel::gfxRemap()
 				undo_manager->recordUndoStep(new EntryDataUS(entry));
 
 				// Write modified image data
-				if (!temp.getFormat()->saveImage(temp, mc, pal))
+				if (!temp.format()->saveImage(temp, mc, pal))
 					LOG_MESSAGE(1, "Error: Could not write image data to entry %s, unsupported format for writing", entry->getName());
 				else
 					entry->importMemChunk(mc);
@@ -1983,7 +1983,7 @@ bool ArchivePanel::gfxColourise()
 				undo_manager->recordUndoStep(new EntryDataUS(entry));
 
 				// Write modified image data
-				if (!temp.getFormat()->saveImage(temp, mc, pal))
+				if (!temp.format()->saveImage(temp, mc, pal))
 					LOG_MESSAGE(1, "Error: Could not write image data to entry %s, unsupported format for writing", entry->getName());
 				else
 					entry->importMemChunk(mc);
@@ -2038,7 +2038,7 @@ bool ArchivePanel::gfxTint()
 				undo_manager->recordUndoStep(new EntryDataUS(entry));
 
 				// Write modified image data
-				if (!temp.getFormat()->saveImage(temp, mc, pal))
+				if (!temp.format()->saveImage(temp, mc, pal))
 					LOG_MESSAGE(1, "Error: Could not write image data to entry %s, unsupported format for writing", entry->getName());
 				else
 					entry->importMemChunk(mc);

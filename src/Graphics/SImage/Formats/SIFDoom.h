@@ -45,7 +45,7 @@ protected:
 		}
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 
 		// Read column offsets
 		vector<uint32_t> col_offsets(width);
@@ -163,12 +163,12 @@ protected:
 		return true;
 	}
 
-	virtual bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		return readDoomFormat(image, data, 0);
 	}
 
-	virtual bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index)
+	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index) override
 	{
 		// Convert image to column/post structure
 		vector<column_t> columns;
@@ -177,7 +177,7 @@ protected:
 
 		// Go through columns
 		uint32_t offset = 0;
-		for (int c = 0; c < image.getWidth(); c++)
+		for (int c = 0; c < image.width(); c++)
 		{
 			column_t col;
 			post_t post;
@@ -187,10 +187,10 @@ protected:
 
 			offset = c;
 			uint8_t row_off = 0;
-			for (int r = 0; r < image.getHeight(); r++)
+			for (int r = 0; r < image.height(); r++)
 			{
 				// For vanilla-compatible dimensions, use a split at 128 to prevent tiling.
-				if (image.getHeight() < 256)
+				if (image.height() < 256)
 				{
 					if (row_off == 128)
 					{
@@ -258,7 +258,7 @@ protected:
 				}
 
 				// Go to next row
-				offset += image.getWidth();
+				offset += image.width();
 				row_off++;
 			}
 
@@ -281,8 +281,8 @@ protected:
 		patch_header_t header;
 		header.top = image.offset().y;
 		header.left = image.offset().x;
-		header.width = image.getWidth();
-		header.height = image.getHeight();
+		header.width = image.width();
+		header.height = image.height();
 
 		// Byteswap header values if needed
 		header.top = wxINT16_SWAP_ON_BE(header.top);
@@ -362,7 +362,7 @@ public:
 
 	~SIFDoomGfx() {}
 
-	virtual bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom")->isThisFormat(mc))
 			return true;
@@ -370,9 +370,9 @@ public:
 			return false;
 	}
 
-	virtual SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		patch_header_t hdr;
@@ -381,34 +381,34 @@ public:
 		// Setup info
 		info.width = hdr.width;
 		info.height = hdr.height;
-		info.offset_x = hdr.left;
-		info.offset_y = hdr.top;
-		info.colformat = PALMASK;
+		info.offset.x = hdr.left;
+		info.offset.y = hdr.top;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.has_palette = false;
 		info.format = id;
 
 		return info;
 	}
 
-	virtual int canWrite(SImage& image)
+	int canWrite(SImage& image) override
 	{
 		// Must be converted to paletted to be written
-		if (image.getType() == PALMASK)
+		if (image.pixelFormat() == SImage::PixelFormat::PalMask)
 			return WRITABLE;
 		else
 			return CONVERTIBLE;
 	}
 
-	virtual bool canWriteType(SIType type)
+	bool canWriteType(SImage::PixelFormat type) override
 	{
 		// Doom format gfx can only be written as paletted
-		if (type == PALMASK)
+		if (type == SImage::PixelFormat::PalMask)
 			return true;
 		else
 			return false;
 	}
 
-	virtual bool convertWritable(SImage& image, convert_options_t opt)
+	bool convertWritable(SImage& image, convert_options_t opt) override
 	{
 		// Do mask conversion
 		if (!opt.transparency)
@@ -424,7 +424,7 @@ public:
 		return true;
 	}
 
-	virtual bool writeOffset(SImage& image, ArchiveEntry* entry, point2_t offset)
+	bool writeOffset(SImage& image, ArchiveEntry* entry, point2_t offset) override
 	{
 		MemChunk mc;
 		image.setXOffset(offset.x);
@@ -437,7 +437,7 @@ public:
 class SIFDoomBetaGfx : public SIFDoomGfx
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		return readDoomFormat(image, data, 1);
 	}
@@ -448,9 +448,9 @@ public:
 		this->name = "Doom Gfx (Beta)";
 		this->reliability = 160;
 	}
-	~SIFDoomBetaGfx();
+	~SIFDoomBetaGfx() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_beta")->isThisFormat(mc))
 			return true;
@@ -458,23 +458,23 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info = SIFDoomGfx::getInfo(mc, index);
+		SImage::Info info = SIFDoomGfx::getInfo(mc, index);
 		info.format = id;
 		return info;
 	}
 
 	// Cannot write this format
-	int		canWrite(SImage& image) { return NOTWRITABLE; }
-	bool	canWriteType(SIType type) { return false; }
-	bool	convertWritable(SImage& image, convert_options_t opt) { return false; }
+	int		canWrite(SImage& image) override { return NOTWRITABLE; }
+	bool	canWriteType(SImage::PixelFormat type) override { return false; }
+	bool	convertWritable(SImage& image, convert_options_t opt) override { return false; }
 };
 
 class SIFDoomAlphaGfx : public SIFDoomGfx
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		return readDoomFormat(image, data, 2);
 	}
@@ -485,9 +485,9 @@ public:
 		this->name = "Doom Gfx (Alpha)";
 		this->reliability = 100;
 	}
-	~SIFDoomAlphaGfx();
+	~SIFDoomAlphaGfx() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_alpha")->isThisFormat(mc))
 			return true;
@@ -495,31 +495,31 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Setup info
 		info.width = mc[0];
 		info.height = mc[1];
-		info.offset_x = mc[2];
-		info.offset_y = mc[3];
-		info.colformat = PALMASK;
+		info.offset.x = mc[2];
+		info.offset.y = mc[3];
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
 	}
 
 	// Cannot write this format
-	int		canWrite(SImage& image) { return NOTWRITABLE; }
-	bool	canWriteType(SIType type) { return false; }
-	bool	convertWritable(SImage& image, convert_options_t opt) { return false; }
+	int		canWrite(SImage& image) override { return NOTWRITABLE; }
+	bool	canWriteType(SImage::PixelFormat type) override { return false; }
+	bool	convertWritable(SImage& image, convert_options_t opt) override { return false; }
 };
 
 class SIFDoomArah : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Setup variables
 		patch_header_t header;
@@ -530,7 +530,7 @@ protected:
 		int offset_y = wxINT16_SWAP_ON_BE(header.top);
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 
@@ -560,7 +560,7 @@ public:
 	}
 	~SIFDoomArah() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_arah")->isThisFormat(mc))
 			return true;
@@ -568,9 +568,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		patch_header_t header;
@@ -579,9 +579,9 @@ public:
 		// Set info
 		info.width = wxINT16_SWAP_ON_BE(header.width);
 		info.height = wxINT16_SWAP_ON_BE(header.height);
-		info.offset_x = wxINT16_SWAP_ON_BE(header.left);
-		info.offset_y = wxINT16_SWAP_ON_BE(header.top);
-		info.colformat = PALMASK;
+		info.offset.x = wxINT16_SWAP_ON_BE(header.left);
+		info.offset.y = wxINT16_SWAP_ON_BE(header.top);
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -591,7 +591,7 @@ public:
 class SIFDoomSnea : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Check/setup size
 		uint8_t qwidth = data[0];
@@ -608,7 +608,7 @@ protected:
 			return false;
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 
 		// Read raw pixel data
 		uint8_t* img_data = imageData(image);
@@ -643,7 +643,7 @@ public:
 	};
 	~SIFDoomSnea() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_snea")->isThisFormat(mc))
 			return true;
@@ -651,15 +651,15 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image info
 		uint8_t qwidth = mc[0];
 		info.width = qwidth * 4;
 		info.height = mc[1];
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -670,7 +670,7 @@ public:
 class SIFDoomPSX : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Setup variables
 		psxpic_header_t header;
@@ -681,7 +681,7 @@ protected:
 		int offset_y = wxINT16_SWAP_ON_BE(header.top);
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 
@@ -711,7 +711,7 @@ public:
 	}
 	~SIFDoomPSX() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_psx")->isThisFormat(mc))
 			return true;
@@ -719,9 +719,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		patch_header_t header;
@@ -730,9 +730,9 @@ public:
 		// Set info
 		info.width = wxINT16_SWAP_ON_BE(header.width);
 		info.height = wxINT16_SWAP_ON_BE(header.height);
-		info.offset_x = wxINT16_SWAP_ON_BE(header.left);
-		info.offset_y = wxINT16_SWAP_ON_BE(header.top);
-		info.colformat = PALMASK;
+		info.offset.x = wxINT16_SWAP_ON_BE(header.left);
+		info.offset.y = wxINT16_SWAP_ON_BE(header.top);
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -742,7 +742,7 @@ public:
 class SIFDoomJaguar : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Setup variables
 		jagpic_header_t header;
@@ -753,7 +753,7 @@ protected:
 		int shift = wxINT16_SWAP_ON_LE(header.palshift);
 
 		// Create image
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 
@@ -795,7 +795,7 @@ public:
 	}
 	~SIFDoomJaguar() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_doom_jaguar")->isThisFormat(mc))
 			return true;
@@ -803,9 +803,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		jagpic_header_t header;
@@ -814,12 +814,10 @@ public:
 		// Set info
 		info.width = wxINT16_SWAP_ON_LE(header.width);
 		info.height = wxINT16_SWAP_ON_LE(header.height);
-		info.offset_x = 0;
-		info.offset_y = 0;
-		info.colformat = PALMASK;
+		info.offset = { 0, 0 };
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
 	}
 };
-

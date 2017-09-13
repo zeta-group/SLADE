@@ -14,9 +14,9 @@ protected:
 	uint8_t	reliability;
 
 	// Stuff to access protected image data
-	uint8_t*		imageData(SImage& image) { return image.data; }
-	uint8_t*		imageMask(SImage& image) { return image.mask; }
-	Palette&	imagePalette(SImage& image) { return image.palette; }
+	uint8_t*		imageData(SImage& image) { return image.data_; }
+	uint8_t*		imageMask(SImage& image) { return image.mask_; }
+	Palette&	imagePalette(SImage& image) { return image.palette_; }
 
 	virtual bool	readImage(SImage& image, MemChunk& data, int index) = 0;
 	virtual bool	writeImage(SImage& image, MemChunk& data, Palette* pal, int index) { return false; }
@@ -32,26 +32,26 @@ public:
 	};
 	struct convert_options_t
 	{
-		Palette*	pal_current;
-		Palette*	pal_target;
-		int				mask_source;
-		rgba_t			mask_colour;
-		uint8_t			alpha_threshold;
-		bool			transparency;
-		int				col_format;
+		Palette*			pal_current;
+		Palette*			pal_target;
+		int					mask_source;
+		rgba_t				mask_colour;
+		uint8_t				alpha_threshold;
+		bool				transparency;
+		SImage::PixelFormat	col_format;
 
 		convert_options_t()
 		{
 			pal_current = pal_target = nullptr;
 			mask_source = MASK_ALPHA;
 			transparency = true;
-			col_format = -1;
+			col_format = SImage::PixelFormat::Any;
 			alpha_threshold = 0;
 		}
 	};
 
 	SIFormat(string id);
-	~SIFormat();
+	virtual ~SIFormat();
 
 	string	getId() { return id; }
 	string	getName() { return name; }
@@ -60,7 +60,7 @@ public:
 	virtual bool	isThisFormat(MemChunk& mc) = 0;
 
 	// Reading
-	virtual SImage::info_t	getInfo(MemChunk& mc, int index = 0) = 0;
+	virtual SImage::Info	getInfo(MemChunk& mc, int index = 0) = 0;
 
 	bool loadImage(SImage& image, MemChunk& data, int index = 0)
 	{
@@ -74,8 +74,8 @@ public:
 		// Set image properties if successful
 		if (ok)
 		{
-			image.format = this;
-			image.imgindex = index;
+			image.format_ = this;
+			image.img_index_ = index;
 		}
 		else
 			image.clear();
@@ -94,7 +94,7 @@ public:
 	    CONVERTIBLE,	// Format can be written but a conversion is required
 	};
 	virtual int		canWrite(SImage& image) { return NOTWRITABLE; }
-	virtual bool	canWriteType(SIType type) { return false; }
+	virtual bool	canWriteType(SImage::PixelFormat format) { return false; }
 	virtual bool	convertWritable(SImage& image, convert_options_t opt) { return false; }
 	virtual bool	writeOffset(SImage& image, ArchiveEntry* entry, point2_t offset) { return false; }
 
@@ -105,7 +105,7 @@ public:
 
 		// Set format if successful
 		if (ok)
-			image.format = this;
+			image.format_ = this;
 
 		return ok;
 	}

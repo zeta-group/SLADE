@@ -28,8 +28,9 @@ public:
 	Palette(unsigned size = 256);
 	~Palette();
 
-	rgba_t	colour(uint8_t index) { return colours_[index]; }
-	short	transIndex() { return index_trans_; }
+	const vector<rgba_t>&	colours() const { return colours_; }
+	rgba_t					colour(uint8_t index) { return colours_[index]; }
+	short					transIndex() { return index_trans_; }
 
 	bool	loadMem(MemChunk& mc);
 	bool	loadMem(const uint8_t* data, uint32_t size);

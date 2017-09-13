@@ -2,7 +2,7 @@
 class SIFPlanar : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Variables
 		Palette palette;
@@ -37,7 +37,7 @@ protected:
 		}
 
 		// Prepare image data and mask (opaque)
-		image.create(640, 480, PALMASK, &palette);
+		image.create(640, 480, SImage::PixelFormat::PalMask, &palette);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 		memset(img_mask, 0xFF, width*height);
@@ -75,7 +75,7 @@ protected:
 		return true;
 	}
 
-	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index)
+	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index) override
 	{
 		// Is there really any point to being able to write this format?
 		// Answer: yeah, no other tool can do it. :p
@@ -84,7 +84,7 @@ protected:
 			return false;
 
 		// Check if data is paletted
-		if (image.getType() != PALMASK)
+		if (image.pixelFormat() != SImage::PixelFormat::PalMask)
 		{
 			LOG_MESSAGE(1, "Cannot convert truecolour image to planar format - convert to 16-colour first.");
 			return false;
@@ -97,7 +97,7 @@ protected:
 		}
 
 		// Check image size
-		if (!(image.getWidth() == 640 && image.getHeight() == 480))
+		if (!(image.width() == 640 && image.height() == 480))
 		{
 			LOG_MESSAGE(1, "Cannot convert to planar format, invalid size (must be 640x480)");
 			return false;
@@ -106,7 +106,7 @@ protected:
 		// Get palette to use
 		Palette usepal;
 		if (image.hasPalette())
-			usepal.copyPalette(image.getPalette());
+			usepal.copyPalette(image.palette());
 		else if (pal)
 			usepal.copyPalette(pal);
 
@@ -117,7 +117,7 @@ protected:
 		// Make sure all used colors are in the first 16 entries of the palette
 		image.shrinkPalette(&usepal);
 		// Re-read shrunk palette from image
-		usepal.copyPalette(image.getPalette());
+		usepal.copyPalette(image.palette());
 
 		// Create planar palette
 		uint8_t* mycolors = new uint8_t[3];
@@ -166,7 +166,7 @@ protected:
 		out.write(planes, 153600);
 		delete[] planes;
 		backup.seek(0, SEEK_SET);
-		backup.read(imageData(image), image.getWidth()*image.getHeight());
+		backup.read(imageData(image), image.width()*image.height());
 
 		return true;
 	}
@@ -178,9 +178,9 @@ public:
 		extension = "lmp";
 		reliability = 240;
 	}
-	~SIFPlanar();
+	~SIFPlanar() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		// Can only go by image size
 		if (mc.getSize() == 153648)
@@ -189,14 +189,14 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Set info (always the same)
 		info.width = 640;
 		info.height = 480;
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.has_palette = true;
 		info.format = id;
 
@@ -204,36 +204,36 @@ public:
 	}
 
 
-	int canWrite(SImage& image)
+	int canWrite(SImage& image) override
 	{
 		if (!gfx_extraconv)
 			return NOTWRITABLE;
 		// Can write paletted images of size 640x480
-		if (image.getWidth() == 640 && image.getHeight() == 480 && image.getType() == PALMASK)
+		if (image.width() == 640 && image.height() == 480 && image.pixelFormat() == SImage::PixelFormat::PalMask)
 			return WRITABLE;
 		// Otherwise it's possible to convert the image as long as it's at least 640x480
-		else if (image.getWidth() >= 640 && image.getHeight() >= 480)
+		else if (image.width() >= 640 && image.height() >= 480)
 			return CONVERTIBLE;
 		// If it wouldn't work, it wouldn't work
 		return NOTWRITABLE;
 	}
 
-	bool canWriteType(SIType type)
+	bool canWriteType(SImage::PixelFormat type) override
 	{
 		// Only writable as paletted
-		if (type == PALMASK)
+		if (type == SImage::PixelFormat::PalMask)
 			return true;
 		else
 			return false;
 	}
 
-	bool convertWritable(SImage& image, convert_options_t opt)
+	bool convertWritable(SImage& image, convert_options_t opt) override
 	{
 		// First convert image to paletted
 		image.convertPaletted(opt.pal_target, opt.pal_current);
 
 		// Now crop the image if it's too large
-		if (image.getWidth() > 640 || image.getHeight() > 480)
+		if (image.width() > 640 || image.height() > 480)
 			image.crop(0, 0, 640, 480);
 
 		return true;
@@ -243,7 +243,7 @@ public:
 class SIF4BitChunk : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		int width, height;
 
@@ -261,7 +261,7 @@ protected:
 		else
 			return false;
 
-		image.create(width, height, PALMASK);
+		image.create(width, height, SImage::PixelFormat::PalMask);
 		uint8_t* img_data = imageData(image);
 		uint8_t* img_mask = imageMask(image);
 		memset(img_mask, 0xFF, width*height);
@@ -275,14 +275,14 @@ protected:
 		return true;
 	}
 
-	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index)
+	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index) override
 	{
 		// Again, don't see much point
 		if (!gfx_extraconv)
 			return false;
 
 		// Check if data is paletted
-		if (image.getType() != PALMASK)
+		if (image.pixelFormat() != SImage::PixelFormat::PalMask)
 		{
 			LOG_MESSAGE(1, "Cannot convert truecolour image to 4-bit format - convert to 16-colour first.");
 			return false;
@@ -295,7 +295,7 @@ protected:
 		}
 
 		// Check image size
-		if (!((image.getWidth() == 4 && image.getHeight() == 16) || (image.getWidth() == 16 && image.getHeight() == 23)))
+		if (!((image.width() == 4 && image.height() == 16) || (image.width() == 16 && image.height() == 23)))
 		{
 			LOG_MESSAGE(1, "No point in converting to 4-bit format, image isn't a valid Hexen size (4x16 or 16x23)");
 			return false;
@@ -304,21 +304,21 @@ protected:
 		// Get palette to use
 		Palette usepal;
 		if (image.hasPalette())
-			usepal.copyPalette(image.getPalette());
+			usepal.copyPalette(image.palette());
 		else if (pal)
 			usepal.copyPalette(pal);
 
 		// Backup current image data (since shrinkPalette remaps the image colours)
-		MemChunk backup(image.getWidth()*image.getHeight());
-		backup.write(imageData(image), image.getWidth()*image.getHeight());
+		MemChunk backup(image.width()*image.height());
+		backup.write(imageData(image), image.width()*image.height());
 
 		// Make sure all used colors are in the first 16 entries of the palette
 		image.shrinkPalette();
 
-		size_t filesize = image.getWidth() * image.getHeight() / 2;
+		size_t filesize = image.width() * image.height() / 2;
 		uint8_t* temp = new uint8_t[filesize];
 
-		for (int i = 0; i < image.getWidth()*image.getHeight(); i+=2)
+		for (int i = 0; i < image.width()*image.height(); i+=2)
 		{
 			temp[i/2] = imageData(image)[i]<<4 | imageData(image)[i+1];
 		}
@@ -327,7 +327,7 @@ protected:
 		out.write(temp, filesize);
 		delete[] temp;
 		backup.seek(0, SEEK_SET);
-		backup.read(imageData(image), image.getWidth()*image.getHeight());
+		backup.read(imageData(image), image.width()*image.height());
 
 		return true;
 	}
@@ -341,7 +341,7 @@ public:
 	}
 	~SIF4BitChunk() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		// Can only detect by size
 		if (mc.getSize() == 32 || mc.getSize() == 184)
@@ -350,9 +350,9 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Check size
 		if (mc.getSize() == 32)
@@ -367,29 +367,29 @@ public:
 		}
 
 		// Set other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = "4bit";
 
 		return info;
 	}
 
-	int canWrite(SImage& image)
+	int canWrite(SImage& image) override
 	{
 		if (!gfx_extraconv)
 			return NOTWRITABLE;
 		// Can write paletted images of size 4x16 or 16x23
-		if (image.getType() == PALMASK && (
-		            (image.getWidth() == 4 && image.getHeight() == 16)  ||
-		            (image.getWidth() == 16 && image.getHeight() == 23)))
+		if (image.pixelFormat() == SImage::PixelFormat::PalMask && (
+		            (image.width() == 4 && image.height() == 16)  ||
+		            (image.width() == 16 && image.height() == 23)))
 			return WRITABLE;
 		// If it wouldn't work, it wouldn't work
 		return NOTWRITABLE;
 	}
 
-	bool canWriteType(SIType type)
+	bool canWriteType(SImage::PixelFormat type) override
 	{
 		// Only writable as paletted
-		if (type == PALMASK)
+		if (type == SImage::PixelFormat::PalMask)
 			return true;
 		else
 			return false;

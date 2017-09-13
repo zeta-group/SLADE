@@ -12,7 +12,7 @@ private:
 	};
 
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image properties
 		int width = wxINT16_SWAP_ON_BE(*(const uint16_t*)(data.getData()));
@@ -20,11 +20,11 @@ protected:
 		uint8_t mode = data[3];
 
 		// Determine image type
-		SIType type = RGBA;
+		SImage::PixelFormat type = SImage::PixelFormat::RGBA;
 		if (mode == QUAKE_PALETTE || mode == QUAKE_ALPHA)
-			type = PALMASK;
+			type = SImage::PixelFormat::PalMask;
 		else if (mode == QUAKE_INTENSITY)
-			type = ALPHAMAP;
+			type = SImage::PixelFormat::AlphaMap;
 
 		// Create image
 		image.create(width, height, type);
@@ -98,7 +98,7 @@ public:
 	}
 	~SIFQuakeGfx() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_quake")->isThisFormat(mc))
 			return true;
@@ -106,21 +106,21 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image properties
 		info.width = wxINT16_SWAP_ON_BE(*(const uint16_t*)(mc.getData()));
 		info.height = wxINT16_SWAP_ON_BE(*(const uint16_t*)(mc.getData()+4));
 
 		// Determine colour type
-		info.colformat = RGBA;
+		info.colformat = SImage::PixelFormat::RGBA;
 		uint8_t mode = mc[3];
 		if (mode == QUAKE_PALETTE || mode == QUAKE_ALPHA)
-			info.colformat = PALMASK;
+			info.colformat = SImage::PixelFormat::PalMask;
 		else if (mode == QUAKE_INTENSITY)
-			info.colformat = ALPHAMAP;
+			info.colformat = SImage::PixelFormat::AlphaMap;
 
 		info.format = id;
 
@@ -131,7 +131,7 @@ public:
 class SIFQuakeSprite : public SIFormat
 {
 private:
-	unsigned sprInfo(MemChunk& mc, int index, SImage::info_t& info)
+	unsigned sprInfo(MemChunk& mc, int index, SImage::Info& info)
 	{
 		// Setup variables
 		uint32_t maxheight	= READ_L32(mc.getData(), 16);
@@ -199,15 +199,15 @@ private:
 
 		// Setup variables using appropriate image data
 		imgofs = pics[index];
-		info.offset_x = READ_L32(mc.getData(), imgofs + 0);
-		info.offset_y = READ_L32(mc.getData(), imgofs + 4);
+		info.offset.x = READ_L32(mc.getData(), imgofs + 0);
+		info.offset.y = READ_L32(mc.getData(), imgofs + 4);
 		info.width = READ_L32(mc.getData(), imgofs + 8);
 		info.height = READ_L32(mc.getData(), imgofs +12);
 		// Horizontal offsets seem computed differently from Doom, so translate them
-		info.offset_x += info.width;
+		info.offset.x += info.width;
 
 		// Setup other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.numimages = numimages;
 		info.format = id;
 
@@ -215,10 +215,10 @@ private:
 	}
 
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info;
+		SImage::Info info;
 		unsigned imgofs = sprInfo(data, index, info);
 
 		// Check data is valid
@@ -226,9 +226,9 @@ protected:
 			return false;
 
 		// Create image
-		image.create(info.width, info.height, PALMASK, nullptr, index, info.numimages);
-		image.setXOffset(info.offset_x);
-		image.setYOffset(info.offset_y);
+		image.create(info.width, info.height, SImage::PixelFormat::PalMask, nullptr, index, info.numimages);
+		image.setXOffset(info.offset.x);
+		image.setYOffset(info.offset.y);
 
 		// Load image data
 		uint8_t* img_data = imageData(image);
@@ -252,7 +252,7 @@ public:
 	}
 	~SIFQuakeSprite() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_qspr")->isThisFormat(mc))
 			return true;
@@ -260,10 +260,10 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
 		// Get image info
-		SImage::info_t info;
+		SImage::Info info;
 		sprInfo(mc, index, info);
 
 		return info;
@@ -273,16 +273,16 @@ public:
 class SIFQuakeTex : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Find offset
 		uint32_t imgofs = READ_L32(data.getData(), 24+(index<<2));
 
 		// Create image
-		image.create(info.width, info.height, (SIType)info.colformat, nullptr, index, info.numimages);
+		image.create(info.width, info.height, (SImage::PixelFormat)info.colformat, nullptr, index, info.numimages);
 		image.fillAlpha(255);
 
 		// Load image data
@@ -291,7 +291,7 @@ protected:
 		return true;
 	}
 
-	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index)
+	bool writeImage(SImage& image, MemChunk& out, Palette* pal, int index) override
 	{
 		return false;
 	}
@@ -305,7 +305,7 @@ public:
 	}
 	~SIFQuakeTex() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_quaketex")->isThisFormat(mc))
 			return true;
@@ -313,13 +313,13 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Setup variables
 		info.numimages = 4;
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.width = READ_L32(mc.getData(), 16);
 		info.height = READ_L32(mc.getData(), 20);
 		info.format = id;
@@ -343,10 +343,10 @@ public:
 class SIFQuake2Wal : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Sanitize index if needed
 		index %= info.numimages;
@@ -362,7 +362,7 @@ protected:
 		}
 
 		// Create image
-		image.create(info.width, info.height, PALMASK, nullptr, index, info.numimages);
+		image.create(info.width, info.height, SImage::PixelFormat::PalMask, nullptr, index, info.numimages);
 		image.fillAlpha(255);
 
 		// Fill data with pixel data
@@ -380,7 +380,7 @@ public:
 	}
 	~SIFQuake2Wal() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_quake2wal")->isThisFormat(mc))
 			return true;
@@ -388,12 +388,12 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Get image info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.numimages = 4;
 		info.width = READ_L32(mc.getData(), 32) >> index;
 		info.height = READ_L32(mc.getData(), 36) >> index;

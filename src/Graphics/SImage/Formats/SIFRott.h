@@ -5,7 +5,7 @@ protected:
 	bool readRottGfx(SImage& image, MemChunk& data, bool mask)
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, 0);
+		SImage::Info info = getInfo(data, 0);
 
 		// Setup variables
 		size_t hdr_size = sizeof(rottpatch_header_t);
@@ -89,7 +89,7 @@ protected:
 		return true;
 	}
 
-	virtual bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		return readRottGfx(image, data, false);
 	}
@@ -103,7 +103,7 @@ public:
 	}
 	~SIFRottGfx() {}
 
-	virtual bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_rott")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -111,19 +111,19 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		const rottpatch_header_t* header = (const rottpatch_header_t*)mc.getData();
 		info.width = wxINT16_SWAP_ON_BE(header->width);
 		info.height = wxINT16_SWAP_ON_BE(header->height);
-		info.offset_x = wxINT16_SWAP_ON_BE(header->left) + (wxINT16_SWAP_ON_BE(header->origsize)/2);
-		info.offset_y = wxINT16_SWAP_ON_BE(header->top) + wxINT16_SWAP_ON_BE(header->origsize);
+		info.offset.x = wxINT16_SWAP_ON_BE(header->left) + (wxINT16_SWAP_ON_BE(header->origsize)/2);
+		info.offset.y = wxINT16_SWAP_ON_BE(header->top) + wxINT16_SWAP_ON_BE(header->origsize);
 
 		// Setup other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -133,7 +133,7 @@ public:
 class SIFRottGfxMasked : public SIFRottGfx
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		return readRottGfx(image, data, true);
 	}
@@ -146,7 +146,7 @@ public:
 	}
 	~SIFRottGfxMasked() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_rottmask")->isThisFormat(mc))
 			return true;
@@ -158,10 +158,10 @@ public:
 class SIFRottLbm : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// ROTT source code says: "LIMITATIONS - Only works with 320x200!!!"
 		if (info.width != 320 || info.height != 200)
@@ -227,7 +227,7 @@ public:
 	}
 	~SIFRottLbm() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_rottlbm")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -235,14 +235,14 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Setup info
 		info.width = READ_L16(mc.getData(), 0);
 		info.height = READ_L16(mc.getData(), 2);
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.has_palette = true;
 		info.format = id;
 
@@ -253,13 +253,13 @@ public:
 class SIFRottRaw : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Create image (swapped width/height because column-major)
-		image.create(info.height, info.width, PALMASK);
+		image.create(info.height, info.width, SImage::PixelFormat::PalMask);
 		image.fillAlpha(255);
 
 		// Read raw pixel data
@@ -281,7 +281,7 @@ public:
 	}
 	~SIFRottRaw() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_rottraw")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -289,19 +289,19 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read header
 		const patch_header_t* header = (const patch_header_t*)mc.getData();
 		info.width = wxINT16_SWAP_ON_BE(header->width);
 		info.height = wxINT16_SWAP_ON_BE(header->height);
-		info.offset_x = wxINT16_SWAP_ON_BE(header->left);
-		info.offset_y = wxINT16_SWAP_ON_BE(header->top);
+		info.offset.x = wxINT16_SWAP_ON_BE(header->left);
+		info.offset.y = wxINT16_SWAP_ON_BE(header->top);
 
 		// Set other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -311,10 +311,10 @@ public:
 class SIFRottPic : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Check data
 		if (data.getSize() != 4 + info.width*info.height)
@@ -359,7 +359,7 @@ public:
 	}
 	~SIFRottPic() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (EntryDataFormat::getFormat("img_rottpic")->isThisFormat(mc) >= EDF_PROBABLY)
 			return true;
@@ -367,16 +367,16 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Read dimensions
 		info.width = mc[0] * 4;
 		info.height = mc[1];
 
 		// Setup other info
-		info.colformat = PALMASK;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;
@@ -386,13 +386,13 @@ public:
 class SIFRottWall : public SIFormat
 {
 protected:
-	bool readImage(SImage& image, MemChunk& data, int index)
+	bool readImage(SImage& image, MemChunk& data, int index) override
 	{
 		// Get image info
-		SImage::info_t info = getInfo(data, index);
+		SImage::Info info = getInfo(data, index);
 
 		// Create image (swapped width/height because column-major)
-		image.create(info.height, info.width, PALMASK);
+		image.create(info.height, info.width, SImage::PixelFormat::PalMask);
 		image.fillAlpha(255);
 
 		// Read raw pixel data
@@ -415,7 +415,7 @@ public:
 	}
 	~SIFRottWall() {}
 
-	bool isThisFormat(MemChunk& mc)
+	bool isThisFormat(MemChunk& mc) override
 	{
 		if (mc.getSize() == 4096 || mc.getSize() == 51200)
 			return true;
@@ -423,16 +423,16 @@ public:
 			return false;
 	}
 
-	SImage::info_t getInfo(MemChunk& mc, int index)
+	SImage::Info getInfo(MemChunk& mc, int index) override
 	{
-		SImage::info_t info;
+		SImage::Info info;
 
 		// Always the same thing
 		info.width = mc.getSize() == 4096 ? 64 : 256;
 		info.height = mc.getSize() == 4096 ? 64 : 200;
-		info.offset_x = 0;
-		info.offset_y = 0;
-		info.colformat = PALMASK;
+		info.offset.x = 0;
+		info.offset.y = 0;
+		info.colformat = SImage::PixelFormat::PalMask;
 		info.format = id;
 
 		return info;

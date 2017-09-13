@@ -181,8 +181,8 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			LOG_MESSAGE(0, Global::error);
 			return false;
 		}
-		int side = image.getHeight();
-		if (side != image.getWidth() || side%16)
+		int side = image.height();
+		if (side != image.width() || side%16)
 		{
 			Global::error = "Palette information cannot be loaded from a non-square image";
 			LOG_MESSAGE(0, Global::error);
@@ -204,13 +204,13 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 				++x, ++y;
 
 			// Get color from image
-			rgba_t col = image.getPixel(x, y);
+			rgba_t col = image.colourAt(x, y);
 			col.index = a;
 
 			// Validate color cell
 			for (int b = x; b < (x + (cell > 3 ? cell - 1 : cell)); ++b)
 				for (int c = y; c < (y + (cell > 3 ? cell - 1 : cell)); ++c)
-					if (!col.equals(image.getPixel(b, c)))
+					if (!col.equals(image.colourAt(b, c)))
 						LOG_MESSAGE(0, "Image does not seem to be a valid palette, color discrepancy in cell %u at [%u, %u]", a, b, c);
 
 			// Color is validated, so add it
@@ -347,10 +347,8 @@ bool Palette::saveMem(MemChunk& mc, Format format, const string& name)
 	// Image
 	else if (format == Format::Image)
 	{
-		SImage image;
-
 		// Generate palette image
-		image.create(128, 128, PALMASK, this);
+		SImage image(128, 128, SImage::PixelFormat::PalMask, this);
 		unsigned xoff = 0;
 		unsigned yoff = 0;
 		for (unsigned a = 0; a < 256; a++)

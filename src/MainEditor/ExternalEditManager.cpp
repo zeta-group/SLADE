@@ -181,7 +181,7 @@ public:
 		}
 
 		// Set export info
-		gfx_format = image.getFormat()->getId();
+		gfx_format = image.format()->getId();
 		offsets = image.offset();
 		palette.copyPalette(MainEditor::currentPalette(entry));
 

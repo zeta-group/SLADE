@@ -170,10 +170,10 @@ GLTexture* MapTextureManager::getTexture(string name, bool mixed)
 					if (Misc::loadImageFromEntry(&imgref, ref))
 					{
 						int w, h, sw, sh;
-						w = image.getWidth();
-						h = image.getHeight();
-						sw = imgref.getWidth();
-						sh = imgref.getHeight();
+						w = image.width();
+						h = image.height();
+						sw = imgref.width();
+						sh = imgref.height();
 						mtex.texture->setScale((double)sw/(double)w, (double)sh/(double)h);
 					}
 				}
@@ -369,7 +369,7 @@ GLTexture* MapTextureManager::getSprite(string name, string translation, string 
 				// Copying data in pal->loadMem shouldn't
 				// change it in the original entry...
 				// We shouldn't need to copy the data in a temporary place first.
-				pal = image.getPalette();
+				pal = image.palette();
 				MemChunk mc;
 				mc.importMem(newpal->getData(), newpal->getSize());
 				pal->loadMem(mc);
@@ -426,7 +426,7 @@ int MapTextureManager::getVerticalOffset(string name)
 	{
 		SImage image;
 		Misc::loadImageFromEntry(&image, entry);
-		int h = image.getHeight();
+		int h = image.height();
 		int o = image.offset().y;
 		if (o > h)
 			return o - h;

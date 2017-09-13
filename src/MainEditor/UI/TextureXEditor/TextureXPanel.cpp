@@ -618,8 +618,8 @@ CTexture* TextureXPanel::newTextureFromPatch(string name, string patch)
 	tex->loadPatchImage(0, image);
 
 	// Set dimensions
-	tex->setWidth(image.getWidth());
-	tex->setHeight(image.getHeight());
+	tex->setWidth(image.width());
+	tex->setHeight(image.height());
 
 	// Update variables
 	modified = true;

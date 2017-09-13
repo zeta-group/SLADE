@@ -467,7 +467,7 @@ void PatchTablePanel::updateDisplay()
 	{
 		theMainWindow->getPaletteChooser()->setGlobalFromArchive(entry->getParent());
 		patch_canvas->setPalette(theMainWindow->getPaletteChooser()->getSelectedPalette());
-		label_dimensions->SetLabel(S_FMT("Size: %d x %d", patch_canvas->getImage()->getWidth(), patch_canvas->getImage()->getHeight()));
+		label_dimensions->SetLabel(S_FMT("Size: %d x %d", patch_canvas->getImage()->width(), patch_canvas->getImage()->height()));
 	}
 	else
 	{
