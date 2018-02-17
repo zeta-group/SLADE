@@ -166,7 +166,7 @@ protected:
 
 		// Get image palette if it exists
 		RGBQUAD* bm_pal = FreeImage_GetPalette(bm);
-		Palette8bit palette;
+		Palette palette;
 		if (bpp == 8 && bm_pal)
 		{
 			type = PALMASK;
@@ -186,7 +186,7 @@ protected:
 		if (bm_pal)
 			image.create(width, height, type, &palette);
 		else
-			image.create(width, height, type, NULL);
+			image.create(width, height, type, nullptr);
 
 		// Load image data
 		uint8_t* img_data = imageData(image);
@@ -248,10 +248,10 @@ protected:
 		return true;
 	}
 
-	bool writeImage(SImage& image, MemChunk& data, Palette8bit* pal, int index)
+	bool writeImage(SImage& image, MemChunk& data, Palette* pal, int index)
 	{
 		// Variables
-		FIBITMAP*	bm = NULL;
+		FIBITMAP*	bm = nullptr;
 		uint8_t*	img_data = imageData(image);
 		uint8_t*	img_mask = imageMask(image);
 		int			type = image.getType();
@@ -280,7 +280,7 @@ protected:
 			bm = FreeImage_Allocate(width, height, 8);
 
 			// Get palette to use
-			Palette8bit usepal;
+			Palette usepal;
 			if (image.hasPalette())
 				usepal.copyPalette(&imagePalette(image));
 			else if (pal)
@@ -562,6 +562,6 @@ public:
 		MemChunk mc;
 		image.setXOffset(offset.x);
 		image.setYOffset(offset.y);
-		return (writeImage(image, mc, NULL, 0) && entry->importMemChunk(mc));
+		return (writeImage(image, mc, nullptr, 0) && entry->importMemChunk(mc));
 	}
 };

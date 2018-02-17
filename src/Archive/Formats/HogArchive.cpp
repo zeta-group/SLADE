@@ -38,6 +38,7 @@
  *******************************************************************/
 EXTERN_CVAR(Bool, archive_load_data)
 
+
 /*******************************************************************
  * HOGARCHIVE HELPER FUNCTIONS
  *******************************************************************/
@@ -107,11 +108,11 @@ bool ShouldEncodeTXB(string name)
 /* HogArchive::HogArchive
  * HogArchive class constructor
  *******************************************************************/
-HogArchive::HogArchive() : TreelessArchive(ARCHIVE_HOG)
+HogArchive::HogArchive() : TreelessArchive("hog")
 {
-	desc.max_name_length = 13;
-	desc.names_extensions = false;
-	desc.supports_dirs = false;
+	//desc.max_name_length = 13;
+	//desc.names_extensions = false;
+	//desc.supports_dirs = false;
 }
 
 /* HogArchive::~HogArchive
@@ -143,22 +144,6 @@ void HogArchive::setEntryOffset(ArchiveEntry* entry, uint32_t offset)
 		return;
 
 	entry->exProp("Offset") = (int)offset;
-}
-
-/* HogArchive::getFileExtensionString
- * Gets the wxWidgets file dialog filter string for the archive type
- *******************************************************************/
-string HogArchive::getFileExtensionString()
-{
-	return "Hog Files (*.hog)|*.hog";
-}
-
-/* HogArchive::getFormat
- * Returns the EntryDataFormat id of this archive type
- *******************************************************************/
-string HogArchive::getFormat()
-{
-	return "archive_hog";
 }
 
 /* HogArchive::open
@@ -224,7 +209,7 @@ bool HogArchive::open(MemChunk& mc)
 			nlump->setEncryption(ENC_TXB);
 
 		// Add to entry list
-		getRoot()->addEntry(nlump);
+		rootDir()->addEntry(nlump);
 
 		// Update entry size to compute next offset
 		iter_offset = offset + size;
@@ -280,7 +265,7 @@ bool HogArchive::write(MemChunk& mc, bool update)
 {
 	// Determine individual lump offsets
 	uint32_t offset = 3;
-	ArchiveEntry* entry = NULL;
+	ArchiveEntry* entry = nullptr;
 	for (uint32_t l = 0; l < numEntries(); l++)
 	{
 		offset += 17;
@@ -347,12 +332,12 @@ bool HogArchive::loadEntryData(ArchiveEntry* entry)
 	}
 
 	// Open hogfile
-	wxFile file(filename);
+	wxFile file(filename_);
 
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "HogArchive::loadEntryData: Failed to open hogfile %s", filename);
+		LOG_MESSAGE(1, "HogArchive::loadEntryData: Failed to open hogfile %s", filename_);
 		return false;
 	}
 
@@ -375,11 +360,11 @@ ArchiveEntry* HogArchive::addEntry(ArchiveEntry* entry, unsigned position, Archi
 {
 	// Check entry
 	if (!entry)
-		return NULL;
+		return nullptr;
 
 	// Check if read-only
 	if (isReadOnly())
-		return NULL;
+		return nullptr;
 
 	// Copy if necessary
 	if (copy)
@@ -405,7 +390,7 @@ ArchiveEntry* HogArchive::addEntry(ArchiveEntry* entry, string add_namespace, bo
 	if (ShouldEncodeTXB(entry->getName()))
 		entry->setEncryption(ENC_TXB);
 
-	return addEntry(entry, 0xFFFFFFFF, NULL, copy);
+	return addEntry(entry, 0xFFFFFFFF, nullptr, copy);
 }
 
 /* HogArchive::renameEntry

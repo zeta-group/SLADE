@@ -45,7 +45,7 @@ MapSide::MapSide(MapSector* sector, SLADEMap* parent) : MapObject(MOBJ_SIDE, par
 {
 	// Init variables
 	this->sector = sector;
-	this->parent = NULL;
+	this->parent = nullptr;
 	this->offset_x = 0;
 	this->offset_y = 0;
 
@@ -59,8 +59,8 @@ MapSide::MapSide(MapSector* sector, SLADEMap* parent) : MapObject(MOBJ_SIDE, par
 MapSide::MapSide(SLADEMap* parent) : MapObject(MOBJ_SIDE, parent)
 {
 	// Init variables
-	this->sector = NULL;
-	this->parent = NULL;
+	this->sector = nullptr;
+	this->parent = nullptr;
 	this->offset_x = 0;
 	this->offset_y = 0;
 }
@@ -167,7 +167,7 @@ void MapSide::setSector(MapSector* sector)
 /* MapSide::intProperty
  * Returns the value of the integer property matching [key]
  *******************************************************************/
-int MapSide::intProperty(string key)
+int MapSide::intProperty(const string& key)
 {
 	if (key == "sector")
 	{
@@ -187,7 +187,7 @@ int MapSide::intProperty(string key)
 /* MapSide::setIntProperty
  * Sets the integer value of the property [key] to [value]
  *******************************************************************/
-void MapSide::setIntProperty(string key, int value)
+void MapSide::setIntProperty(const string& key, int value)
 {
 	// Update modified time
 	setModified();
@@ -205,7 +205,7 @@ void MapSide::setIntProperty(string key, int value)
 /* MapSide::stringProperty
  * Returns the value of the string property matching [key]
  *******************************************************************/
-string MapSide::stringProperty(string key)
+string MapSide::stringProperty(const string& key)
 {
 	if (key == "texturetop")
 		return tex_upper;
@@ -220,7 +220,7 @@ string MapSide::stringProperty(string key)
 /* MapSide::setStringProperty
  * Sets the string value of the property [key] to [value]
  *******************************************************************/
-void MapSide::setStringProperty(string key, string value)
+void MapSide::setStringProperty(const string& key, const string& value)
 {
 	// Update modified time
 	setModified();
@@ -245,6 +245,17 @@ void MapSide::setStringProperty(string key, string value)
 	}
 	else
 		MapObject::setStringProperty(key, value);
+}
+
+/* MapSide::scriptCanModifyProp
+ * Returns true if the property [key] can be modified via script
+ *******************************************************************/
+bool MapSide::scriptCanModifyProp(const string& key)
+{
+	if (key == "sector")
+		return false;
+
+	return true;
 }
 
 /* MapSide::writeBackup
@@ -288,7 +299,7 @@ void MapSide::readBackup(mobj_backup_t* backup)
 	{
 		if (sector)
 			sector->disconnectSide(this);
-		sector = NULL;
+		sector = nullptr;
 	}
 
 	// Update texture counts (decrement previous)

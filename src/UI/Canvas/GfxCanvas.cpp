@@ -35,6 +35,7 @@
 #include "OpenGL/Drawing.h"
 #include "OpenGL/GLTexture.h"
 #include "UI/SBrush.h"
+#include "General/UI.h"
 
 
 /*******************************************************************
@@ -71,9 +72,9 @@ GfxCanvas::GfxCanvas(wxWindow* parent, int id)
 	allow_scroll = false;
 	editing_mode = 0;
 	paint_colour = COL_BLACK;
-	translation = NULL;
+	translation = nullptr;
 	drawing = false;
-	drawing_mask = NULL;
+	drawing_mask = nullptr;
 	brush = nullptr;
 	tex_brush = new GLTexture();
 	cursor_pos.set(POINT_OUTSIDE);
@@ -138,6 +139,9 @@ void GfxCanvas::draw()
 		int mid_y = GetSize().y / 2;
 		glTranslated(mid_x, mid_y, 0);
 	}
+
+	// Scale by UI scale
+	glScaled(UI::scaleFactor(), UI::scaleFactor(), 1.);
 
 	// Draw offset lines
 	if (view_type == GFXVIEW_SPRITE || view_type == GFXVIEW_HUD)
@@ -445,7 +449,7 @@ void GfxCanvas::paintPixel(int x, int y)
 		painted = image->setPixel(x, y, 255, 0);
 	else if (editing_mode == 3) // translator
 	{
-		if (translation != NULL)
+		if (translation != nullptr)
 		{
 			rgba_t ocol = image->getPixel(x, y, getPalette());
 			uint8_t alpha = ocol.a;

@@ -95,7 +95,6 @@ namespace Global
 	extern string version;
 	extern string sc_rev;
 	extern bool debug;
-	extern double ppi_scale;
 	extern int win_version_major;
 	extern int win_version_minor;
 };
@@ -181,19 +180,19 @@ inline void LOG_DEBUG(
 )
 {
 	string message;
-	message << a1.get() << " ";
-	message << a2.get() << " ";
-	message << a3.get() << " ";
-	message << a4.get() << " ";
-	message << a5.get() << " ";
-	message << a6.get() << " ";
-	message << a7.get() << " ";
-	message << a8.get() << " ";
-	message << a9.get() << " ";
-	message << a10.get() << " ";
-	message << a11.get() << " ";
-	message << a12.get();
-	message.Trim();
+	message += a1.get() + " ";
+	message += a2.get() + " ";
+	message += a3.get() + " ";
+	message += a4.get() + " ";
+	message += a5.get() + " ";
+	message += a6.get() + " ";
+	message += a7.get() + " ";
+	message += a8.get() + " ";
+	message += a9.get() + " ";
+	message += a10.get() + " ";
+	message += a11.get() + " ";
+	message += a12.get();
+	//message.Trim();
 	Log::debug(S_FMT("%s", message));
 }
 

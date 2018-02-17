@@ -35,6 +35,7 @@
 #include "Graphics/Icons.h"
 #include "General/ColourConfiguration.h"
 #include "General/UndoRedo.h"
+#include "UI/WxUtils.h"
 
 
 // ----------------------------------------------------------------------------
@@ -99,9 +100,8 @@ EXTERN_CVAR(Bool, list_font_monospace)
 	setupColumns();
 
 	// Setup entry icons
-	wxImageList* image_list = new wxImageList(16, 16, false, 0);
-
-	wxArrayString et_icon_list = EntryType::getIconList();
+	auto image_list = WxUtils::createSmallImageList();
+	wxArrayString et_icon_list = EntryType::iconList();
 	for (size_t a = 0; a < et_icon_list.size(); a++)
 	{
 		if (image_list->Add(Icons::getIcon(Icons::ENTRY, et_icon_list[a])) < 0)
@@ -204,7 +204,7 @@ int ArchiveEntryList::getItemIcon(long item, long column, long index) const
 	if (!entry)
 		return -1;
 
-	return entry->getType()->getIndex();
+	return entry->getType()->index();
 }
 
 // ----------------------------------------------------------------------------
@@ -234,7 +234,7 @@ void ArchiveEntryList::updateItemAttr(long item, long column, long index) const
 		item_attr->SetFont(list_font_monospace ? *font_monospace : *font_normal);
 
 	// Set background colour defined in entry type (if any)
-	rgba_t col = entry->getType()->getColour();
+	rgba_t col = entry->getType()->colour();
 	if ((col.r != 255 || col.g != 255 || col.b != 255) && elist_type_bgcol)
 	{
 		rgba_t bcol;
@@ -293,7 +293,7 @@ void ArchiveEntryList::setArchive(Archive* archive)
 		listenTo(archive);
 
 		// Open root directory
-		current_dir = archive->getRoot();
+		current_dir = archive->rootDir();
 		applyFilter();
 		updateList();
 	}
@@ -469,7 +469,7 @@ void ArchiveEntryList::applyFilter()
 		else
 		{
 			// Check for category match
-			if (S_CMPNOCASE(entry->getType()->getCategory(), filter_category))
+			if (S_CMPNOCASE(entry->getType()->category(), filter_category))
 				items.push_back(index);
 		}
 
@@ -599,43 +599,26 @@ void ArchiveEntryList::sortItems()
 		auto le = getEntry(left, false);
 		auto re = getEntry(right, false);
 
-		// Check entries exist (just to be needlessly safe)
-		if (!le || !re)
-			return sort_descend ? right < left : left < right;
-
 		// Sort folder->entry first
 		if (le->getType() == EntryType::folderType() && re->getType() != EntryType::folderType())
 			return true;
 		if (re->getType() == EntryType::folderType() && le->getType() != EntryType::folderType())
 			return false;
 
-		// Sort folder<->folder or entry<->entry
-		int result = 0;
+		// Name sort
+		if (col_name >= 0 && col_name == sortColumn())
+			return sort_descend ? le->getName() > re->getName() : le->getName() < re->getName();
 
 		// Size sort
 		if (col_size >= 0 && col_size == sortColumn())
-			result = entrySize(left) - entrySize(right);
+			return sort_descend ? entrySize(left) > entrySize(right) : entrySize(left) < entrySize(right);
 
 		// Index sort
-		else if (col_index >= 0 && col_index == sortColumn())
-			result = 0;
-
-		// Name sort
-		else if (col_name >= 0 && col_name == sortColumn())
-		{
-			const wxChar* reName = re->getName().c_str();
-			result = le->getName().CompareTo(reName, string::ignoreCase);
-		}
+		if (col_index >= 0 && col_index == sortColumn())
+			return sort_descend ? left > right : left < right;
 
 		// Other (default) sort
-		else
-			return VirtualListView::defaultSort(left, right);
-
-		// If sort values are equal, just sort by index
-		if (result == 0)
-			result = left - right;
-
-		return sort_descend ? result > 0 : result < 0;
+		return VirtualListView::defaultSort(left, right);
 	});
 }
 
@@ -693,11 +676,11 @@ ArchiveEntry* ArchiveEntryList::getEntry(int index, bool filtered) const
 	// Subdirectories
 	int subdirs = current_dir->nChildren();
 	if (index < subdirs)
-		return ((ArchiveTreeNode*)(current_dir->getChild(index)))->getDirEntry();
+		return ((ArchiveTreeNode*)(current_dir->getChild(index)))->dirEntry();
 
 	// Entries
 	if ((unsigned)index < subdirs + current_dir->numEntries())
-		return current_dir->getEntry(index - subdirs);
+		return current_dir->entryAt(index - subdirs);
 
 	// Out of bounds
 	return nullptr;

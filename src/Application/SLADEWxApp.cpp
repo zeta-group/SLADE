@@ -1,41 +1,45 @@
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    SLADEWxApp.cpp
- * Description: SLADEWxApp class functions.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+
+// ----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    SLADEWxApp.cpp
+// Description: SLADEWxApp class functions.
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// ----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// Includes
+//
+// ----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
 #include "SLADEWxApp.h"
 #include "Archive/ArchiveManager.h"
 #include "External/email/wxMailer.h"
 #include "General/Console/Console.h"
-#include "General/VersionCheck.h"
+#include "General/Web.h"
 #include "MainEditor/MainEditor.h"
 #include "MainEditor/UI/MainWindow.h"
 #include "MainEditor/UI/ArchiveManagerPanel.h"
+#include "MainEditor/UI/StartPage.h"
 #include "OpenGL/OpenGL.h"
 #include <wx/statbmp.h>
 
@@ -46,16 +50,18 @@
 #endif
 
 
-/*******************************************************************
- * VARIABLES
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// Variables
+//
+// ----------------------------------------------------------------------------
 namespace Global
 {
 	string error = "";
 
-	int beta_num = 1;
+	int beta_num = 4;
 	int version_num = 3120;
-	string version = "3.1.2 Beta 1";
+	string version = "3.1.2 Beta 4";
 #ifdef GIT_DESCRIPTION
 	string sc_rev = GIT_DESCRIPTION;
 #else
@@ -68,7 +74,6 @@ namespace Global
 	bool debug = false;
 #endif
 
-	double ppi_scale = 1.0;
 	int win_version_major = 0;
 	int win_version_minor = 0;
 }
@@ -81,14 +86,18 @@ CVAR(Bool, update_check, true, CVAR_SAVE)
 CVAR(Bool, update_check_beta, false, CVAR_SAVE)
 
 
-/*******************************************************************
- * CLASSES
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// Classes
+//
+// ----------------------------------------------------------------------------
 
-/* SLADELog class
- * Extension of the wxLog class to send all wxWidgets log messages
- * to the SLADE log implementation
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADELog class
+//
+// Extension of the wxLog class to send all wxWidgets log messages
+// to the SLADE log implementation
+// ----------------------------------------------------------------------------
 class SLADELog : public wxLog
 {
 protected:
@@ -98,7 +107,12 @@ protected:
 #endif
 	void DoLogText(const wxString& msg) override
 	{
-		Log::message(Log::MessageType::Info, msg);
+		if (msg.Lower().Contains("error"))
+			Log::error(msg.Right(msg.size() - 10));
+		else if (msg.Lower().Contains("warning"))
+			Log::warning(msg.Right(msg.size() - 10));
+		else
+			Log::info(msg.Right(msg.size() - 10));
 	}
 
 public:
@@ -107,12 +121,14 @@ public:
 };
 
 
-/* SLADEStackTrace class
- * Extension of the wxStackWalker class that formats stack trace
- * information to a multi-line string, that can be retrieved via
- * getTraceString(). wxStackWalker is currently unimplemented on some
- * platforms, so unfortunately it has to be disabled there
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEStackTrace class
+//
+// Extension of the wxStackWalker class that formats stack trace
+// information to a multi-line string, that can be retrieved via
+// getTraceString(). wxStackWalker is currently unimplemented on some
+// platforms, so unfortunately it has to be disabled there
+// ----------------------------------------------------------------------------
 #if wxUSE_STACKWALKER
 class SLADEStackTrace : public wxStackWalker
 {
@@ -158,10 +174,12 @@ private:
 };
 
 
-/* SLADECrashDialog class
- * A simple dialog that displays a crash message and a scrollable,
- * multi-line textbox with a stack trace
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADECrashDialog class
+//
+// A simple dialog that displays a crash message and a scrollable,
+// multi-line textbox with a stack trace
+// ----------------------------------------------------------------------------
 class SLADECrashDialog : public wxDialog, public wxThreadHelper
 {
 public:
@@ -177,7 +195,7 @@ public:
 		sizer->Add(hbox, 0, wxEXPAND);
 
 		// Add dead doomguy picture
-		theArchiveManager->programResourceArchive()
+		App::archiveManager().programResourceArchive()
 			->entryAtPath("images/STFDEAD0.png")
 			->exportFile(App::path("STFDEAD0.png", App::Dir::Temp));
 		wxImage img;
@@ -310,7 +328,7 @@ public:
 		evt->SetInt(sent ? 1 : 0);
 		wxQueueEvent(GetEventHandler(), evt);
 
-		return (wxThread::ExitCode)0;
+		return (wxThread::ExitCode)nullptr;
 	}
 
 	void onBtnCopyTrace(wxCommandEvent& e)
@@ -389,11 +407,13 @@ private:
 #endif//wxUSE_STACKWALKER
 
 
-/* MainAppFileListener and related Classes
- * wxWidgets IPC classes used to send filenames of archives to open
- * from one SLADE instance to another in the case where a second
- * instance is opened
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// MainAppFileListener and related Classes
+//
+// wxWidgets IPC classes used to send filenames of archives to open
+// from one SLADE instance to another in the case where a second
+// instance is opened
+// ----------------------------------------------------------------------------
 class MainAppFLConnection : public wxConnection
 {
 public:
@@ -417,7 +437,7 @@ public:
 		size_t size,
 		wxIPCFormat format) override
 	{
-		theArchiveManager->openArchive(item);
+		App::archiveManager().openArchive(item);
 		return true;
 	}
 };
@@ -447,33 +467,41 @@ public:
 };
 
 
-/*******************************************************************
- * SLADEWXAPP CLASS FUNCTIONS
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// SLADEWxApp Class Functions
+//
+// ----------------------------------------------------------------------------
 IMPLEMENT_APP(SLADEWxApp)
 
-/* SLADEWxApp::SLADEWxApp
- * SLADEWxApp class constructor
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::SLADEWxApp
+//
+// SLADEWxApp class constructor
+// ----------------------------------------------------------------------------
 SLADEWxApp::SLADEWxApp() :
 	single_instance_checker{ nullptr },
 	file_listener{ nullptr }
 {
 }
 
-/* SLADEWxApp::~SLADEWxApp
- * SLADEWxApp class destructor
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::~SLADEWxApp
+//
+// SLADEWxApp class destructor
+// ----------------------------------------------------------------------------
 SLADEWxApp::~SLADEWxApp()
 {
 }
 
-/* SLADEWxApp::singleInstanceCheck
- * Checks if another instance of SLADE is already running, and if so,
- * sends the args to the file listener of the existing SLADE
- * process. Returns false if another instance was found and the new
- * SLADE was started with arguments
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::singleInstanceCheck
+//
+// Checks if another instance of SLADE is already running, and if so,
+// sends the args to the file listener of the existing SLADE
+// process. Returns false if another instance was found and the new
+// SLADE was started with arguments
+// ----------------------------------------------------------------------------
 bool SLADEWxApp::singleInstanceCheck()
 {
 	single_instance_checker = new wxSingleInstanceChecker;
@@ -504,9 +532,11 @@ bool SLADEWxApp::singleInstanceCheck()
 	return true;
 }
 
-/* SLADEWxApp::OnInit
- * Application initialization, run when program is started
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::OnInit
+//
+// Application initialization, run when program is started
+// ----------------------------------------------------------------------------
 bool SLADEWxApp::OnInit()
 {
 	// Check if an instance of SLADE is already running
@@ -518,6 +548,9 @@ bool SLADEWxApp::OnInit()
 
 	// Init global variables
 	Global::error = "";
+
+	// Init wxSocket stuff (for WebGet)
+	wxSocketBase::Initialize();
 
 	// Start up file listener
 	file_listener = new MainAppFileListener();
@@ -541,9 +574,14 @@ bool SLADEWxApp::OnInit()
 	// Load image handlers
 	wxInitAllImageHandlers();
 
+#ifdef __APPLE__
+	// Should be constant, wxWidgets Cocoa backend scales everything under the hood
+	const double ui_scale = 1.0;
+#else // !__APPLE__
 	// Calculate scaling factor (from system ppi)
 	wxMemoryDC dc;
-	Global::ppi_scale = (double)(dc.GetPPI().x) / 96.0;
+	double ui_scale = (double)(dc.GetPPI().x) / 96.0;
+#endif // __APPLE__
 
 	// Get Windows version
 #ifdef __WXMSW__
@@ -551,12 +589,17 @@ bool SLADEWxApp::OnInit()
 	LOG_MESSAGE(1, "Windows Version: %d.%d", Global::win_version_major, Global::win_version_minor);
 #endif
 
-	// Init application
-	if (!App::init())
-		return false;
-
 	// Reroute wx log messages
 	wxLog::SetActiveTarget(new SLADELog());
+
+	// Get command line arguments
+	vector<string> args;
+	for (int a = 1; a < argc; a++)
+		args.push_back(argv[a]);
+
+	// Init application
+	if (!App::init(args, ui_scale))
+		return false;
 
 	// Check for updates
 #ifdef __WXMSW__
@@ -567,23 +610,32 @@ bool SLADEWxApp::OnInit()
 
 	// Bind events
 	Bind(wxEVT_MENU, &SLADEWxApp::onMenu, this);
-	Bind(wxEVT_COMMAND_VERSIONCHECK_COMPLETED, &SLADEWxApp::onVersionCheckCompleted, this);
+	Bind(wxEVT_THREAD_WEBGET_COMPLETED, &SLADEWxApp::onVersionCheckCompleted, this);
 	Bind(wxEVT_ACTIVATE_APP, &SLADEWxApp::onActivate, this);
 
 	return true;
 }
 
-/* SLADEWxApp::OnExit
- * Application shutdown, run when program is closed
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::OnExit
+//
+// Application shutdown, run when program is closed
+// ----------------------------------------------------------------------------
 int SLADEWxApp::OnExit()
 {
+	wxSocketBase::Shutdown();
 	delete single_instance_checker;
 	delete file_listener;
 
 	return 0;
 }
 
+// ----------------------------------------------------------------------------
+// SLADEWxApp::OnFatalException
+//
+// Handler for when a fatal exception occurs - show the stack trace/crash
+// dialog if it's configured to be used
+// ----------------------------------------------------------------------------
 void SLADEWxApp::OnFatalException()
 {
 #if wxUSE_STACKWALKER
@@ -603,29 +655,34 @@ void SLADEWxApp::MacOpenFile(const wxString &fileName)
 }
 #endif // __APPLE__
 
-/* SLADEWxApp::checkForUpdates
- * Runs the version checker, if [message_box] is true, a message box
- * will be shown if already up-to-date
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::checkForUpdates
+//
+// Runs the version checker, if [message_box] is true, a message box
+// will be shown if already up-to-date
+// ----------------------------------------------------------------------------
 void SLADEWxApp::checkForUpdates(bool message_box)
 {
 #ifdef __WXMSW__
 	update_check_message_box = message_box;
-	LOG_MESSAGE(1, "Checking for updates...");
-	VersionCheck* checker = new VersionCheck(this);
-	checker->Create();
-	checker->Run();
+	Log::info(1, "Checking for updates...");
+	Web::getHttpAsync("slade.mancubus.net", "/version.txt", this);
 #endif
 }
 
 
-/*******************************************************************
- * MAINAPP CLASS EVENTS
- *******************************************************************/
+// ----------------------------------------------------------------------------
+//
+// SLADEWxApp Class Events
+//
+// ----------------------------------------------------------------------------
 
-/* SLADEWxApp::onMenu
- * Called when a menu item is selected in the application
- *******************************************************************/
+
+// ----------------------------------------------------------------------------
+// SLADEWxApp::onMenu
+//
+// Called when a menu item is selected in the application
+// ----------------------------------------------------------------------------
 void SLADEWxApp::onMenu(wxCommandEvent& e)
 {
 	bool handled = false;
@@ -659,9 +716,11 @@ void SLADEWxApp::onMenu(wxCommandEvent& e)
 		e.Skip();
 }
 
-/* SLADEWxApp::onVersionCheckCompleted
- * Called when the VersionCheck thread completes
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::onVersionCheckCompleted
+//
+// Called when the version check thread completes
+// ----------------------------------------------------------------------------
 void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 {
 	// Check failed
@@ -669,11 +728,16 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	{
 		LOG_MESSAGE(1, "Version check failed, unable to connect");
 		if (update_check_message_box)
-			wxMessageBox("Update check failed: unable to connect to internet. Check your connection and try again.", "Check for Updates");
+			wxMessageBox(
+				"Update check failed: unable to connect to internet. "
+				"Check your connection and try again.",
+				"Check for Updates"
+			);
+
 		return;
 	}
 
-	wxArrayString info = wxSplit(e.GetString(), '\n');
+	auto info = wxSplit(e.GetString(), '\n');
 	
 	// Check for correct info
 	if (info.size() != 5)
@@ -708,37 +772,68 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 			new_beta = true;
 
 		// Beta -> Beta
-		else if (Global::version_num < version_beta ||															// New version beta
-				(Global::beta_num < beta_num && Global::version_num == version_beta && Global::beta_num > 0))	// Same version, newer beta
+		else if (Global::version_num < version_beta ||		// New version beta
+				(Global::beta_num < beta_num &&				// Same version, newer beta
+					Global::version_num == version_beta &&
+					Global::beta_num > 0))
 			new_beta = true;
 	}
 
-	// Ask for new beta
+	// Set up for new beta/stable version prompt (if any)
+	string message, caption, version;
 	if (update_check_beta && new_beta)
 	{
-		if (wxMessageBox(S_FMT("A new beta version of SLADE is available (%s), click OK to visit the SLADE homepage and download the update.", info[4].Trim()), "New Beta Version Available", wxOK|wxCANCEL) == wxOK)
-			wxLaunchDefaultBrowser("http://slade.mancubus.net/index.php?page=downloads");
-
-		return;
+		// New Beta
+		caption = "New Beta Version Available";
+		version = info[4].Trim();
+		message = S_FMT(
+			"A new beta version of SLADE is available (%s), click OK to visit the SLADE homepage "
+			"and download the update.",
+			CHR(version)
+		);
 	}
-
-	// Ask for new stable
-	if (new_stable)
+	else if (new_stable)
 	{
-		if (wxMessageBox(S_FMT("A new version of SLADE is available (%s), click OK to visit the SLADE homepage and download the update.", info[1].Trim()), "New Version Available", wxOK|wxCANCEL) == wxOK)
-			wxLaunchDefaultBrowser("http://slade.mancubus.net/index.php?page=downloads");
+		// New Stable
+		caption = "New Version Available";
+		version = info[1].Trim();
+		message = S_FMT(
+			"A new version of SLADE is available (%s), click OK to visit the SLADE homepage and "
+			"download the update.",
+			CHR(version)
+		);
+	}
+	else
+	{
+		// No update
+		Log::info(1, "Already up-to-date");
+		if (update_check_message_box)
+			wxMessageBox("SLADE is already up to date", "Check for Updates");
 
 		return;
 	}
 
-	LOG_MESSAGE(1, "Already up-to-date");
-	if (update_check_message_box)
-		wxMessageBox("SLADE is already up to date", "Check for Updates");
+	// Prompt to update
+	auto main_window = MainEditor::window();
+	if (main_window->startPageTabOpen() && App::useWebView())
+	{
+		// Start Page (webview version) is open, show it there
+		main_window->openStartPageTab();
+		main_window->startPage()->updateAvailable(version);
+	}
+	else
+	{
+		// No start page, show a message box
+		if (wxMessageBox(message, caption, wxOK | wxCANCEL) == wxOK)
+			wxLaunchDefaultBrowser("http://slade.mancubus.net/index.php?page=downloads");
+	}
 }
 
-/* SLADEWxApp::onActivate
- * Called when the app gains focus
- *******************************************************************/
+// ----------------------------------------------------------------------------
+// SLADEWxApp::onActivate
+//
+// Called when the app gains focus
+// ----------------------------------------------------------------------------
 void SLADEWxApp::onActivate(wxActivateEvent& e)
 {
 	if (!e.GetActive() || App::isExiting())
@@ -754,13 +849,19 @@ void SLADEWxApp::onActivate(wxActivateEvent& e)
 	e.Skip();
 }
 
-/*******************************************************************
- * CONSOLE COMMANDS
- *******************************************************************/
+
+// ----------------------------------------------------------------------------
+//
+// Console Commands
+//
+// ----------------------------------------------------------------------------
 
 CONSOLE_COMMAND (crash, 0, false)
 {
-	if (wxMessageBox("Yes, this command does actually exist and *will* crash the program. Do you really want it to crash?", "...Really?", wxYES_NO|wxCENTRE) == wxYES)
+	if (wxMessageBox(
+		"Yes, this command does actually exist and *will* crash the program. Do you really want it to crash?",
+		"...Really?",
+		wxYES_NO|wxCENTRE) == wxYES)
 	{
 		uint8_t* test = nullptr;
 		test[123] = 5;

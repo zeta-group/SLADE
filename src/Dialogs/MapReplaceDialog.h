@@ -3,7 +3,7 @@
 #define __MAP_REPLACE_DIALOG_H__
 
 #include "common.h"
-#include "UI/STabCtrl.h"
+#include "UI/Controls/STabCtrl.h"
 #include "UI/WxBasicControls.h"
 
 
@@ -72,7 +72,7 @@ private:
 	wxButton*				btn_done;
 
 public:
-	MapReplaceDialog(wxWindow* parent = NULL, Archive* archive = NULL);
+	MapReplaceDialog(wxWindow* parent = nullptr, Archive* archive = nullptr);
 	~MapReplaceDialog();
 
 	void	onBtnDone(wxCommandEvent& e);

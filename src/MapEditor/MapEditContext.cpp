@@ -146,7 +146,7 @@ void MapEditContext::setEditMode(Mode mode)
 	// Clear 3d mode undo manager etc on exiting 3d mode
 	if (edit_mode_ == Mode::Visual && mode != Mode::Visual)
 	{
-		info_3d_.clearTexture();
+		info_3d_.reset();
 		undo_manager_->createMergedLevel(edit_3d_.undoManager(), "3D Mode Editing");
 		edit_3d_.undoManager()->clear();
 	}
@@ -373,7 +373,7 @@ bool MapEditContext::update(long frametime)
 //
 // Opens [map]
 // ----------------------------------------------------------------------------
-bool MapEditContext::openMap(Archive::mapdesc_t map)
+bool MapEditContext::openMap(Archive::MapDesc map)
 {
 	LOG_MESSAGE(1, "Opening map %s", map.name);
 	if (!this->map_.readMap(map))
@@ -424,20 +424,25 @@ bool MapEditContext::openMap(Archive::mapdesc_t map)
 // ----------------------------------------------------------------------------
 void MapEditContext::clearMap()
 {
-	// Clear map
-	map_.clearMap();
-
 	// Clear selection
 	selection_.clear();
 	selection_.clearHilight();
+
+	// Reset state
 	edit_3d_.setLinked(true, true);
+	input_.setMouseState(MapEditor::Input::MouseState::Normal);
+	MapEditor::resetObjectPropertiesPanel();
 
 	// Clear undo manager
 	undo_manager_->clear();
 	last_undo_level_ = "";
 
 	// Clear other data
-	pathed_things_.clear();
+	updateTagged();
+	info_3d_.reset();
+
+	// Clear map
+	map_.clearMap();
 }
 
 // ----------------------------------------------------------------------------
@@ -1260,7 +1265,7 @@ void MapEditContext::updateStatusText()
 
 	if (edit_mode_ != Mode::Visual && selection_.size() > 0)
 	{
-		mode += S_FMT(" (%lu selected)", selection_.size());
+		mode += S_FMT(" (%d selected)", (int) selection_.size());
 	}
 
 	MapEditor::setStatusText(mode, 1);
@@ -1458,7 +1463,7 @@ void MapEditContext::swapPlayerStart3d()
 {
 	// Find player 1 start
 	MapThing* pstart = nullptr;
-	for (unsigned a = 0; a < map_.nThings(); a++)
+	for (int a = map_.nThings() - 1; a >= 0 ; a--)
 		if (map_.getThing(a)->getType() == 1)
 		{
 			pstart = map_.getThing(a);
@@ -1485,7 +1490,7 @@ void MapEditContext::swapPlayerStart2d(fpoint2_t pos)
 {
 	// Find player 1 start
 	MapThing* pstart = nullptr;
-	for (unsigned a = 0; a < map_.nThings(); a++)
+	for (int a = map_.nThings() - 1; a >= 0; a--)
 		if (map_.getThing(a)->getType() == 1)
 		{
 			pstart = map_.getThing(a);
@@ -1506,11 +1511,11 @@ void MapEditContext::swapPlayerStart2d(fpoint2_t pos)
 //
 // Resets the player 1 start thing to its original position
 // ----------------------------------------------------------------------------
-void MapEditContext::resetPlayerStart()
+void MapEditContext::resetPlayerStart() const
 {
 	// Find player 1 start
 	MapThing* pstart = nullptr;
-	for (unsigned a = 0; a < map_.nThings(); a++)
+	for (int a = map_.nThings() - 1; a >= 0; a--)
 		if (map_.getThing(a)->getType() == 1)
 		{
 			pstart = map_.getThing(a);
@@ -2008,17 +2013,15 @@ CONSOLE_COMMAND(m_check, 0, true)
 	if (args.empty())
 	{
 		Log::console("Usage: m_check <check1> <check2> ...");
+
 		Log::console("Available map checks:");
-		Log::console("missing_tex: Check for missing textures");
-		Log::console("special_tags: Check for missing action special tags");
-		Log::console("intersecting_lines: Check for intersecting lines");
-		Log::console("overlapping_lines: Check for overlapping lines");
-		Log::console("overlapping_things: Check for overlapping things");
-		Log::console("unknown_textures: Check for unknown wall textures");
-		Log::console("unknown_flats: Check for unknown floor/ceiling textures");
-		Log::console("unknown_things: Check for unknown thing types");
-		Log::console("stuck_things: Check for things stuck in walls");
-		Log::console("sector_references: Check for wrong sector references");
+		for (auto a = 0; a < MapCheck::NumStandardChecks; ++a)
+			Log::console(S_FMT(
+				"%s: Check for %s",
+				CHR(MapCheck::standardCheckId((MapCheck::StandardCheck)a)),
+				CHR(MapCheck::standardCheckDesc((MapCheck::StandardCheck)a))
+			));
+
 		Log::console("all: Run all checks");
 
 		return;
@@ -2029,36 +2032,33 @@ CONSOLE_COMMAND(m_check, 0, true)
 
 	// Get checks to run
 	vector<MapCheck*> checks;
-	for (unsigned a = 0; a < args.size(); a++)
+
+	// Check for 'all'
+	bool all = false;
+	for (auto& arg : args)
+		if (S_CMPNOCASE(arg, "all"))
+		{
+			all = true;
+			break;
+		}
+
+	if (all)
 	{
-		string id = args[a].Lower();
-		unsigned n = checks.size();
-
-		if (id == "missing_tex" || id == "all")
-			checks.push_back(MapCheck::missingTextureCheck(map));
-		if (id == "special_tags" || id == "all")
-			checks.push_back(MapCheck::specialTagCheck(map));
-		if (id == "intersecting_lines" || id == "all")
-			checks.push_back(MapCheck::intersectingLineCheck(map));
-		if (id == "overlapping_lines" || id == "all")
-			checks.push_back(MapCheck::overlappingLineCheck(map));
-		if (id == "overlapping_things" || id == "all")
-			checks.push_back(MapCheck::overlappingThingCheck(map));
-		if (id == "unknown_textures" || id == "all")
-			checks.push_back(MapCheck::unknownTextureCheck(map, texman));
-		if (id == "unknown_flats" || id == "all")
-			checks.push_back(MapCheck::unknownFlatCheck(map, texman));
-		if (id == "unknown_things" || id == "all")
-			checks.push_back(MapCheck::unknownThingTypeCheck(map));
-		if (id == "stuck_things" || id == "all")
-			checks.push_back(MapCheck::stuckThingsCheck(map));
-		if (id == "sector_references" || id == "all")
-			checks.push_back(MapCheck::sectorReferenceCheck(map));
-		
-		if (n == checks.size())
-			Log::console(S_FMT("Unknown check \"%s\"", id));
+		for (auto a = 0; a < MapCheck::NumStandardChecks; ++a)
+			checks.push_back(MapCheck::standardCheck((MapCheck::StandardCheck)a, map, texman));
 	}
-
+	else
+	{
+		for (auto& arg : args)
+		{
+			auto check = MapCheck::standardCheck(arg.Lower(), map, texman);
+			if (check)
+				checks.push_back(check);
+			else
+				Log::console(S_FMT("Unknown check \"%s\"", CHR(arg)));
+		}
+	}
+	
 	// Run checks
 	for (unsigned a = 0; a < checks.size(); a++)
 	{
@@ -2078,7 +2078,6 @@ CONSOLE_COMMAND(m_check, 0, true)
 		delete checks[a];
 	}
 }
-
 
 
 

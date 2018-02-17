@@ -40,7 +40,6 @@
 #include "General/Console/Console.h"
 #include "General/Executables.h"
 #include "General/KeyBind.h"
-#include "General/Lua.h"
 #include "General/Misc.h"
 #include "General/SAction.h"
 #include "General/UI.h"
@@ -50,8 +49,10 @@
 #include "MainEditor/MainEditor.h"
 #include "MapEditor/NodeBuilders.h"
 #include "OpenGL/Drawing.h"
-#include "UI/TextEditor/TextLanguage.h"
-#include "UI/TextEditor/TextStyle.h"
+#include "Scripting/Lua.h"
+#include "Scripting/ScriptManager.h"
+#include "TextEditor/TextLanguage.h"
+#include "TextEditor/TextStyle.h"
 #include "UI/SBrush.h"
 #include "Utility/Tokenizer.h"
 #include "Utility/StringUtils.h"
@@ -83,6 +84,7 @@ namespace App
 	// App objects (managers, etc.)
 	Console			console_main;
 	PaletteManager	palette_manager;
+	ArchiveManager	archive_manager;
 }
 
 CVAR(Int, temp_location, 0, CVAR_SAVE)
@@ -220,105 +222,114 @@ namespace App
 			return;
 
 		// Go through the file with the tokenizer
-		string token = tz.getToken();
 		while (!tz.atEnd())
 		{
 			// If we come across a 'cvars' token, read in the cvars section
-			//if (!token.Cmp("cvars"))
-			if (token == "cvars")
+			if (tz.advIf("cvars", 2))
 			{
-				token = tz.getToken();	// Skip '{'
-
-										// Keep reading name/value pairs until we hit the ending '}'
-				string cvar_name = tz.getToken();
-				while (cvar_name == "}" && !tz.atEnd())
+				// Keep reading name/value pairs until we hit the ending '}'
+				while (!tz.checkOrEnd("}"))
 				{
-					string cvar_val = tz.getToken();
-					read_cvar(cvar_name, cvar_val);
-					cvar_name = tz.getToken();
+					read_cvar(tz.current().text, tz.peek().text);
+					tz.adv(2);
 				}
+
+				tz.adv(); // Skip ending }
 			}
 
 			// Read base resource archive paths
-			if (token == "base_resource_paths")
+			if (tz.advIf("base_resource_paths", 2))
 			{
-				// Skip {
-				token = wxString::FromUTF8(UTF8(tz.getToken()));
-
-				// Read paths until closing brace found
-				token = tz.getToken();
-				while (token == "}" && !tz.atEnd())
+				while (!tz.checkOrEnd("}"))
 				{
-					theArchiveManager->addBaseResourcePath(token);
-					token = wxString::FromUTF8(UTF8(tz.getToken()));
+					archive_manager.addBaseResourcePath(
+						wxString::FromUTF8(UTF8(tz.current().text))
+					);
+					tz.adv();
 				}
+
+				tz.adv(); // Skip ending }
 			}
 
 			// Read recent files list
-			if (token == "recent_files")
+			if (tz.advIf("recent_files", 2))
 			{
-				// Skip {
-				token = tz.getToken();
-
-				// Read files until closing brace found
-				token = wxString::FromUTF8(UTF8(tz.getToken()));
-				while (token != "}" && !tz.atEnd())
+				while (!tz.checkOrEnd("}"))
 				{
-					theArchiveManager->addRecentFile(token);
-					token = wxString::FromUTF8(UTF8(tz.getToken()));
+					archive_manager.addRecentFile(
+						wxString::FromUTF8(UTF8(tz.current().text))
+					);
+					tz.adv();
 				}
+
+				tz.adv(); // Skip ending }
 			}
 
 			// Read keybinds
-			if (token == "keys")
-			{
-				token = tz.getToken();	// Skip {
+			if (tz.advIf("keys", 2))
 				KeyBind::readBinds(tz);
-			}
 
 			// Read nodebuilder paths
-			if (token == "nodebuilder_paths")
+			if (tz.advIf("nodebuilder_paths", 2))
 			{
-				token = tz.getToken();	// Skip {
-
-										// Read paths until closing brace found
-				token = tz.getToken();
-				while (token != "}" && !tz.atEnd())
+				while (!tz.checkOrEnd("}"))
 				{
-					string path = tz.getToken();
-					NodeBuilders::addBuilderPath(token, path);
-					token = tz.getToken();
+					NodeBuilders::addBuilderPath(tz.current().text, tz.peek().text);
+					tz.adv(2);
 				}
+
+				tz.adv(); // Skip ending }
 			}
 
 			// Read game exe paths
-			if (token == "executable_paths")
+			if (tz.advIf("executable_paths", 2))
 			{
-				token = tz.getToken();	// Skip {
-
-										// Read paths until closing brace found
-				token = tz.getToken();
-				while (token != "}" && !tz.atEnd())
+				while (!tz.checkOrEnd("}"))
 				{
-					if (token.length())
-					{
-						string path = tz.getToken();
-						Executables::setGameExePath(token, path);
-					}
-					token = tz.getToken();
+					Executables::setGameExePath(tz.current().text, tz.peek().text);
+					tz.adv(2);
 				}
+
+				tz.adv(); // Skip ending }
 			}
 
 			// Read window size/position info
-			if (token == "window_info")
+			if (tz.advIf("window_info", 2))
+				Misc::readWindowInfo(tz);
+
+			// Next token
+			tz.adv();
+		}
+	}
+
+	vector<string> processCommandLine(vector<string>& args)
+	{
+		vector<string> to_open;
+
+		// Process command line args (except the first as it is normally the executable name)
+		for (auto& arg : args)
+		{
+			// -nosplash: Disable splash window
+			if (S_CMPNOCASE(arg, "-nosplash"))
+				UI::enableSplash(false);
+
+			// -debug: Enable debug mode
+			else if (S_CMPNOCASE(arg, "-debug"))
 			{
-				token = tz.getToken();	// Skip {
-				Misc::readWindowInfo(&tz);
+				Global::debug = true;
+				Log::info("Debugging stuff enabled");
 			}
 
-			// Get next token
-			token = tz.getToken();
+			// Other (no dash), open as archive
+			else if (!arg.StartsWith("-"))
+				to_open.push_back(arg);
+
+			// Unknown parameter
+			else
+				Log::warning(S_FMT("Unknown command line parameter: \"%s\"", CHR(arg)));
 		}
+
+		return to_open;
 	}
 }
 
@@ -353,6 +364,16 @@ PaletteManager* App::paletteManager()
 }
 
 // ----------------------------------------------------------------------------
+// App::archiveManager
+//
+// Returns the Archive Manager
+// ----------------------------------------------------------------------------
+ArchiveManager& App::archiveManager()
+{
+	return archive_manager;
+}
+
+// ----------------------------------------------------------------------------
 // App::runTimer
 //
 // Returns the number of ms elapsed since the application was started
@@ -377,7 +398,7 @@ bool App::isExiting()
 //
 // Application initialisation
 // ----------------------------------------------------------------------------
-bool App::init()
+bool App::init(vector<string>& args, double ui_scale)
 {
 	// Set locale to C so that the tokenizer will work properly
 	// even in locales where the decimal separator is a comma.
@@ -390,6 +411,9 @@ bool App::init()
 	// Init log
 	Log::init();
 
+	// Process the command line arguments
+	vector<string> paths_to_open = processCommandLine(args);
+
 	// Init keybinds
 	KeyBind::initBinds();
 
@@ -399,8 +423,8 @@ bool App::init()
 
 	// Check that SLADE.pk3 can be found
 	Log::info("Loading resources");
-	theArchiveManager->init();
-	if (!theArchiveManager->resArchiveOK())
+	archive_manager.init();
+	if (!archive_manager.resArchiveOK())
 	{
 		wxMessageBox(
 			"Unable to find slade.pk3, make sure it exists in the same directory as the "
@@ -417,6 +441,9 @@ bool App::init()
 
 	// Init lua
 	Lua::init();
+
+	// Init UI
+	UI::init(ui_scale);
 
 	// Show splash screen
 	UI::showSplash("Starting up...");
@@ -470,23 +497,24 @@ bool App::init()
 
 	// Init base resource
 	Log::info("Loading base resource");
-	theArchiveManager->initBaseResource();
+	archive_manager.initBaseResource();
 	Log::info("Base resource loaded");
 
 	// Init game configuration
 	Log::info("Loading game configurations");
 	Game::init();
 
+	// Init script manager
+	ScriptManager::init();
+
 	// Show the main window
 	MainEditor::windowWx()->Show(true);
 	wxTheApp->SetTopWindow(MainEditor::windowWx());
 	UI::showSplash("Starting up...", false, MainEditor::windowWx());
 
-	// Open any archives on the command line
-	// argv[0] is normally the executable itself (i.e. SLADE.exe)
-	// and opening it as an archive should not be attempted...
-	for (int a = 1; a < wxTheApp->argc; a++)
-		theArchiveManager->openArchive((string)wxTheApp->argv[a]);
+	// Open any archives from the command line
+	for (auto& path : paths_to_open)
+		archive_manager.openArchive(path);
 
 	// Hide splash screen
 	UI::hideSplash();
@@ -532,9 +560,9 @@ void App::saveConfigFile()
 
 	// Write base resource archive paths
 	file.Write("\nbase_resource_paths\n{\n");
-	for (size_t a = 0; a < theArchiveManager->numBaseResourcePaths(); a++)
+	for (size_t a = 0; a < archive_manager.numBaseResourcePaths(); a++)
 	{
-		string path = theArchiveManager->getBaseResourcePath(a);
+		string path = archive_manager.getBaseResourcePath(a);
 		StringUtils::replace(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
@@ -542,9 +570,9 @@ void App::saveConfigFile()
 
 	// Write recent files list (in reverse to keep proper order when reading back)
 	file.Write("\nrecent_files\n{\n");
-	for (int a = theArchiveManager->numRecentFiles() - 1; a >= 0; a--)
+	for (int a = archive_manager.numRecentFiles() - 1; a >= 0; a--)
 	{
-		string path = theArchiveManager->recentFile(a);
+		string path = archive_manager.recentFile(a);
 		StringUtils::replace(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
@@ -604,14 +632,16 @@ void App::exit(bool save_config)
 
 		// Save custom special presets
 		Game::saveCustomSpecialPresets();
+
+		// Save custom scripts
+		ScriptManager::saveUserScripts();
 	}
 
 	// Close all open archives
-	theArchiveManager->closeAll();
+	archive_manager.closeAll();
 
 	// Clean up
 	EntryType::cleanupEntryTypes();
-	ArchiveManager::deleteInstance();
 
 	// Clear temp folder
 	wxDir temp;
@@ -680,6 +710,37 @@ string App::path(string filename, Dir dir)
 	}
 
 	return filename;
+}
+
+App::Platform App::platform()
+{
+#ifdef __WXMSW__
+	return Platform::Windows;
+#elif __WXGTK__
+	return Platform::Linux;
+#elif __WXOSX__
+	return Platform::MacOS;
+#else
+	return Platform::Unknown;
+#endif
+}
+
+bool App::useWebView()
+{
+#ifdef USE_WEBVIEW_STARTPAGE
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool App::useSFMLRenderWindow()
+{
+#ifdef USE_SFML_RENDERWINDOW
+	return true;
+#else
+	return false;
+#endif
 }
 
 

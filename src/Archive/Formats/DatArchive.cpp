@@ -40,7 +40,7 @@
  * DatArchive class constructor
  *******************************************************************/
 DatArchive::DatArchive()
-	: TreelessArchive(ARCHIVE_DAT)
+	: TreelessArchive("dat")
 {
 }
 
@@ -66,23 +66,6 @@ uint32_t DatArchive::getEntryOffset(ArchiveEntry* entry)
 void DatArchive::setEntryOffset(ArchiveEntry* entry, uint32_t offset)
 {
 	entry->exProp("Offset") = (int)offset;
-}
-
-
-/* DatArchive::getFileExtensionString
- * Gets the wxWidgets file dialog filter string for the archive type
- *******************************************************************/
-string DatArchive::getFileExtensionString()
-{
-	return "Raven Software Data Files (*.dat; *.cd; *.hd)|*.dat;*.cd;*.hd";
-}
-
-/* DatArchive::getFormat
- * Gives the "archive_dat" string
- *******************************************************************/
-string DatArchive::getFormat()
-{
-	return "archive_dat";
 }
 
 /* DatArchive::open
@@ -185,7 +168,7 @@ bool DatArchive::open(MemChunk& mc)
 			walls[1] = d;
 
 		// Add to entry list
-		getRoot()->addEntry(nlump);
+		rootDir()->addEntry(nlump);
 	}
 
 	// Detect all entry types
@@ -264,7 +247,7 @@ void DatArchive::updateNamespaces()
 	// Go through all entries
 	for (unsigned a = 0; a < numEntries(); a++)
 	{
-		ArchiveEntry* entry = getRoot()->getEntry(a);
+		ArchiveEntry* entry = rootDir()->entryAt(a);
 
 		// Check for markers
 		if (!entry->getName().Cmp("startflats"))
@@ -290,11 +273,11 @@ ArchiveEntry* DatArchive::addEntry(ArchiveEntry* entry, unsigned position, Archi
 {
 	// Check entry
 	if (!entry)
-		return NULL;
+		return nullptr;
 
 	// Check if read-only
 	if (isReadOnly())
-		return NULL;
+		return nullptr;
 
 	// Copy if necessary
 	if (copy)
@@ -321,7 +304,7 @@ ArchiveEntry* DatArchive::addEntry(ArchiveEntry* entry, string add_namespace, bo
 	// Find requested namespace, only three non-global namespaces are valid in this format
 	if (S_CMPNOCASE(add_namespace, "textures"))
 	{
-		if (walls[1] >= 0) return addEntry(entry, walls[1], NULL, copy);
+		if (walls[1] >= 0) return addEntry(entry, walls[1], nullptr, copy);
 		else
 		{
 			addNewEntry("startwalls");
@@ -331,7 +314,7 @@ ArchiveEntry* DatArchive::addEntry(ArchiveEntry* entry, string add_namespace, bo
 	}
 	else if (S_CMPNOCASE(add_namespace, "flats"))
 	{
-		if (flats[1] >= 0) return addEntry(entry, flats[1], NULL, copy);
+		if (flats[1] >= 0) return addEntry(entry, flats[1], nullptr, copy);
 		else
 		{
 			addNewEntry("startflats");
@@ -341,7 +324,7 @@ ArchiveEntry* DatArchive::addEntry(ArchiveEntry* entry, string add_namespace, bo
 	}
 	else if (S_CMPNOCASE(add_namespace, "sprites"))
 	{
-		if (sprites[1] >= 0) return addEntry(entry, sprites[1], NULL, copy);
+		if (sprites[1] >= 0) return addEntry(entry, sprites[1], nullptr, copy);
 		else
 		{
 			addNewEntry("startsprites");
@@ -349,7 +332,7 @@ ArchiveEntry* DatArchive::addEntry(ArchiveEntry* entry, string add_namespace, bo
 			return addEntry(entry, add_namespace, copy);
 		}
 	}
-	else return addEntry(entry, 0xFFFFFFFF, NULL, copy);
+	else return addEntry(entry, 0xFFFFFFFF, nullptr, copy);
 }
 
 /* DatArchive::removeEntry
@@ -442,7 +425,7 @@ bool DatArchive::moveEntry(ArchiveEntry* entry, unsigned position, ArchiveTreeNo
 		return false;
 
 	// Do default move (force root dir)
-	bool ok = Archive::moveEntry(entry, position, NULL);
+	bool ok = Archive::moveEntry(entry, position, nullptr);
 
 	if (ok)
 	{
@@ -474,7 +457,7 @@ bool DatArchive::write(MemChunk& mc, bool update)
 	uint32_t name_size = 0;
 	string previousname = "";
 	uint16_t* nameoffsets = new uint16_t[numEntries()];
-	ArchiveEntry* entry = NULL;
+	ArchiveEntry* entry = nullptr;
 	for (uint16_t l = 0; l < numEntries(); l++)
 	{
 		entry = getEntry(l);
@@ -580,12 +563,12 @@ bool DatArchive::loadEntryData(ArchiveEntry* entry)
 	}
 
 	// Open wadfile
-	wxFile file(filename);
+	wxFile file(filename_);
 
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "DatArchive::loadEntryData: Failed to open datfile %s", filename);
+		LOG_MESSAGE(1, "DatArchive::loadEntryData: Failed to open datfile %s", filename_);
 		return false;
 	}
 

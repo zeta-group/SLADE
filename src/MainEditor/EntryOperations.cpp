@@ -28,7 +28,6 @@
  * INCLUDES
  *******************************************************************/
 #include "Main.h"
-#include "UI/WxStuff.h"
 #include "EntryOperations.h"
 #include "General/Misc.h"
 #include "General/Console/Console.h"
@@ -41,7 +40,7 @@
 #include "Archive/Formats/WadArchive.h"
 #include "Dialogs/Preferences/PreferencesDialog.h"
 #include "Dialogs/ModifyOffsetsDialog.h"
-#include "UI/PaletteChooser.h"
+#include "UI/Controls/PaletteChooser.h"
 #include "App.h"
 
 
@@ -160,17 +159,17 @@ bool EntryOperations::gfxConvert(ArchiveEntry* entry, string target_format, SIFo
  *******************************************************************/
 bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog* dialog)
 {
-	if (entry == NULL || entry->getType() == NULL)
+	if (entry == nullptr || entry->getType() == nullptr)
 		return false;
 
 	// Check entry type
 	EntryType* type = entry->getType();
-	string entryformat = type->getFormat();
+	string entryformat = type->formatId();
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" ||
 		entryformat == "img_doom_alpha" || entryformat == "img_doom_beta" ||
 		entryformat == "img_png"))
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->getName(), entry->getType()->getName());
+		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->getName(), entry->getType()->name());
 		return false;
 	}
 
@@ -312,17 +311,17 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
  *******************************************************************/
 bool EntryOperations::setGfxOffsets(ArchiveEntry* entry, int x, int y)
 {
-	if (entry == NULL || entry->getType() == NULL)
+	if (entry == nullptr || entry->getType() == nullptr)
 		return false;
 
 	// Check entry type
 	EntryType* type = entry->getType();
-	string entryformat = type->getFormat();
+	string entryformat = type->formatId();
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" ||
 		entryformat == "img_doom_alpha" || entryformat == "img_doom_beta" ||
 		entryformat == "img_png"))
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->getName(), entry->getType()->getName());
+		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->getName(), entry->getType()->name());
 		return false;
 	}
 
@@ -465,14 +464,14 @@ bool EntryOperations::openMapDB2(ArchiveEntry* entry)
 	}
 
 	// Get map info for entry
-	Archive::mapdesc_t map = entry->getParent()->getMapInfo(entry);
+	Archive::MapDesc map = entry->getParent()->getMapInfo(entry);
 
 	// Check valid map
 	if (map.format == MAP_UNKNOWN)
 		return false;
 
 	// Export the map to a temp .wad file
-	string filename = App::path(entry->getParent()->getFilename(false) + "-" + entry->getName(true) + ".wad", App::Dir::Temp);
+	string filename = App::path(entry->getParent()->filename(false) + "-" + entry->getName(true) + ".wad", App::Dir::Temp);
 	filename.Replace("/", "-");
 	if (map.archive)
 	{
@@ -505,25 +504,25 @@ bool EntryOperations::openMapDB2(ArchiveEntry* entry)
 	string cmd = S_FMT("%s \"%s\" -map %s", path, filename, entry->getName());
 
 	// Add base resource archive to command line
-	Archive* base = theArchiveManager->baseResourceArchive();
+	Archive* base = App::archiveManager().baseResourceArchive();
 	if (base)
 	{
-		if (base->getType() == ARCHIVE_WAD)
-			cmd += S_FMT(" -resource wad \"%s\"", base->getFilename());
-		else if (base->getType() == ARCHIVE_ZIP)
-			cmd += S_FMT(" -resource pk3 \"%s\"", base->getFilename());
+		if (base->formatId() == "wad")
+			cmd += S_FMT(" -resource wad \"%s\"", base->filename());
+		else if (base->formatId() == "zip")
+			cmd += S_FMT(" -resource pk3 \"%s\"", base->filename());
 	}
 
 	// Add resource archives to command line
-	for (int a = 0; a < theArchiveManager->numArchives(); ++a)
+	for (int a = 0; a < App::archiveManager().numArchives(); ++a)
 	{
-		Archive* archive = theArchiveManager->getArchive(a);
+		Archive* archive = App::archiveManager().getArchive(a);
 
 		// Check archive type (only wad and zip supported by db2)
-		if (archive->getType() == ARCHIVE_WAD)
-			cmd += S_FMT(" -resource wad \"%s\"", archive->getFilename());
-		else if (archive->getType() == ARCHIVE_ZIP)
-			cmd += S_FMT(" -resource pk3 \"%s\"", archive->getFilename());
+		if (archive->formatId() == "wad")
+			cmd += S_FMT(" -resource wad \"%s\"", archive->filename());
+		else if (archive->formatId() == "zip")
+			cmd += S_FMT(" -resource pk3 \"%s\"", archive->filename());
 	}
 
 	// Run DB2
@@ -549,9 +548,9 @@ bool EntryOperations::modifyalPhChunk(ArchiveEntry* entry, bool value)
 		return false;
 
 	// Check entry type
-	if (!(entry->getType()->getFormat() == "img_png"))
+	if (!(entry->getType()->formatId() == "img_png"))
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getType()->getName());
+		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getType()->name());
 		return false;
 	}
 
@@ -658,7 +657,7 @@ bool EntryOperations::modifytRNSChunk(ArchiveEntry* entry, bool value)
 		return false;
 
 	// Check entry type
-	if (!(entry->getType()->getFormat() == "img_png"))
+	if (!(entry->getType()->formatId() == "img_png"))
 	{
 		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getTypeString());
 		return false;
@@ -775,7 +774,7 @@ bool EntryOperations::getalPhChunk(ArchiveEntry* entry)
 		return false;
 
 	// Check entry type
-	if (entry->getType()->getFormat() != "img_png")
+	if (entry->getType()->formatId() != "img_png")
 	{
 		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getTypeString());
 		return false;
@@ -809,7 +808,7 @@ bool EntryOperations::gettRNSChunk(ArchiveEntry* entry)
 		return false;
 
 	// Check entry type
-	if (entry->getType()->getFormat() != "img_png")
+	if (entry->getType()->formatId() != "img_png")
 	{
 		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getTypeString());
 		return false;
@@ -846,7 +845,7 @@ bool EntryOperations::readgrAbChunk(ArchiveEntry* entry, point2_t& offsets)
 		return false;
 
 	// Check entry type
-	if (entry->getType()->getFormat() != "img_png")
+	if (entry->getType()->formatId() != "img_png")
 	{
 		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->getName(), entry->getTypeString());
 		return false;
@@ -886,12 +885,12 @@ bool EntryOperations::addToPatchTable(vector<ArchiveEntry*> entries)
 
 	// Get parent archive
 	Archive* parent = entries[0]->getParent();
-	if (parent == NULL)
+	if (parent == nullptr)
 		return true;
 
 	// Find patch table in parent archive
-	Archive::search_options_t opt;
-	opt.match_type = EntryType::getType("pnames");
+	Archive::SearchOptions opt;
+	opt.match_type = EntryType::fromId("pnames");
 	ArchiveEntry* pnames = parent->findLast(opt);
 
 	// Check it exists
@@ -972,15 +971,15 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		return false;
 
 	// Find texturex entry to add to
-	Archive::search_options_t opt;
-	opt.match_type = EntryType::getType("texturex");
+	Archive::SearchOptions opt;
+	opt.match_type = EntryType::fromId("texturex");
 	ArchiveEntry* texturex = parent->findFirst(opt);
 
 	// Check it exists
 	bool zdtextures = false;
 	if (!texturex)
 	{
-		opt.match_type = EntryType::getType("zdtextures");
+		opt.match_type = EntryType::fromId("zdtextures");
 		texturex = parent->findFirst(opt);
 
 		if (!texturex)
@@ -990,10 +989,10 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 	}
 
 	// Find patch table in parent archive
-	ArchiveEntry* pnames = NULL;
+	ArchiveEntry* pnames = nullptr;
 	if (!zdtextures)
 	{
-		opt.match_type = EntryType::getType("pnames");
+		opt.match_type = EntryType::fromId("pnames");
 		pnames = parent->findLast(opt);
 
 		// Check it exists
@@ -1106,8 +1105,8 @@ bool EntryOperations::convertTextures(vector<ArchiveEntry*> entries)
 		return false;
 
 	// Find patch table in parent archive
-	Archive::search_options_t opt;
-	opt.match_type = EntryType::getType("pnames");
+	Archive::SearchOptions opt;
+	opt.match_type = EntryType::fromId("pnames");
 	ArchiveEntry* pnames = parent->findLast(opt);
 
 	// Check it exists
@@ -1156,8 +1155,8 @@ bool EntryOperations::findTextureErrors(vector<ArchiveEntry*> entries)
 		return false;
 
 	// Find patch table in parent archive
-	Archive::search_options_t opt;
-	opt.match_type = EntryType::getType("pnames");
+	Archive::SearchOptions opt;
+	opt.match_type = EntryType::fromId("pnames");
 	ArchiveEntry* pnames = parent->findLast(opt);
 
 	// Check it exists
@@ -1227,10 +1226,10 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 	}
 
 	// Find/export any resource libraries
-	Archive::search_options_t sopt;
-	sopt.match_type = EntryType::getType("acs");
+	Archive::SearchOptions sopt;
+	sopt.match_type = EntryType::fromId("acs");
 	sopt.search_subdirs = true;
-	vector<ArchiveEntry*> entries = theArchiveManager->findAllResourceEntries(sopt);
+	vector<ArchiveEntry*> entries = App::archiveManager().findAllResourceEntries(sopt);
 	wxArrayString lib_paths;
 	for (unsigned a = 0; a < entries.size(); a++)
 	{
@@ -1240,7 +1239,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 
 		// Ignore entries from other archives
 		if (entry->getParent() &&
-			(entry->getParent()->getFilename(true) != entries[a]->getParent()->getFilename(true)))
+			(entry->getParent()->filename(true) != entries[a]->getParent()->filename(true)))
 			continue;
 
 		string path = App::path(entries[a]->getName(true) + ".acs", App::Dir::Temp);
@@ -1319,10 +1318,10 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 				// Otherwise, treat it as a library
 
 				// See if the compiled library already exists as an entry
-				Archive::search_options_t opt;
+				Archive::SearchOptions opt;
 				opt.match_namespace = "acs";
 				opt.match_name = entry->getName(true);
-				if (entry->getParent()->getDesc().names_extensions)
+				if (entry->getParent()->formatDesc().names_extensions)
 				{
 					opt.match_name += ".o";
 					opt.ignore_ext = false;
@@ -1361,7 +1360,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 
 		if (errors != "" || !success)
 		{
-			ExtMessageDialog dlg(NULL, success ? "ACC Output" : "Error Compiling");
+			ExtMessageDialog dlg(nullptr, success ? "ACC Output" : "Error Compiling");
 			dlg.setMessage(success ?
 				"The following errors were encountered while compiling, please fix them and recompile:" :
 				"Compiler output shown below: "
@@ -1598,7 +1597,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 
 	if (!crushed && !outed && !errormessages.IsEmpty())
 	{
-		ExtMessageDialog dlg(NULL, "Optimizing Report");
+		ExtMessageDialog dlg(nullptr, "Optimizing Report");
 		dlg.setMessage("The following issues were encountered while optimizing:");
 		dlg.setExt(errormessages);
 		dlg.ShowModal();
@@ -1677,7 +1676,7 @@ CONSOLE_COMMAND(fixpngcrc, 0, true)
 	}
 	for (size_t a = 0; a < selection.size(); ++a)
 	{
-		if (selection[a]->getType()->getFormat() == "img_png")
+		if (selection[a]->getType()->formatId() == "img_png")
 			fixpngsrc(selection[a]);
 	}
 }

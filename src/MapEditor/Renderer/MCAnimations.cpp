@@ -30,7 +30,6 @@
  * INCLUDES
  *******************************************************************/
 #include "Main.h"
-#include "UI/WxStuff.h"
 #include "MCAnimations.h"
 #include "General/ColourConfiguration.h"
 #include "MapEditor/MapEditor.h"
@@ -192,7 +191,7 @@ void MCAThingSelection::draw()
 	if (!thing_overlay_square)
 	{
 		// Get thing selection texture
-		GLTexture* tex = NULL;
+		GLTexture* tex = nullptr;
 		if (thing_drawtype == TDT_ROUND || thing_drawtype == TDT_SPRITE)
 			tex = MapEditor::textureManager().getEditorImage("thing/hilight");
 		else

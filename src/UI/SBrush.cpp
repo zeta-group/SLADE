@@ -37,7 +37,7 @@
 /*******************************************************************
 * CONSTANTS
 *******************************************************************/
-SBrushManager* SBrushManager::instance = NULL;
+SBrushManager* SBrushManager::instance = nullptr;
 
 /*******************************************************************
 * VARIABLES
@@ -58,13 +58,13 @@ SBrushManager* SBrushManager::instance = NULL;
 SBrush::SBrush(string name)
 {
 
-	image = NULL;
+	image = nullptr;
 	this->name = name;
 	icon = name.AfterFirst('_');
 	cx = 0;
 	cy = 0;
 
-	Archive* res = theArchiveManager->programResourceArchive();
+	Archive* res = App::archiveManager().programResourceArchive();
 	if (res == nullptr)
 		return;
 	ArchiveEntry* file = res->entryAtPath(S_FMT("icons/general/%s.png", icon));

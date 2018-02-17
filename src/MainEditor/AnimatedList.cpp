@@ -86,7 +86,7 @@ AnimatedEntry* AnimatedList::getEntry(size_t index)
 {
 	// Check index range
 	if (index > nEntries())
-		return NULL;
+		return nullptr;
 
 	return entries[index];
 }
@@ -105,7 +105,7 @@ AnimatedEntry* AnimatedList::getEntry(string name)
 	}
 
 	// No match found
-	return NULL;
+	return nullptr;
 }
 
 /* AnimatedList::clear
@@ -160,7 +160,7 @@ bool AnimatedList::readANIMATEDData(ArchiveEntry* animated)
  *******************************************************************/
 bool AnimatedList::addEntry(AnimatedEntry* entry, size_t pos)
 {
-	if (entry == NULL)
+	if (entry == nullptr)
 		return false;
 	if (pos >= nEntries())
 	{
@@ -275,8 +275,8 @@ bool AnimatedList::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, bool
  *******************************************************************/
 bool AnimatedList::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata)
 {
-	Tokenizer tz(HCOMMENTS);
-	tz.openMem(&(entry->getMCData()), entry->getName());
+	Tokenizer tz(Tokenizer::Hash);
+	tz.openMem(entry->getMCData(), entry->getName());
 
 	string token;
 	char buffer[23];

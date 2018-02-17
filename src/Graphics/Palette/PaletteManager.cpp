@@ -74,7 +74,7 @@ bool PaletteManager::init()
  * by [name]. Returns false if the palette doesn't exist or the name
  * is invalid, true otherwise
  *******************************************************************/
-bool PaletteManager::addPalette(Palette8bit::UPtr pal, string name)
+bool PaletteManager::addPalette(Palette::UPtr pal, string name)
 {
 	// Check palette and name were given
 	if (!pal || name.IsEmpty())
@@ -92,14 +92,14 @@ bool PaletteManager::addPalette(Palette8bit::UPtr pal, string name)
  * current base resource archive. If no base resource archive is
  * loaded, the default greyscale palette is used
  *******************************************************************/
-Palette8bit* PaletteManager::globalPalette()
+Palette* PaletteManager::globalPalette()
 {
 	// Check if a base resource archive is open
-	if (!theArchiveManager->baseResourceArchive())
+	if (!App::archiveManager().baseResourceArchive())
 		return &pal_default;
 
 	// Return the palette contained in the base resource archive
-	Misc::loadPaletteFromArchive(&pal_global, theArchiveManager->baseResourceArchive());
+	Misc::loadPaletteFromArchive(&pal_global, App::archiveManager().baseResourceArchive());
 	return &pal_global;
 }
 
@@ -107,7 +107,7 @@ Palette8bit* PaletteManager::globalPalette()
  * Returns the palette at [index]. or the default palette (greyscale)
  * if index is out of bounds
  *******************************************************************/
-Palette8bit* PaletteManager::getPalette(int index)
+Palette* PaletteManager::getPalette(int index)
 {
 	if (index < 0 || index >= numPalettes())
 		return &pal_default;
@@ -119,7 +119,7 @@ Palette8bit* PaletteManager::getPalette(int index)
  * Returns the palette matching the given name, or the default
  * palette (greyscale) if no matching palette found
  *******************************************************************/
-Palette8bit* PaletteManager::getPalette(string name)
+Palette* PaletteManager::getPalette(string name)
 {
 	for (uint32_t a = 0; a < pal_names.size(); a++)
 	{
@@ -146,7 +146,7 @@ string PaletteManager::getPalName(int index)
  * Returns the name of the given palette, or an empty string if the
  * palette isn't managed by the PaletteManager
  *******************************************************************/
-string PaletteManager::getPalName(Palette8bit* pal)
+string PaletteManager::getPalName(Palette* pal)
 {
 	for (uint32_t a = 0; a < palettes.size(); a++)
 	{
@@ -164,7 +164,7 @@ string PaletteManager::getPalName(Palette8bit* pal)
 bool PaletteManager::loadResourcePalettes()
 {
 	// Get the 'palettes' directory of SLADE.pk3
-	auto res_archive = theArchiveManager->programResourceArchive();
+	auto res_archive = App::archiveManager().programResourceArchive();
 	auto dir_palettes = res_archive->getDir("palettes/");
 
 	// Check it exists
@@ -175,12 +175,12 @@ bool PaletteManager::loadResourcePalettes()
 	for (size_t a = 0; a < dir_palettes->numEntries(); a++)
 	{
 		// Load palette data
-		auto pal = std::make_unique<Palette8bit>();
-		MemChunk mc(dir_palettes->getEntry(a)->getData(true), dir_palettes->getEntry(a)->getSize());
+		auto pal = std::make_unique<Palette>();
+		MemChunk mc(dir_palettes->entryAt(a)->getData(true), dir_palettes->entryAt(a)->getSize());
 		pal->loadMem(mc);
 
 		// Add the palette
-		addPalette(std::move(pal), dir_palettes->getEntry(a)->getName(true));
+		addPalette(std::move(pal), dir_palettes->entryAt(a)->getName(true));
 	}
 
 	return true;
@@ -206,7 +206,7 @@ bool PaletteManager::loadCustomPalettes()
 	while (files)
 	{
 		// Load palette data
-		auto pal = std::make_unique<Palette8bit>();
+		auto pal = std::make_unique<Palette>();
 		MemChunk mc;
 		mc.importFile(res_dir.GetName() + "/" + filename);
 		pal->loadMem(mc);

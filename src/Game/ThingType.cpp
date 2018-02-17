@@ -57,12 +57,13 @@ ThingType ThingType::unknown_;
 //
 // ThingType class constructor
 // ----------------------------------------------------------------------------
-ThingType::ThingType(const string& name, const string& group) :
+ThingType::ThingType(const string& name, const string& group, const string& class_name) :
 	name_{ name },
 	group_{ group },
 	colour_{ 170, 170, 180, 255, 0 },
 	radius_{ 20 },
 	height_{ -1 },
+	scale_{ 1.0, 1.0 },
 	angled_{ true },
 	hanging_{ false },
 	shrink_{ false },
@@ -76,7 +77,7 @@ ThingType::ThingType(const string& name, const string& group) :
 	flags_{ 0 },
 	tagged_{ TagType::None },
 	number_{ -1 },
-	scale_{ 1.0, 1.0 }
+	class_name_{ class_name }
 {
 	// Init args
 	args_.count = 0;
@@ -112,6 +113,10 @@ void ThingType::copy(const ThingType& copy)
 	flags_ = copy.flags_;
 	tagged_ = copy.tagged_;
 	args_ = copy.args_;
+	sprite_ = copy.sprite_;
+	icon_ = copy.icon_;
+	translation_ = copy.translation_;
+	palette_ = copy.palette_;
 }
 
 // ----------------------------------------------------------------------------
@@ -377,9 +382,9 @@ string ThingType::stringDesc() const
 // ThingType::loadProps
 //
 // Reads type properties from [props] and marks as a decorate type if
-// [decorate] is true
+// [decorate] is true. If [zscript] is true, support zscript-only properties
 // ----------------------------------------------------------------------------
-void ThingType::loadProps(PropertyList& props, bool decorate)
+void ThingType::loadProps(PropertyList& props, bool decorate, bool zscript)
 {
 	// Set decorate flag
 	decorate_ = decorate;
@@ -449,6 +454,15 @@ void ThingType::loadProps(PropertyList& props, bool decorate)
 	if (props["translation"].hasValue()) translation_ = props["translation"].getStringValue();
 	if (props["solid"].hasValue()) solid_ = props["solid"].getBoolValue();
 	if (props["obsolete"].hasValue()) flags_ |= FLAG_OBSOLETE;
+
+	// ZScript-only props
+	if (zscript)
+	{
+		if (props["scale"].hasValue()) scale_.x = scale_.y = props["scale"].getFloatValue();
+		if (props["scale.x"].hasValue()) scale_.x = props["scale.x"].getFloatValue();
+		if (props["scale.y"].hasValue()) scale_.y = props["scale.y"].getFloatValue();
+		if (props["spawnceiling"].hasValue()) hanging_ = props["spawnceiling"].getBoolValue();
+	}
 }
 
 

@@ -12,12 +12,13 @@
 #include "UI/PropsPanel/MapObjectPropsPanel.h"
 #include "UI/SDialog.h"
 #include "UI/MapCanvas.h"
+#include "UI/WxUtils.h"
 
 namespace MapEditor
 {
 	std::unique_ptr<MapEditContext>	edit_context;
 	MapTextureManager				texture_manager;
-	Archive::mapdesc_t				current_map_desc;
+	Archive::MapDesc				current_map_desc;
 	MapEditorWindow*				map_window;
 	MapBackupManager				backup_manager;
 }
@@ -196,7 +197,7 @@ string MapEditor::browseTexture(const string &init_texture, int tex_type, SLADEM
 	// Get selected texture
 	string tex;
 	if (browser.ShowModal() == wxID_OK)
-		tex = browser.getSelectedItem()->getName();
+		tex = browser.getSelectedItem()->name();
 
 	// Re-lock cursor if needed
 	if (cursor_locked)
@@ -247,23 +248,20 @@ bool MapEditor::editObjectProperties(vector<MapObject*>& list)
 	auto sizer = new wxBoxSizer(wxVERTICAL);
 	dlg.SetSizer(sizer);
 
-	// Create properties panel
+	// Create/add properties panel
 	PropsPanelBase* panel_props = nullptr;
 	switch (edit_context->editMode())
 	{
-	case Mode::Lines:
-		sizer->Add(panel_props = new LinePropsPanel(&dlg), 1, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10); break;
-	case Mode::Sectors:
-		sizer->Add(panel_props = new SectorPropsPanel(&dlg), 1, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10); break;
-	case Mode::Things:
-		sizer->Add(panel_props = new ThingPropsPanel(&dlg), 1, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10); break;
-	default:
-		sizer->Add(panel_props = new MapObjectPropsPanel(&dlg, true), 1, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+	case Mode::Lines:	panel_props = new LinePropsPanel(&dlg); break;
+	case Mode::Sectors:	panel_props = new SectorPropsPanel(&dlg); break;
+	case Mode::Things:	panel_props = new ThingPropsPanel(&dlg); break;
+	default:			panel_props = new MapObjectPropsPanel(&dlg, true);
 	}
+	sizer->Add(panel_props, 1, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, UI::padLarge());
 
 	// Add dialog buttons
-	sizer->AddSpacer(4);
-	sizer->Add(dlg.CreateButtonSizer(wxOK | wxCANCEL), 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+	sizer->AddSpacer(UI::pad());
+	sizer->Add(dlg.CreateButtonSizer(wxOK | wxCANCEL), 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, UI::padLarge());
 
 	// Open current selection
 	panel_props->openObjects(list);
@@ -278,6 +276,11 @@ bool MapEditor::editObjectProperties(vector<MapObject*>& list)
 	}
 
 	return false;
+}
+
+void MapEditor::resetObjectPropertiesPanel()
+{
+	map_window->propsPanel()->clearGrid();
 }
 
 MapEditor::ItemType MapEditor::baseItemType(const ItemType& type)
@@ -295,5 +298,24 @@ MapEditor::ItemType MapEditor::baseItemType(const ItemType& type)
 	case ItemType::Floor:		return ItemType::Sector;
 	case ItemType::Thing:		return ItemType::Thing;
 	default:					return ItemType::Any;
+	}
+}
+
+MapEditor::ItemType MapEditor::itemTypeFromObject(const MapObject* object)
+{
+	switch (object->getObjType())
+	{
+	case MOBJ_VERTEX:
+		return ItemType::Vertex;
+	case MOBJ_LINE:
+		return ItemType::Line;
+	case MOBJ_SIDE:
+		return ItemType::Side;
+	case MOBJ_SECTOR:
+		return ItemType::Sector;
+	case MOBJ_THING:
+		return ItemType::Thing;
+	default:
+		return ItemType::Any;
 	}
 }

@@ -5,7 +5,7 @@
 #include "UI/MainWindow.h"
 #include "MapEditor/UI/MapEditorWindow.h"
 #include "UI/ArchiveManagerPanel.h"
-#include "UI/PaletteChooser.h"
+#include "UI/Controls/PaletteChooser.h"
 #include "MapEditor/MapEditor.h"
 
 namespace MainEditor
@@ -61,7 +61,7 @@ vector<ArchiveEntry*> MainEditor::currentEntrySelection()
  *******************************************************************/
 void MainEditor::openTextureEditor(Archive* archive, ArchiveEntry* entry)
 {
-	main_window->getArchiveManagerPanel()->openTextureTab(theArchiveManager->archiveIndex(archive), entry);
+	main_window->getArchiveManagerPanel()->openTextureTab(App::archiveManager().archiveIndex(archive), entry);
 }
 
 /* MainWindow::openMapEditor
@@ -70,6 +70,11 @@ void MainEditor::openTextureEditor(Archive* archive, ArchiveEntry* entry)
 void MainEditor::openMapEditor(Archive* archive)
 {
 	MapEditor::chooseMap(archive);
+}
+
+void ::MainEditor::openArchiveTab(Archive* archive)
+{
+	main_window->getArchiveManagerPanel()->openTab(archive);
 }
 
 /* MainWindow::openEntry
@@ -85,7 +90,7 @@ void MainEditor::setGlobalPaletteFromArchive(Archive * archive)
 	main_window->getPaletteChooser()->setGlobalFromArchive(archive);
 }
 
-Palette8bit* MainEditor::currentPalette(ArchiveEntry* entry)
+Palette* MainEditor::currentPalette(ArchiveEntry* entry)
 {
 	return main_window->getPaletteChooser()->getSelectedPalette(entry);
 }
@@ -94,8 +99,9 @@ EntryPanel* MainEditor::currentEntryPanel()
 {
 	return main_window->getArchiveManagerPanel()->currentArea();
 }
-
+#ifdef USE_WEBVIEW_STARTPAGE
 void MainEditor::openDocs(string page_name)
 {
 	main_window->openDocs(page_name);
 }
+#endif

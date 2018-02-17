@@ -31,12 +31,15 @@
 //
 // ----------------------------------------------------------------------------
 #include "Main.h"
-#include "Game.h"
-#include "Configuration.h"
-#include "Utility/Parser.h"
-#include "Archive/ArchiveManager.h"
 #include "App.h"
-#include "General/Console/Console.h"
+#include "Archive/ArchiveManager.h"
+#include "Archive/Formats/ZipArchive.h"
+#include "Configuration.h"
+#include "Game.h"
+#include "TextEditor/TextLanguage.h"
+#include "Utility/Parser.h"
+#include "ZScript.h"
+#include <thread>
 
 using namespace Game;
 
@@ -53,9 +56,42 @@ namespace Game
 	GameDef						game_def_unknown;
 	std::map<string, PortDef>	port_defs;
 	PortDef						port_def_unknown;
+	ZScript::Definitions		zscript_base;
+	ZScript::Definitions		zscript_custom;
+	std::unique_ptr<Listener>	listener;
 }
 CVAR(String, game_configuration, "", CVAR_SAVE)
 CVAR(String, port_configuration, "", CVAR_SAVE)
+CVAR(String, zdoom_pk3_path, "", CVAR_SAVE)
+
+
+// ----------------------------------------------------------------------------
+// GameListener Class
+//
+// A Listener to handle custom definition updates resulting from archives being
+// opened or closed, since Game isn't a class
+// ----------------------------------------------------------------------------
+namespace Game
+{
+class GameListener : public Listener
+{
+public:
+	GameListener()
+	{
+		// Listen to archive manager
+		listenTo(&App::archiveManager());
+	}
+
+	void onAnnouncement(Announcer* announcer, string event_name, MemChunk& event_data) override
+	{
+		if (announcer == &App::archiveManager())
+		{
+			if (event_name == "archive_added" || event_name == "archive_closed")
+				updateCustomDefinitions();
+		}
+	}
+};
+}
 
 
 // ----------------------------------------------------------------------------
@@ -70,7 +106,7 @@ CVAR(String, port_configuration, "", CVAR_SAVE)
 //
 // Parses the basic game definition in [mc]
 // ----------------------------------------------------------------------------
-bool Game::GameDef::parse(MemChunk& mc)
+bool GameDef::parse(MemChunk& mc)
 {
 	// Parse configuration
 	Parser parser;
@@ -152,7 +188,7 @@ bool GameDef::supportsFilter(const string& filter) const
 //
 // Parses the basic port definition in [mc]
 // ----------------------------------------------------------------------------
-bool Game::PortDef::parse(MemChunk& mc)
+bool PortDef::parse(MemChunk& mc)
 {
 	// Parse configuration
 	Parser parser;
@@ -224,6 +260,60 @@ bool Game::PortDef::parse(MemChunk& mc)
 Configuration& Game::configuration()
 {
 	return config_current;
+}
+
+// ----------------------------------------------------------------------------
+// Game::updateCustomDefinitions
+//
+// Clears and re-parses custom definitions in all open archives
+// (DECORATE, *MAPINFO, ZScript etc.)
+// ----------------------------------------------------------------------------
+void Game::updateCustomDefinitions()
+{
+	// Clear out all existing custom definitions
+	config_current.clearDecorateDefs();
+	config_current.clearMapInfo();
+	zscript_custom.clear();
+
+	// Parse custom definitions in base resource
+	auto base_resource = App::archiveManager().baseResourceArchive();
+	if (base_resource)
+	{
+		zscript_custom.parseZScript(base_resource);
+		config_current.parseDecorateDefs(base_resource);
+		config_current.parseMapInfo(base_resource);
+	}
+
+	// Parse custom definitions in all resource archives
+	vector<Archive*> resource_archives;
+	for (auto a = 0; a < App::archiveManager().numArchives(); a++)
+	{
+		auto archive = App::archiveManager().getArchive(a);
+		if (App::archiveManager().archiveIsResource(archive))
+			resource_archives.push_back(archive);
+	}
+
+	// ZScript first
+	for (auto archive : resource_archives)
+		zscript_custom.parseZScript(archive);
+
+	// Other definitions
+	for (auto archive : resource_archives)
+	{
+		config_current.parseDecorateDefs(archive);
+		config_current.parseMapInfo(archive);
+	}
+
+	// Process custom definitions
+	config_current.importZScriptDefs(zscript_custom);
+	config_current.linkDoomEdNums();
+
+	auto lang = TextLanguage::fromId("zscript");
+	if (lang)
+	{
+		lang->clearCustomDefs();
+		lang->loadZScript(zscript_custom, true);
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -318,10 +408,10 @@ void Game::init()
 	}
 
 	// Add game configurations from program resource
-	auto dir = theArchiveManager->programResourceArchive()->getDir("config/games");
+	auto dir = App::archiveManager().programResourceArchive()->getDir("config/games");
 	if (dir)
 	{
-		for (auto& entry : dir->getEntries())
+		for (auto& entry : dir->entries())
 		{
 			// Read config info
 			GameDef conf;
@@ -339,10 +429,10 @@ void Game::init()
 	}
 
 	// Add port configurations from program resource
-	dir = theArchiveManager->programResourceArchive()->getDir("config/ports");
+	dir = App::archiveManager().programResourceArchive()->getDir("config/ports");
 	if (dir)
 	{
-		for (auto& entry : dir->getEntries())
+		for (auto& entry : dir->entries())
 		{
 			// Read config info
 			PortDef conf;
@@ -366,6 +456,33 @@ void Game::init()
 	// Load custom special presets
 	if (!loadCustomSpecialPresets())
 		Log::warning("An error occurred loading user special_presets.cfg");
+
+	// Load zdoom.pk3 stuff
+	if (wxFileExists(zdoom_pk3_path))
+	{
+		std::thread thread([=]()
+		{
+			ZipArchive zdoom_pk3;
+			if (!zdoom_pk3.open(zdoom_pk3_path))
+				return;
+
+			// ZScript
+			auto zscript_entry = zdoom_pk3.entryAtPath("zscript.txt");
+			zscript_base.parseZScript(zscript_entry);
+
+			auto lang = TextLanguage::fromId("zscript");
+			if (lang)
+				lang->loadZScript(zscript_base);
+
+			// MapInfo
+			auto mapinfo_entry = zdoom_pk3.entryAtPath("zmapinfo.txt");
+			config_current.parseMapInfo(&zdoom_pk3);
+		});
+		thread.detach();
+	}
+
+	// Init game listener
+	listener = std::make_unique<GameListener>();
 }
 
 // ----------------------------------------------------------------------------
@@ -373,7 +490,7 @@ void Game::init()
 //
 // Returns a vector of all basic game definitions
 // ----------------------------------------------------------------------------
-const std::map<string, Game::GameDef>& Game::gameDefs()
+const std::map<string, GameDef>& Game::gameDefs()
 {
 	return game_defs;
 }
@@ -383,7 +500,7 @@ const std::map<string, Game::GameDef>& Game::gameDefs()
 //
 // Returns the basic game configuration matching [id]
 // ----------------------------------------------------------------------------
-const Game::GameDef& Game::gameDef(const string& id)
+const GameDef& Game::gameDef(const string& id)
 {
 	return game_defs.empty() ? game_def_unknown : game_defs[id];
 }
@@ -393,7 +510,7 @@ const Game::GameDef& Game::gameDef(const string& id)
 //
 // Returns a vector of all basic port definitions
 // ----------------------------------------------------------------------------
-const std::map<string, Game::PortDef>& Game::portDefs()
+const std::map<string, PortDef>& Game::portDefs()
 {
 	return port_defs;
 }
@@ -403,7 +520,7 @@ const std::map<string, Game::PortDef>& Game::portDefs()
 //
 // Returns the basic port configuration matching [id]
 // ----------------------------------------------------------------------------
-const Game::PortDef& Game::portDef(const string& id)
+const PortDef& Game::portDef(const string& id)
 {
 	return port_defs.empty() ? port_def_unknown : port_defs[id];
 }
@@ -702,9 +819,11 @@ namespace
 	}
 }
 
+#include "General/Console/Console.h"
+
 CONSOLE_COMMAND(parsexlat, 0, false)
 {
-	parseXlat(theArchiveManager->getArchive(0));
+	parseXlat(App::archiveManager().getArchive(0));
 }
 
 #endif

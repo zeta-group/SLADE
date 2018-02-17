@@ -9,7 +9,8 @@ namespace Log
 		Error,
 		Debug,
 		Console,	// Only displayed in the console
-		Script		// Script output
+		Script,		// Script output
+		Any
 	};
 
 	struct Message
@@ -32,6 +33,8 @@ namespace Log
 	void		message(MessageType type, const char* text);
 	inline void	message(MessageType type, int level, const string& text) { message(type, level, text.c_str()); }
 	inline void	message(MessageType type, const string& text) { message(type, text.c_str()); }
+
+	vector<Message*>	since(time_t time, MessageType type = MessageType::Any);
 
 	inline void	info(int level, const char* text) { message(MessageType::Info, level, text); }
 	inline void	info(const char* text) { message(MessageType::Info, text); }

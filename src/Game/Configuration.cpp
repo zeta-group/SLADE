@@ -42,6 +42,7 @@
 #include "Utility/Parser.h"
 #include "Utility/StringUtils.h"
 #include "Decorate.h"
+#include "ZScript.h"
 
 using namespace Game;
 
@@ -915,7 +916,7 @@ bool Configuration::openConfig(string game, string port, uint8_t format)
 		{
 			// Config is in program resource
 			string epath = S_FMT("config/games/%s.cfg", game_config.filename);
-			Archive* archive = theArchiveManager->programResourceArchive();
+			Archive* archive = App::archiveManager().programResourceArchive();
 			ArchiveEntry* entry = archive->entryAtPath(epath);
 			if (entry)
 				StringUtils::processIncludes(entry, full_config);
@@ -947,7 +948,7 @@ bool Configuration::openConfig(string game, string port, uint8_t format)
 			{
 				// Config is in program resource
 				string epath = S_FMT("config/ports/%s.cfg", conf.filename);
-				Archive* archive = theArchiveManager->programResourceArchive();
+				Archive* archive = App::archiveManager().programResourceArchive();
 				ArchiveEntry* entry = archive->entryAtPath(epath);
 				if (entry)
 					StringUtils::processIncludes(entry, full_config);
@@ -979,15 +980,15 @@ bool Configuration::openConfig(string game, string port, uint8_t format)
 	}
 
 	// Read any embedded configurations in resource archives
-	Archive::search_options_t opt;
+	Archive::SearchOptions opt;
 	opt.match_name = "sladecfg";
-	vector<ArchiveEntry*> cfg_entries = theArchiveManager->findAllResourceEntries(opt);
+	vector<ArchiveEntry*> cfg_entries = App::archiveManager().findAllResourceEntries(opt);
 	for (unsigned a = 0; a < cfg_entries.size(); a++)
 	{
 		// Log message
 		Archive* parent = cfg_entries[a]->getParent();
 		if (parent)
-			LOG_MESSAGE(1, "Reading SLADECFG in %s", parent->getFilename());
+			LOG_MESSAGE(1, "Reading SLADECFG in %s", parent->filename());
 
 		// Read embedded config
 		string config = wxString::FromAscii(cfg_entries[a]->getData(), cfg_entries[a]->getSize());
@@ -1421,7 +1422,7 @@ void Configuration::setThingBasicFlag(string flag, MapThing* thing, int map_form
 // ----------------------------------------------------------------------------
 bool Configuration::parseDecorateDefs(Archive* archive)
 {
-	return Game::readDecorateDefs(archive, thing_types_);
+	return Game::readDecorateDefs(archive, thing_types_, parsed_types_);
 }
 
 // ----------------------------------------------------------------------------
@@ -1434,6 +1435,49 @@ void Configuration::clearDecorateDefs()
 	for (auto def : thing_types_)
 		if (def.second.decorate() && def.second.defined())
 			def.second.define(-1, "", "");
+}
+
+// ----------------------------------------------------------------------------
+// Configuration::importZScriptDefs
+//
+// Imports parsed classes from ZScript [defs] as thing types
+// ----------------------------------------------------------------------------
+void Configuration::importZScriptDefs(ZScript::Definitions& defs)
+{
+	defs.exportThingTypes(thing_types_, parsed_types_);
+}
+
+// ----------------------------------------------------------------------------
+// Configuration::parseMapInfo
+//
+// Parses all *MAPINFO definitions in [archive]
+// ----------------------------------------------------------------------------
+bool Configuration::parseMapInfo(Archive* archive)
+{
+	return map_info_.readMapInfo(archive);
+}
+
+// ----------------------------------------------------------------------------
+// Configuration::linkDoomEdNums
+//
+// Attempts to find editor numbers in *MAPINFO for parsed DECORATE/ZScript
+// types that were not given one along with their definition
+// ----------------------------------------------------------------------------
+void Configuration::linkDoomEdNums()
+{
+	for (auto& parsed : parsed_types_)
+	{
+		// Find MAPINFO editor number for parsed actor class
+		int ednum = map_info_.doomEdNumForClass(parsed.className());
+
+		if (ednum >= 0)
+		{
+			// Editor number found, copy the definition to thing types map
+			thing_types_[ednum].define(ednum, parsed.name(), parsed.group());
+			thing_types_[ednum].copy(parsed);
+			Log::info(2, S_FMT("Linked parsed class %s to DoomEdNum %d", CHR(parsed.className()), ednum));
+		}
+	}
 }
 
 // ----------------------------------------------------------------------------
