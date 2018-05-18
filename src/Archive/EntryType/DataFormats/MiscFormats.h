@@ -1,16 +1,15 @@
-#ifndef MISCFORMATS_H
-#define MISCFORMATS_H
+#pragma once
 
 class RLE0DataFormat : public EntryDataFormat
 {
 public:
-	RLE0DataFormat() : EntryDataFormat("misc_rle0") {};
-	~RLE0DataFormat() {}
+	RLE0DataFormat() : EntryDataFormat("misc_rle0") {}
+	~RLE0DataFormat() = default;
 
-	int isThisFormat(MemChunk& mc)
+	int isThisFormat(MemChunk& mc) override
 	{
 		// Check size
-		if (mc.getSize() > 6)
+		if (mc.size() > 6)
 		{
 			// Check for RLE0 header
 			if (mc[0] == 'R' && mc[1] == 'L' && mc[2] == 'E' && mc[3] == '0')
@@ -20,5 +19,3 @@ public:
 		return EDF_FALSE;
 	}
 };
-
-#endif //MISCFORMATS_H

@@ -150,5 +150,11 @@
 // C
 #include <locale.h>
 
-#endif // COMMON_H
+// C++17 features for C++11/14
+// (will be removed eventually whenever I decide to switch to C++17)
+#include "External/cpp17/string_view.hpp"
+using string_view = stx::string_view;
+#include "External/cpp17/variant.hpp"
+using nonstd::variant;
 
+#endif // COMMON_H

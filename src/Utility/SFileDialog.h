@@ -1,47 +1,43 @@
-
-#ifndef __S_FILE_DIALOG_H__
-#define __S_FILE_DIALOG_H__
-
-#include "common.h"
+#pragma once
 
 namespace SFileDialog
 {
-	struct fd_info_t
+	struct FileInfo
 	{
-		wxArrayString	filenames;
+		vector<string>	filenames;
 		string			extension;
 		int				ext_index;
 		string			path;
 	};
 
 	bool	openFile(
-				fd_info_t& info,
-				string caption,
-				string extensions,
+				FileInfo& info,
+				string_view caption,
+				string_view extensions,
 				wxWindow* parent = nullptr,
-				string fn_default = "",
+				string_view fn_default = "",
 				int ext_default = 0
 			);
 	bool	openFiles(
-				fd_info_t& info,
-				string caption,
-				string extensions,
+				FileInfo& info,
+				string_view caption,
+				string_view extensions,
 				wxWindow* parent = nullptr,
-				string fn_default = "",
+				string_view fn_default = "",
 				int ext_default = 0
 			);
 	bool	saveFile(
-				fd_info_t& info,
-				string caption,
-				string extensions,
+				FileInfo& info,
+				string_view caption,
+				string_view extensions,
 				wxWindow* parent = nullptr,
-				string fn_default = "",
+				string_view fn_default = "",
 				int ext_default = 0
 			);
 	bool	saveFiles(
-				fd_info_t& info,
-				string caption,
-				string extensions,
+				FileInfo& info,
+				string_view caption,
+				string_view extensions,
 				wxWindow* parent = nullptr,
 				int ext_default = 0
 			);
@@ -49,5 +45,3 @@ namespace SFileDialog
 	string	executableExtensionString();
 	string	executableFileName(const string& exe_name);
 }
-
-#endif//__S_FILE_DIALOG_H__

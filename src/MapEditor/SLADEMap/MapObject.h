@@ -1,6 +1,4 @@
-
-#ifndef __MAP_OBJECT_H__
-#define __MAP_OBJECT_H__
+#pragma once
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wundefined-bool-conversion"
@@ -10,96 +8,109 @@
 
 class SLADEMap;
 
-enum
-{
-	MOBJ_UNKNOWN = 0,
-	MOBJ_VERTEX,
-	MOBJ_LINE,
-	MOBJ_SIDE,
-	MOBJ_SECTOR,
-	MOBJ_THING,
-
-	MOBJ_POINT_MID = 0,
-	MOBJ_POINT_WITHIN,
-	MOBJ_POINT_TEXT
-};
-
-struct mobj_backup_t
-{
-	MobjPropertyList	properties;
-	MobjPropertyList	props_internal;
-	unsigned			id;
-	uint8_t				type;
-
-	mobj_backup_t() { id = 0; type = 0; }
-};
-
 class MapObject
 {
 	friend class SLADEMap;
-private:
-	uint8_t			type;
-
-protected:
-	unsigned			index;
-	SLADEMap*			parent_map;
-	MobjPropertyList	properties;
-	bool				filtered;
-	long				modified_time;
-	unsigned			id;
-	mobj_backup_t*		obj_backup;
 
 public:
-	MapObject(int type = MOBJ_UNKNOWN, SLADEMap* parent = nullptr);
+	enum class Type
+	{
+		Object = 0,
+		Vertex,
+		Line,
+		Side,
+		Sector,
+		Thing
+	};
+
+	enum class Point
+	{
+		Mid = 0,
+		Within,
+		Text
+	};
+
+	struct Backup
+	{
+		MobjPropertyList properties;
+		MobjPropertyList props_internal;
+		unsigned         id   = 0;
+		Type             type = Type::Object;
+	};
+
+	MapObject(Type type = Type::Object, SLADEMap* parent = nullptr);
 	virtual ~MapObject();
-	bool operator< (const MapObject& right) const { return (index < right.index); }
-	bool operator> (const MapObject& right) const { return (index > right.index); }
+	bool operator<(const MapObject& right) const { return (index_ < right.index_); }
+	bool operator>(const MapObject& right) const { return (index_ > right.index_); }
 
-	uint8_t		getObjType() const { return type; }
-	unsigned	getIndex();
-	SLADEMap*	getParentMap() const { return parent_map; }
-	bool		isFiltered() const { return filtered; }
-	long		modifiedTime() const { return modified_time; }
-	unsigned	getId() const { return id; }
-	string		getTypeName();
-	void		setModified();
+	Type     objType() const { return obj_type_; }
+	unsigned objId() const { return obj_id_; }
+	bool     isType(Type type) const { return type == Type::Object || type == obj_type_; }
+	bool     isSameType(MapObject* other) const { return obj_type_ == other->obj_type_; }
 
-	MobjPropertyList&	props()						{ return properties; }
-	bool				hasProp(const string& key)	{ return properties[key].hasValue(); }
+	unsigned  index() const { return index_; }
+	SLADEMap* parentMap() const { return parent_map_; }
+	bool      isFiltered() const { return filtered_; }
+	long      modifiedTime() const { return modified_time_; }
+	string    typeName() const;
+	void      setModified();
+
+	MobjPropertyList& props() { return properties_; }
+	bool              hasProp(string_view key) { return properties_[key].hasValue(); }
 
 	// Generic property modification
-	virtual bool	boolProperty(const string& key);
-	virtual int		intProperty(const string& key);
-	virtual double	floatProperty(const string& key);
-	virtual string	stringProperty(const string& key);
-	virtual void	setBoolProperty(const string& key, bool value);
-	virtual void	setIntProperty(const string& key, int value);
-	virtual void	setFloatProperty(const string& key, double value);
-	virtual void	setStringProperty(const string& key, const string& value);
-	virtual bool	scriptCanModifyProp(const string& key) { return true; }
+	virtual bool   boolProperty(const string& key);
+	virtual int    intProperty(const string& key);
+	virtual double floatProperty(const string& key);
+	virtual string stringProperty(const string& key);
+	virtual void   setBoolProperty(const string& key, bool value);
+	virtual void   setIntProperty(const string& key, int value);
+	virtual void   setFloatProperty(const string& key, double value);
+	virtual void   setStringProperty(const string& key, const string& value);
+	virtual bool   scriptCanModifyProp(const string& key) { return true; }
 
-	virtual fpoint2_t	getPoint(uint8_t point) { return fpoint2_t(0, 0); }
+	virtual fpoint2_t point(Point point) { return { 0, 0 }; }
 
-	void	filter(bool f = true) { filtered = f; }
+	void filter(bool f = true) { filtered_ = f; }
 
-	virtual void	copy(MapObject* c);
+	virtual void copy(MapObject* c);
 
-	void			backup(mobj_backup_t* backup);
-	void			loadFromBackup(mobj_backup_t* backup);
-	mobj_backup_t*	getBackup(bool remove = false);
+	void    backup(Backup* backup);
+	void    loadFromBackup(Backup* backup);
+	Backup* getBackup(bool remove = false);
 
-	virtual void writeBackup(mobj_backup_t* backup) = 0;
-	virtual void readBackup(mobj_backup_t* backup) = 0;
+	virtual void writeBackup(Backup* backup) = 0;
+	virtual void readBackup(Backup* backup)  = 0;
 
-	static void resetIdCounter();
 	static long propBackupTime();
 	static void beginPropBackup(long current_time);
 	static void endPropBackup();
 
-	static bool	multiBoolProperty(vector<MapObject*>& objects, string prop, bool& value);
-	static bool multiIntProperty(vector<MapObject*>& objects, string prop, int& value);
-	static bool multiFloatProperty(vector<MapObject*>& objects, string prop, double& value);
-	static bool multiStringProperty(vector<MapObject*>& objects, string prop, string& value);
-};
+	static bool multiBoolProperty(vector<MapObject*>& objects, const string& prop, bool& value);
+	static bool multiIntProperty(vector<MapObject*>& objects, const string& prop, int& value);
+	static bool multiFloatProperty(vector<MapObject*>& objects, const string& prop, double& value);
+	static bool multiStringProperty(vector<MapObject*>& objects, const string& prop, string& value);
 
-#endif//__MAP_OBJECT_H__
+	typedef std::unique_ptr<MapObject> UPtr;
+
+private:
+	Type obj_type_;
+
+protected:
+	struct ExProp
+	{
+		string   name;
+		Property value;
+
+		ExProp(string_view name) : name{ name.data(), name.size() } {}
+		ExProp(string_view name, const Property& value) : name{ name.data(), name.size() }, value{ value } {}
+	};
+
+	unsigned                index_      = 0;
+	SLADEMap*               parent_map_ = nullptr;
+	MobjPropertyList        properties_;
+	bool                    filtered_      = false;
+	long                    modified_time_ = 0;
+	unsigned                obj_id_        = 0;
+	std::unique_ptr<Backup> obj_backup_;
+};

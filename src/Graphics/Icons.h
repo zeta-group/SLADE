@@ -1,6 +1,4 @@
-
-#ifndef __ICONS_H__
-#define	__ICONS_H__
+#pragma once
 
 #include "common.h"
 
@@ -8,18 +6,17 @@ class ArchiveTreeNode;
 
 namespace Icons
 {
-	enum
+	enum Type
 	{
-		GENERAL,
-		ENTRY,
-		TEXT_EDITOR,
+		Any = -1,
+		General = 0,
+		Entry,
+		TextEditor,
 	};
 
 	bool			loadIcons();
-	wxBitmap		getIcon(int type, string name, bool large, bool log_missing = true);
-	wxBitmap		getIcon(int type, string name);
-	bool			exportIconPNG(int type, string name, string path);
-	vector<string>	getIconSets(int type);
+	wxBitmap		getIcon(Type type, string_view name, bool large, bool log_missing = true);
+	wxBitmap		getIcon(Type type, string_view name);
+	bool			exportIconPNG(Type type, string_view name, string_view path);
+	vector<string>	getIconSets(Type type);
 }
-
-#endif//__ICONS_H__

@@ -1,6 +1,4 @@
-
-#ifndef __S_TAB_CTRL_H__
-#define __S_TAB_CTRL_H__
+#pragma once
 
 #include "common.h"
 
@@ -16,25 +14,21 @@ class STabCtrl : public wxAuiNotebook
 public:
 	STabCtrl(
 		wxWindow* parent,
-		bool close_buttons = false,
-		bool window_list = false,
-		int height = -1,
-		bool main_tabs = false,
-		bool move_tabs = false
-	);
+		bool      close_buttons = false,
+		bool      window_list   = false,
+		int       height        = -1,
+		bool      main_tabs     = false,
+		bool      move_tabs     = false);
 	~STabCtrl() {}
 
-	static TabControl*	createControl(
-							wxWindow* parent,
-							bool close_buttons = false,
-							bool window_list = false,
-							int height = -1,
-							bool main_tabs = false,
-							bool move_tabs = false
-						);
+	static TabControl* createControl(
+		wxWindow* parent,
+		bool      close_buttons = false,
+		bool      window_list   = false,
+		int       height        = -1,
+		bool      main_tabs     = false,
+		bool      move_tabs     = false);
 
 protected:
-	wxSize	DoGetBestClientSize() const;
+	wxSize DoGetBestClientSize() const override;
 };
-
-#endif//__S_TAB_CTRL_H__

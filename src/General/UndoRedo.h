@@ -1,85 +1,79 @@
+#pragma once
 
-#ifndef __UNDO_REDO_H__
-#define __UNDO_REDO_H__
-
-#include "common.h"
 #include "General/ListenerAnnouncer.h"
+#include "common.h"
 
 class UndoStep
 {
-private:
-
 public:
 	UndoStep() {}
 	virtual ~UndoStep() {}
 
-	virtual bool	doUndo() { return true; }
-	virtual bool	doRedo() { return true; }
-	virtual bool	writeFile(MemChunk& mc) { return true; }
-	virtual bool	readFile(MemChunk& mc) { return true; }
-	virtual bool	isOk() { return true; }
+	virtual bool doUndo() { return true; }
+	virtual bool doRedo() { return true; }
+	virtual bool writeFile(MemChunk& mc) { return true; }
+	virtual bool readFile(MemChunk& mc) { return true; }
+	virtual bool isOk() { return true; }
 };
 
 class UndoLevel
 {
-private:
-	string				name;
-	vector<UndoStep*>	undo_steps;
-	wxDateTime			timestamp;
-
 public:
-	UndoLevel(string name);
+	UndoLevel(string_view name);
 	~UndoLevel();
 
-	string	getName() { return name; }
-	bool	doUndo();
-	bool	doRedo();
-	void	addStep(UndoStep* step) { undo_steps.push_back(step); }
-	string	getTimeStamp(bool date, bool time);
+	string name() const { return name_; }
+	bool   doUndo();
+	bool   doRedo();
+	void   addStep(UndoStep* step) { undo_steps_.push_back(step); }
+	string getTimeStamp(bool date, bool time) const;
 
-	bool	writeFile(string filename);
-	bool	readFile(string filename);
-	void	createMerged(vector<UndoLevel*>& levels);
+	bool writeFile(string_view filename);
+	bool readFile(string_view filename);
+	void createMerged(vector<UndoLevel*>& levels);
+
+private:
+	string            name_;
+	vector<UndoStep*> undo_steps_;
+	wxDateTime        timestamp_;
 };
 
 class SLADEMap;
 class UndoManager : public Announcer
 {
-private:
-	vector<UndoLevel*>	undo_levels;
-	UndoLevel*			current_level;
-	int					current_level_index;
-	bool				undo_running;
-	SLADEMap*			map;
-
 public:
 	UndoManager(SLADEMap* map = nullptr);
 	~UndoManager();
 
-	SLADEMap*	getMap() { return map; }
-	void		getAllLevels(vector<string>& list);
-	int			getCurrentIndex() { return current_level_index; }
-	unsigned	nUndoLevels() { return undo_levels.size(); }
-	UndoLevel*	undoLevel(unsigned index) { return undo_levels[index]; }
+	SLADEMap*  map() const { return map_; }
+	void       getAllLevels(vector<string>& list);
+	int        currentIndex() const { return current_level_index_; }
+	unsigned   nUndoLevels() const { return undo_levels_.size(); }
+	UndoLevel* undoLevel(unsigned index) { return undo_levels_[index]; }
 
-	void	beginRecord(string name);
-	void	endRecord(bool success);
-	bool	currentlyRecording();
-	bool	recordUndoStep(UndoStep* step);
-	string	undo();
-	string	redo();
+	void   beginRecord(string_view name);
+	void   endRecord(bool success);
+	bool   currentlyRecording() const;
+	bool   recordUndoStep(UndoStep* step) const;
+	string undo();
+	string redo();
 
-	void	clear();
-	bool	createMergedLevel(UndoManager* manager, string name);
+	void clear();
+	bool createMergedLevel(UndoManager* manager, string_view name);
 
 	typedef std::unique_ptr<UndoManager> UPtr;
+
+private:
+	vector<UndoLevel*> undo_levels_;
+	UndoLevel*         current_level_;
+	int                current_level_index_;
+	bool               undo_running_;
+	SLADEMap*          map_;
 };
 
 namespace UndoRedo
 {
-	bool			currentlyRecording();
-	UndoManager*	currentManager();
-	SLADEMap*		currentMap();
-}
-
-#endif//__UNDO_REDO_H__
+bool         currentlyRecording();
+UndoManager* currentManager();
+SLADEMap*    currentMap();
+} // namespace UndoRedo

@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,63 +15,59 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "EntryPanel.h"
+#include "General/UI.h"
 #include "MainEditor/MainEditor.h"
-#include "MainEditor/UI/MainWindow.h"
 #include "MainEditor/UI/ArchivePanel.h"
+#include "MainEditor/UI/MainWindow.h"
 #include "UI/SToolBar/SToolBar.h"
 #include "UI/SToolBar/SToolBarButton.h"
-#include "General/UI.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Variables
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 CVAR(Bool, confirm_entry_revert, true, CVAR_SAVE)
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // EntryPanel Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// EntryPanel::EntryPanel
-//
+// -----------------------------------------------------------------------------
 // EntryPanel class constructor
-// ----------------------------------------------------------------------------
-EntryPanel::EntryPanel(wxWindow* parent, string id) :
-	wxPanel(parent, -1),
-	id_{ id }
+// -----------------------------------------------------------------------------
+EntryPanel::EntryPanel(wxWindow* parent, string_view id) : wxPanel(parent, -1), id_{ id.data(), id.size() }
 {
-	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	auto sizer = new wxBoxSizer(wxVERTICAL);
 	SetSizer(sizer);
 
 	// Create & set sizer & border
-	frame_ = new wxStaticBox(this, -1, "Entry Contents");
-	wxStaticBoxSizer* framesizer = new wxStaticBoxSizer(frame_, wxVERTICAL);
+	frame_          = new wxStaticBox(this, -1, "Entry Contents");
+	auto framesizer = new wxStaticBoxSizer(frame_, wxVERTICAL);
 	sizer->Add(framesizer, 1, wxEXPAND | wxALL, UI::pad());
-	Show(false);
+	wxPanel::Show(false);
 
 	// Add toolbar
 	toolbar_ = new SToolBar(this);
@@ -81,14 +77,14 @@ EntryPanel::EntryPanel(wxWindow* parent, string id) :
 
 	// Default entry toolbar group
 	SToolBarGroup* tb_group = new SToolBarGroup(toolbar_, "Entry");
-	stb_save_ = tb_group->addActionButton("save", "Save", "save", "Save any changes made to the entry", true);
+	stb_save_   = tb_group->addActionButton("save", "Save", "save", "Save any changes made to the entry", true);
 	stb_revert_ = tb_group->addActionButton("revert", "Revert", "revert", "Revert any changes made to the entry", true);
 	toolbar_->addGroup(tb_group);
 	toolbar_->enableGroup("Entry", false);
 
 	// Setup sizer positions
 	sizer_bottom_ = new wxBoxSizer(wxHORIZONTAL);
-	sizer_main_ = new wxBoxSizer(wxVERTICAL);
+	sizer_main_   = new wxBoxSizer(wxVERTICAL);
 	framesizer->Add(sizer_main_, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, UI::pad());
 	framesizer->Add(sizer_bottom_, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, UI::pad());
 
@@ -96,21 +92,17 @@ EntryPanel::EntryPanel(wxWindow* parent, string id) :
 	Bind(wxEVT_STOOLBAR_BUTTON_CLICKED, &EntryPanel::onToolbarButton, this, toolbar_->GetId());
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::~EntryPanel
-//
+// -----------------------------------------------------------------------------
 // EntryPanel class destructor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 EntryPanel::~EntryPanel()
 {
 	removeCustomMenu();
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::setModified
-//
+// -----------------------------------------------------------------------------
 // Sets the modified flag. If the entry is locked modified will always be false
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::setModified(bool c)
 {
 	if (!entry_)
@@ -133,11 +125,9 @@ void EntryPanel::setModified(bool c)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::openEntry
-//
+// -----------------------------------------------------------------------------
 // 'Opens' the given entry (sets the frame label then loads it)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool EntryPanel::openEntry(ArchiveEntry* entry)
 {
 	// Check entry was given
@@ -153,7 +143,7 @@ bool EntryPanel::openEntry(ArchiveEntry* entry)
 
 	// Copy current entry content
 	entry_data_.clear();
-	entry_data_.importMem(entry->getData(true), entry->getSize());
+	entry_data_.importMem(entry->dataRaw(true), entry->size());
 
 	// Load the entry
 	if (loadEntry(entry))
@@ -172,36 +162,30 @@ bool EntryPanel::openEntry(ArchiveEntry* entry)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::loadEntry
-//
+// -----------------------------------------------------------------------------
 // Loads an entry into the entry panel (does nothing here, to be overridden by
 // child classes)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool EntryPanel::loadEntry(ArchiveEntry* entry)
 {
 	Global::error = "Cannot open an entry with the base EntryPanel class";
 	return false;
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::saveEntry
-//
-// Saves the entrypanel content to the entry (does nothing here, to be
-// overridden by child classes)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Saves the entrypanel content to the entry
+// (does nothing here, to be overridden by child classes)
+// -----------------------------------------------------------------------------
 bool EntryPanel::saveEntry()
 {
 	Global::error = "Cannot save an entry with the base EntryPanel class";
 	return false;
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::revertEntry
-//
+// -----------------------------------------------------------------------------
 // Reverts any changes made to the entry since it was loaded into the editor.
 // Returns false if no changes have been made or if the entry data wasn't saved
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool EntryPanel::revertEntry(bool confirm)
 {
 	if (modified_ && entry_data_.hasData())
@@ -210,12 +194,16 @@ bool EntryPanel::revertEntry(bool confirm)
 
 		// Prompt to revert if configured to
 		if (confirm_entry_revert && confirm)
-			if (wxMessageBox("Are you sure you want to revert changes made to the entry?", "Revert Changes", wxICON_QUESTION | wxYES_NO) == wxNO)
+			if (wxMessageBox(
+					"Are you sure you want to revert changes made to the entry?",
+					"Revert Changes",
+					wxICON_QUESTION | wxYES_NO)
+				== wxNO)
 				ok = false;
 
 		if (ok)
 		{
-			uint8_t state = entry_->getState();
+			uint8_t state = entry_->state();
 			entry_->importMemChunk(entry_data_);
 			entry_->setState(state);
 			EntryType::detectEntryType(entry_);
@@ -228,33 +216,27 @@ bool EntryPanel::revertEntry(bool confirm)
 	return false;
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::refreshPanel
-//
+// -----------------------------------------------------------------------------
 // Redraws the panel
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::refreshPanel()
 {
 	Update();
 	Refresh();
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::closeEntry
-//
+// -----------------------------------------------------------------------------
 // 'Closes' the current entry - clean up, save extra info, etc
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::closeEntry()
 {
 	entry_data_.clear();
 	this->entry_ = nullptr;
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::updateStatus
-//
+// -----------------------------------------------------------------------------
 // Updates the main window status bar with info about the current entry
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::updateStatus()
 {
 	// Basic info
@@ -262,11 +244,10 @@ void EntryPanel::updateStatus()
 	{
 		string text = S_FMT(
 			"%d: %s, %d bytes, %s",
-			entry_->getParentDir()->entryIndex(entry_),
-			entry_->getName(),
-			entry_->getSize(),
-			entry_->getType()->name()
-		);
+			entry_->parentDir()->entryIndex(entry_),
+			entry_->name(),
+			entry_->size(),
+			entry_->type()->name());
 
 		theMainWindow->CallAfter(&MainWindow::SetStatusText, text, 1);
 	}
@@ -277,45 +258,37 @@ void EntryPanel::updateStatus()
 	theMainWindow->CallAfter(&MainWindow::SetStatusText, statusString(), 2);
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::addCustomMenu
-//
+// -----------------------------------------------------------------------------
 // Adds this EntryPanel's custom menu to the main window menubar (if it exists)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::addCustomMenu()
 {
 	if (menu_custom_)
 		theMainWindow->addCustomMenu(menu_custom_, custom_menu_name_);
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::removeCustomMenu
-//
+// -----------------------------------------------------------------------------
 // Removes this EntryPanel's custom menu from the main window menubar
-// ----------------------------------------------------------------------------
-void EntryPanel::removeCustomMenu()
+// -----------------------------------------------------------------------------
+void EntryPanel::removeCustomMenu() const
 {
 	theMainWindow->removeCustomMenu(menu_custom_);
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::isActivePanel
-//
+// -----------------------------------------------------------------------------
 // Returns true if the entry panel is the Archive Manager Panel's current area.
 // This is needed because the wx function IsShown() is not enough, it will
 // return true if the panel is shown on any tab, even if it is not on the one
 // that is selected...
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool EntryPanel::isActivePanel()
 {
 	return (IsShown() && MainEditor::currentEntryPanel() == this);
 }
 
-// ----------------------------------------------------------------------------
-// EntryPanel::updateToolbar
-//
+// -----------------------------------------------------------------------------
 // Updates the toolbar layout
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::updateToolbar()
 {
 	toolbar_->updateLayout(true);
@@ -323,21 +296,19 @@ void EntryPanel::updateToolbar()
 }
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // EntryPanel Class Events
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// EntryPanel::onToolbarButton
-//
+// -----------------------------------------------------------------------------
 // Called when a button on the toolbar is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void EntryPanel::onToolbarButton(wxCommandEvent& e)
 {
-	string button = e.GetString();
+	auto button = e.GetString();
 
 	// Save
 	if (button == "save")
@@ -366,5 +337,5 @@ void EntryPanel::onToolbarButton(wxCommandEvent& e)
 		revertEntry();
 
 	else
-		toolbarButtonClick(button);
+		toolbarButtonClick(button.To8BitData().data());
 }

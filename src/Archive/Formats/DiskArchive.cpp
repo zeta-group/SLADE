@@ -1,76 +1,65 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    DiskArchive.cpp
- * Description: DiskArchive, archive class to handle Nerve files
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
-
-/*******************************************************************
- * Note: specifications and snippets of code were taken from the
- * Eternity Engine, by James Haley (a.k.a. Quasar).
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    DiskArchive.cpp
+// Description: DiskArchive, archive class to handle Nerve files
+//
+// Note: specifications and snippets of code were taken from the
+// Eternity Engine, by James Haley (a.k.a. Quasar).
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "DiskArchive.h"
 #include "General/UI.h"
+#include "TextEditor/TextStyle.h"
 
 
-/*******************************************************************
- * EXTERNAL VARIABLES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// External Variables
+//
+// -----------------------------------------------------------------------------
 EXTERN_CVAR(Bool, archive_load_data)
 
 
-/*******************************************************************
- * DISKARCHIVE CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// DiskArchive Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* DiskArchive::DiskArchive
- * DiskArchive class constructor
- *******************************************************************/
-DiskArchive::DiskArchive() : Archive("disk")
-{
-	//desc.max_name_length = 64;
-	//desc.names_extensions = true;
-	//desc.supports_dirs = true;
-}
 
-/* DiskArchive::~DiskArchive
- * DiskArchive class destructor
- *******************************************************************/
-DiskArchive::~DiskArchive()
-{
-}
-
-/* DiskArchive::open
- * Reads disk format data from a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Reads disk format data from a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool DiskArchive::open(MemChunk& mc)
 {
-	size_t mcsize = mc.getSize();
+	size_t mcsize = mc.size();
 
 	// Check given data is valid
 	if (mcsize < 80)
@@ -98,7 +87,7 @@ bool DiskArchive::open(MemChunk& mc)
 		UI::setSplashProgress(((float)d / (float)num_entries));
 
 		// Read entry info
-		DiskEntry dent;
+		DiskEntry dent{};
 		mc.read(&dent, 72);
 
 		// Byteswap if needed
@@ -118,16 +107,16 @@ bool DiskArchive::open(MemChunk& mc)
 		}
 
 		// Parse name
-		string name = wxString::FromAscii(dent.name, 64);
-		name.Replace("\\", "/");
-		name.Replace("GAME:/", "");
+		string name{ dent.name, 64 };
+		std::replace(name.begin(), name.end(), '\\', '/');
+		StrUtil::replaceIP(name, "GAME:/", "");
 		wxFileName fn(name);
 
 		// Create directory if needed
-		ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX));
+		ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
 
 		// Create entry
-		ArchiveEntry* entry = new ArchiveEntry(fn.GetFullName(), dent.length);
+		ArchiveEntry* entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), dent.length);
 		entry->exProp("Offset") = (int)dent.offset;
 		entry->setLoaded(false);
 		entry->setState(0);
@@ -137,7 +126,7 @@ bool DiskArchive::open(MemChunk& mc)
 	}
 
 	// Detect all entry types
-	MemChunk edata;
+	MemChunk              edata;
 	vector<ArchiveEntry*> all_entries;
 	getEntryTreeAsList(all_entries);
 	UI::setSplashProgressMessage("Detecting entry types");
@@ -150,10 +139,10 @@ bool DiskArchive::open(MemChunk& mc)
 		ArchiveEntry* entry = all_entries[a];
 
 		// Read entry data if it isn't zero-sized
-		if (entry->getSize() > 0)
+		if (entry->size() > 0)
 		{
 			// Read the entry data
-			mc.exportMemChunk(edata, (int)entry->exProp("Offset"), entry->getSize());
+			mc.exportMemChunk(edata, (int)entry->exProp("Offset"), entry->size());
 			entry->importMemChunk(edata);
 		}
 
@@ -178,10 +167,10 @@ bool DiskArchive::open(MemChunk& mc)
 	return true;
 }
 
-/* DiskArchive::write
- * Writes the disk archive to a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Writes the disk archive to a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool DiskArchive::write(MemChunk& mc, bool update)
 {
 	// Clear current data
@@ -192,22 +181,22 @@ bool DiskArchive::write(MemChunk& mc, bool update)
 	getEntryTreeAsList(entries);
 
 	// Process entry list
-	uint32_t num_entries = 0;
+	uint32_t num_entries  = 0;
 	uint32_t size_entries = 0;
-	for (unsigned a = 0; a < entries.size(); a++)
+	for (auto& entry : entries)
 	{
 		// Ignore folder entries
-		if (entries[a]->getType() == EntryType::folderType())
+		if (entry->type() == EntryType::folderType())
 			continue;
 
 		// Increment directory offset and size
-		size_entries += entries[a]->getSize();
+		size_entries += entry->size();
 		++num_entries;
 	}
 
 	// Init data size
 	uint32_t start_offset = 8 + (num_entries * 72);
-	uint32_t offset = start_offset;
+	uint32_t offset       = start_offset;
 	mc.reSize(size_entries + start_offset, false);
 
 	// Write header
@@ -216,50 +205,50 @@ bool DiskArchive::write(MemChunk& mc, bool update)
 	mc.write(&num_entries, 4);
 
 	// Write directory
-	for (unsigned a = 0; a < entries.size(); a++)
+	for (auto& entry : entries)
 	{
 		// Skip folders
-		if (entries[a]->getType() == EntryType::folderType())
+		if (entry->type() == EntryType::folderType())
 			continue;
 
 		// Update entry
 		if (update)
 		{
-			entries[a]->setState(0);
-			entries[a]->exProp("Offset") = (int)offset;
+			entry->setState(0);
+			entry->exProp("Offset") = (int)offset;
 		}
 
 		// Check entry name
-		string name = entries[a]->getPath(true);
-		name.Replace("/", "\\");
+		string name = entry->path(true);
+		std::replace(name.begin(), name.end(), '/', '\\');
 		// The leading "GAME:\" part of the name means there is only 58 usable characters for path
-		if (name.Len() > 58)
+		if (name.size() > 58)
 		{
-			LOG_MESSAGE(1, "Warning: Entry %s path is too long (> 58 characters), putting it in the root directory", name);
+			LOG_MESSAGE(
+				1, "Warning: Entry %s path is too long (> 58 characters), putting it in the root directory", name);
 			wxFileName fn(name);
 			name = fn.GetFullName();
-			if (name.Len() > 57)
-				name.Truncate(57);
+			if (name.size() > 57)
+				name.resize(57);
 			// Add leading "\"
-			name = "\\" + name;
-
+			name.insert(0, 1, '\\');
 		}
-		name = "GAME:" + name;
+		name.insert(0, "GAME:");
 
-		DiskEntry dent;
+		DiskEntry dent{};
 
 		// Write entry name
 		// The names field are padded with FD for doom.disk, FE for doom2.disk. No idea whether
 		// a non-null padding is actually required, though. It probably should work with anything.
 		memset(dent.name, 0xFE, 64);
-		memcpy(dent.name, CHR(name), name.Length());
-		dent.name[name.Length()] = 0;
+		memcpy(dent.name, name.c_str(), name.size());
+		dent.name[name.size()] = 0;
 
 		// Write entry offset
 		dent.offset = wxUINT32_SWAP_ON_LE(offset - start_offset);
 
 		// Write entry size
-		dent.length = wxUINT32_SWAP_ON_LE(entries[a]->getSize());
+		dent.length = wxUINT32_SWAP_ON_LE(entry->size());
 
 		// Actually write stuff
 		mc.write(&dent, 72);
@@ -273,23 +262,23 @@ bool DiskArchive::write(MemChunk& mc, bool update)
 	mc.write(&size_entries, 4);
 
 	// Write entry data
-	for (unsigned a = 0; a < entries.size(); a++)
+	for (auto& entry : entries)
 	{
 		// Skip folders
-		if (entries[a]->getType() == EntryType::folderType())
+		if (entry->type() == EntryType::folderType())
 			continue;
 
 		// Write data
-		mc.write(entries[a]->getData(), entries[a]->getSize());
+		mc.write(entry->dataRaw(), entry->size());
 	}
 
 	return true;
 }
 
-/* DiskArchive::loadEntryData
- * Loads an entry's data from the disk file
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Loads an entry's data from the disk file
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 {
 	// Check entry is ok
@@ -298,7 +287,7 @@ bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Do nothing if the entry's size is zero,
 	// or if it has already been loaded
-	if (entry->getSize() == 0 || entry->isLoaded())
+	if (entry->size() == 0 || entry->isLoaded())
 	{
 		entry->setLoaded();
 		return true;
@@ -316,7 +305,7 @@ bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Seek to entry offset in file and read it in
 	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->getSize());
+	entry->importFileStream(file, entry->size());
 
 	// Set the lump to loaded
 	entry->setLoaded();
@@ -324,17 +313,20 @@ bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 	return true;
 }
 
-/*******************************************************************
- * DISKARCHIVE CLASS STATIC FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// DISKARCHIVE CLASS STATIC FUNCTIONS
+//
+// -----------------------------------------------------------------------------
 
-/* DiskArchive::isDiskArchive
- * Checks if the given data is a valid Nerve disk archive
- *******************************************************************/
+
+// -----------------------------------------------------------------------------
+// Checks if the given data is a valid Nerve disk archive
+// -----------------------------------------------------------------------------
 bool DiskArchive::isDiskArchive(MemChunk& mc)
 {
 	// Check given data is valid
-	size_t mcsize = mc.getSize();
+	size_t mcsize = mc.size();
 	if (mcsize < 80)
 		return false;
 
@@ -354,7 +346,7 @@ bool DiskArchive::isDiskArchive(MemChunk& mc)
 	for (uint32_t d = 0; d < num_entries; d++)
 	{
 		// Read entry info
-		DiskEntry entry;
+		DiskEntry entry{};
 		mc.read(&entry, 72);
 
 		// Byteswap if needed
@@ -377,13 +369,13 @@ bool DiskArchive::isDiskArchive(MemChunk& mc)
 	return true;
 }
 
-/* DiskArchive::isDiskArchive
- * Checks if the file at [filename] is a valid Quake disk archive
- *******************************************************************/
-bool DiskArchive::isDiskArchive(string filename)
+// -----------------------------------------------------------------------------
+// Checks if the file at [filename] is a valid Quake disk archive
+// -----------------------------------------------------------------------------
+bool DiskArchive::isDiskArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename);
+	wxFile file(filename.data());
 
 	// Check it opened ok
 	if (!file.IsOpened() || file.Length() < 4)
@@ -409,7 +401,7 @@ bool DiskArchive::isDiskArchive(string filename)
 	for (uint32_t d = 0; d < num_entries; d++)
 	{
 		// Read entry info
-		DiskEntry entry;
+		DiskEntry entry{};
 		file.Read(&entry, 72);
 
 		// Byteswap if needed

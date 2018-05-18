@@ -11,28 +11,27 @@ class BaseResourceArchivesPanel : public PrefsPanelBase
 {
 public:
 	BaseResourceArchivesPanel(wxWindow* parent);
-	~BaseResourceArchivesPanel();
+	~BaseResourceArchivesPanel() = default;
 
-	int		selectedPathIndex();
-	void	autodetect();
+	int  selectedPathIndex() const;
+	void autodetect() const;
 
-	void	init() override;
-	void	applyPreferences() override;
-	string	pageTitle() override { return "Base Resource Archive"; }
-	//string	pageDescription() override;
+	void   init() override;
+	void   applyPreferences() override;
+	string pageTitle() override { return "Base Resource Archive"; }
 
 private:
-	wxListBox*			list_base_archive_paths_;
-	wxButton*			btn_add_;
-	wxButton*			btn_remove_;
-	wxButton*			btn_detect_;
-	FileLocationPanel*	flp_zdoom_pk3_;
+	wxListBox*         list_base_archive_paths_;
+	wxButton*          btn_add_;
+	wxButton*          btn_remove_;
+	wxButton*          btn_detect_;
+	FileLocationPanel* flp_zdoom_pk3_;
 
-	void	setupLayout();
+	void setupLayout();
 
 	// Events
-	void	onBtnAdd(wxCommandEvent& e);
-	void	onBtnRemove(wxCommandEvent& e);
-	void	onBtnDetect(wxCommandEvent& e);
-	void	onBtnBrowseZDoomPk3(wxCommandEvent& e);
+	void onBtnAdd(wxCommandEvent& e);
+	void onBtnRemove(wxCommandEvent& e);
+	void onBtnDetect(wxCommandEvent& e);
+	void onBtnBrowseZDoomPk3(wxCommandEvent& e);
 };

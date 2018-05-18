@@ -1,6 +1,4 @@
-
-#ifndef __MISC_H__
-#define	__MISC_H__
+#pragma once
 
 enum
 {
@@ -22,45 +20,44 @@ class Archive;
 class ArchiveEntry;
 class Palette;
 class Tokenizer;
+
 namespace Misc
 {
-	bool		loadImageFromEntry(SImage* image, ArchiveEntry* entry, int index = 0);
-	int			detectPaletteHack(ArchiveEntry* entry);
-	bool		loadPaletteFromArchive(Palette* pal, Archive* archive, int lump = PAL_NOHACK);
-	string		sizeAsString(uint32_t size);
-	string		lumpNameToFileName(string lump);
-	string		fileNameToLumpName(string file);
-	uint32_t	crc(const uint8_t* buf, uint32_t len);
-	hsl_t		rgbToHsl(double r, double g, double b);
-	rgba_t		hslToRgb(double h, double s, double t);
-	lab_t		rgbToLab(double r, double g, double b);
-	hsl_t		rgbToHsl(rgba_t rgba);
-	rgba_t		hslToRgb(hsl_t hsl);
-	lab_t		rgbToLab(rgba_t);
-	point2_t	findJaguarTextureDimensions(ArchiveEntry* entry, string name);
+bool     loadImageFromEntry(SImage* image, ArchiveEntry* entry, int index = 0);
+int      detectPaletteHack(ArchiveEntry* entry);
+bool     loadPaletteFromArchive(Palette* pal, Archive* archive, int lump = PAL_NOHACK);
+string   sizeAsString(uint32_t size);
+void     lumpNameToFileName(string& lump);
+string   fileNameToLumpName(string_view file);
+uint32_t crc(const uint8_t* buf, uint32_t len);
+ColHSL    rgbToHsl(double r, double g, double b);
+ColRGBA   hslToRgb(double h, double s, double t);
+ColLAB    rgbToLab(double r, double g, double b);
+ColHSL    rgbToHsl(ColRGBA rgba);
+ColRGBA   hslToRgb(ColHSL hsl);
+ColLAB    rgbToLab(ColRGBA);
+point2_t findJaguarTextureDimensions(ArchiveEntry* entry, string_view name);
 
-	// Mass Rename
-	string	massRenameFilter(wxArrayString& names);
-	void	doMassRename(wxArrayString& names, string name_filter);
+// Mass Rename
+string massRenameFilter(const vector<string>& names);
+void   doMassRename(vector<string>& names, string_view name_filter);
 
-	// Dialog/Window sizes
-	struct winf_t
+// Dialog/Window sizes
+struct WinInfo
+{
+	string id;
+	int    width, height, left, top;
+	WinInfo(string_view id, int w, int h, int l, int t) :
+		id{ id.data(), id.size() },
+		width{ w },
+		height{ h },
+		left{ l },
+		top{ t }
 	{
-		string id;
-		int width, height, left, top;
-		winf_t(string id, int w, int h, int l, int t)
-		{
-			this->id = id;
-			width = w;
-			height = h;
-			left = l;
-			top = t;
-		}
-	};
-	winf_t	getWindowInfo(string id);
-	void	setWindowInfo(string id, int width, int height, int left, int top);
-	void	readWindowInfo(Tokenizer& tz);
-	void	writeWindowInfo(wxFile& file);
-}
-
-#endif //__MISC_H__
+	}
+};
+WinInfo getWindowInfo(string_view id);
+void    setWindowInfo(string_view id, int width, int height, int left, int top);
+void    readWindowInfo(Tokenizer& tz);
+void    writeWindowInfo(wxFile& file);
+} // namespace Misc

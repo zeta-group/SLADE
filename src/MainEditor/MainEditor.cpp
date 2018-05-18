@@ -1,16 +1,16 @@
 
 #include "Main.h"
-#include "Archive/ArchiveManager.h"
 #include "MainEditor.h"
-#include "UI/MainWindow.h"
+#include "Archive/ArchiveManager.h"
+#include "MapEditor/MapEditor.h"
 #include "MapEditor/UI/MapEditorWindow.h"
 #include "UI/ArchiveManagerPanel.h"
 #include "UI/Controls/PaletteChooser.h"
-#include "MapEditor/MapEditor.h"
+#include "UI/MainWindow.h"
 
 namespace MainEditor
 {
-	MainWindow*	main_window = nullptr;
+MainWindow* main_window = nullptr;
 }
 
 bool MainEditor::init()
@@ -29,44 +29,41 @@ wxWindow* MainEditor::windowWx()
 	return main_window;
 }
 
-/* MainWindow::getCurrentArchive
- * Returns the currently open archive (ie the current tab's archive,
- * if any)
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns the currently open archive (ie the current tab's archive, if any)
+// -----------------------------------------------------------------------------
 Archive* MainEditor::currentArchive()
 {
-	return main_window->getArchiveManagerPanel()->currentArchive();
+	return main_window->archiveManagerPanel()->currentArchive();
 }
 
-/* MainWindow::getCurrentEntry
- * Returns the currently open entry (current tab -> current entry
- * panel)
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns the currently open entry (current tab -> current entry panel)
+// -----------------------------------------------------------------------------
 ArchiveEntry* MainEditor::currentEntry()
 {
-	return main_window->getArchiveManagerPanel()->currentEntry();
+	return main_window->archiveManagerPanel()->currentEntry();
 }
 
-/* MainWindow::getCurrentEntrySelection
- * Returns a list of all currently selected entries, in the current
- * archive panel
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns a list of all currently selected entries in the current archive panel
+// -----------------------------------------------------------------------------
 vector<ArchiveEntry*> MainEditor::currentEntrySelection()
 {
-	return main_window->getArchiveManagerPanel()->currentEntrySelection();
+	return main_window->archiveManagerPanel()->currentEntrySelection();
 }
 
-/* MainWindow::openTextureEditor
- * Opens the texture editor for the current archive tab
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Opens the texture editor for the current archive tab
+// -----------------------------------------------------------------------------
 void MainEditor::openTextureEditor(Archive* archive, ArchiveEntry* entry)
 {
-	main_window->getArchiveManagerPanel()->openTextureTab(App::archiveManager().archiveIndex(archive), entry);
+	main_window->archiveManagerPanel()->openTextureTab(App::archiveManager().archiveIndex(archive), entry);
 }
 
-/* MainWindow::openMapEditor
- * Opens the map editor for the current archive tab
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Opens the map editor for the current archive tab
+// -----------------------------------------------------------------------------
 void MainEditor::openMapEditor(Archive* archive)
 {
 	MapEditor::chooseMap(archive);
@@ -74,33 +71,34 @@ void MainEditor::openMapEditor(Archive* archive)
 
 void ::MainEditor::openArchiveTab(Archive* archive)
 {
-	main_window->getArchiveManagerPanel()->openTab(archive);
+	main_window->archiveManagerPanel()->openTab(archive);
 }
 
-/* MainWindow::openEntry
- * Opens [entry] in its own tab
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Opens [entry] in its own tab
+// -----------------------------------------------------------------------------
 void MainEditor::openEntry(ArchiveEntry* entry)
 {
-	main_window->getArchiveManagerPanel()->openEntryTab(entry);
+	main_window->archiveManagerPanel()->openEntryTab(entry);
 }
 
-void MainEditor::setGlobalPaletteFromArchive(Archive * archive)
+void MainEditor::setGlobalPaletteFromArchive(Archive* archive)
 {
-	main_window->getPaletteChooser()->setGlobalFromArchive(archive);
+	main_window->paletteChooser()->setGlobalFromArchive(archive);
 }
 
 Palette* MainEditor::currentPalette(ArchiveEntry* entry)
 {
-	return main_window->getPaletteChooser()->getSelectedPalette(entry);
+	return main_window->paletteChooser()->selectedPalette(entry);
 }
 
 EntryPanel* MainEditor::currentEntryPanel()
 {
-	return main_window->getArchiveManagerPanel()->currentArea();
+	return main_window->archiveManagerPanel()->currentArea();
 }
+
 #ifdef USE_WEBVIEW_STARTPAGE
-void MainEditor::openDocs(string page_name)
+void MainEditor::openDocs(string_view page_name)
 {
 	main_window->openDocs(page_name);
 }

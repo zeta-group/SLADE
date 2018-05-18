@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,52 +15,54 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "SpecialPresetDialog.h"
+#include "Dialogs/Preferences/InputPrefsPanel.h"
 #include "Game/Configuration.h"
 #include "UI/WxUtils.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Helper Classes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 namespace
 {
-	class SpecialPresetData : public wxClientData
-	{
-	public:
-		SpecialPresetData(const Game::SpecialPreset& preset) : preset_{ preset } {}
+class SpecialPresetData : public wxClientData
+{
+public:
+	SpecialPresetData(const Game::SpecialPreset& preset) : preset_{ preset } {}
 
-		const Game::SpecialPreset& preset() const { return preset_; }
+	const Game::SpecialPreset& preset() const { return preset_; }
 
-	private:
-		Game::SpecialPreset const&	preset_;
-	};
-}
+private:
+	Game::SpecialPreset const& preset_;
+};
+} // namespace
 
-// ----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
 // SpecialPresetTreeView Class
 //
 // A wxDataViewTreeCtrl specialisation showing the special presets and groups
 // in a tree structure
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 class SpecialPresetTreeView : public wxDataViewTreeCtrl
 {
 public:
@@ -76,14 +78,13 @@ public:
 		wxSize textsize;
 
 		// Populate tree
-		addPresets(Game::customSpecialPresets(), textsize, dc);				// User custom presets
-		addPresets(Game::configuration().specialPresets(), textsize, dc);	// From game configuration
+		addPresets(Game::customSpecialPresets(), textsize, dc);           // User custom presets
+		addPresets(Game::configuration().specialPresets(), textsize, dc); // From game configuration
 		wxDataViewCtrl::Expand(root_);
 
 		// Bind events
 		Bind(wxEVT_DATAVIEW_ITEM_START_EDITING, [&](wxDataViewEvent& e) { e.Veto(); });
-		Bind(wxEVT_DATAVIEW_ITEM_ACTIVATED, [&](wxDataViewEvent& e)
-		{
+		Bind(wxEVT_DATAVIEW_ITEM_ACTIVATED, [&](wxDataViewEvent& e) {
 			if (GetChildCount(e.GetItem()) > 0)
 			{
 				// Expand if group node
@@ -110,42 +111,38 @@ public:
 		return {};
 	}
 
-	void setParentDialog(wxDialog* dlg)
-	{
-		parent_dialog_ = dlg;
-	}
+	void setParentDialog(wxDialog* dlg) { parent_dialog_ = dlg; }
 
 private:
-	wxDataViewItem	root_;
-	wxDialog*		parent_dialog_;
+	wxDataViewItem root_;
+	wxDialog*      parent_dialog_;
 
 	struct Group
 	{
-		string			name;
-		wxDataViewItem	item;
-		Group(wxDataViewItem item, string name) : name{ name }, item{ item } {}
+		string         name;
+		wxDataViewItem item;
+		Group(wxDataViewItem item, string_view name) : name{ name.data(), name.size() }, item{ item } {}
 	};
 	vector<Group> groups_;
 
-	wxDataViewItem getGroup(string group)
+	wxDataViewItem getGroup(string_view group)
 	{
 		// Check if group was already made
-		for (unsigned a = 0; a < groups_.size(); a++)
-		{
-			if (group == groups_[a].name)
-				return groups_[a].item;
-		}
+		for (auto& g : groups_)
+			if (group == g.name)
+				return g.item;
 
 		// Split group into subgroups
-		auto path = wxSplit(group, '/');
+		auto path = StrUtil::splitToViews(group, '/');
 
 		// Create group needed
-		auto current = root_;
-		string fullpath = "";
+		auto   current = root_;
+		string fullpath;
 		for (unsigned p = 0; p < path.size(); p++)
 		{
-			if (p > 0) fullpath += "/";
-			fullpath += path[p];
+			if (p > 0)
+				fullpath += "/";
+			fullpath.append(path[p].data(), path[p].size());
 
 			bool found = false;
 			for (unsigned a = 0; a < groups_.size(); a++)
@@ -153,15 +150,15 @@ private:
 				if (groups_[a].name == fullpath)
 				{
 					current = groups_[a].item;
-					found = true;
+					found   = true;
 					break;
 				}
 			}
 
 			if (!found)
 			{
-				current = AppendContainer(current, path[p], -1, 1);
-				groups_.push_back({ current, fullpath });
+				current = AppendContainer(current, WxUtils::stringFromView(path[p]), -1, 1);
+				groups_.emplace_back(current, fullpath);
 			}
 		}
 
@@ -180,18 +177,16 @@ private:
 };
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // SpecialPresetDialog Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// SpecialPresetDialog::SpecialPresetDialog
-//
+// -----------------------------------------------------------------------------
 // SpecialPresetDialog class constructor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 SpecialPresetDialog::SpecialPresetDialog(wxWindow* parent) :
 	SDialog{ parent, "Special Presets", "special_presets" },
 	tree_presets_{ nullptr }
@@ -218,11 +213,9 @@ SpecialPresetDialog::SpecialPresetDialog(wxWindow* parent) :
 	btn_cancel->Bind(wxEVT_BUTTON, [&](wxCommandEvent& e) { EndModal(wxID_CANCEL); });
 }
 
-// ----------------------------------------------------------------------------
-// SpecialPresetDialog::selectedPreset
-//
+// -----------------------------------------------------------------------------
 // Returns the currently selected special preset
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 Game::SpecialPreset SpecialPresetDialog::selectedPreset() const
 {
 	return tree_presets_->selectedPreset();

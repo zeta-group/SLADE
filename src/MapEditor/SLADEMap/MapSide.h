@@ -1,75 +1,81 @@
-
-#ifndef __MAPSIDE_H__
-#define __MAPSIDE_H__
+#pragma once
 
 #include "MapObject.h"
 
 class MapSector;
 class MapLine;
 
-struct doomside_t
-{
-	short	x_offset;
-	short	y_offset;
-	char	tex_upper[8];
-	char	tex_lower[8];
-	char	tex_middle[8];
-	short	sector;
-};
-
-struct doom64side_t
-{
-	short		x_offset;
-	short		y_offset;
-	uint16_t	tex_upper;
-	uint16_t	tex_lower;
-	uint16_t	tex_middle;
-	short		sector;
-};
-
 class MapSide : public MapObject
 {
 	friend class SLADEMap;
 	friend class MapLine;
+
 public:
+	struct DoomData
+	{
+		short x_offset;
+		short y_offset;
+		char  tex_upper[8];
+		char  tex_lower[8];
+		char  tex_middle[8];
+		short sector;
+	};
+
+	struct Doom64Data
+	{
+		short    x_offset;
+		short    y_offset;
+		uint16_t tex_upper;
+		uint16_t tex_lower;
+		uint16_t tex_middle;
+		short    sector;
+	};
+
+	// UDMF properties
+	static const string PROP_SECTOR;
+	static const string PROP_OFFSET_X;
+	static const string PROP_OFFSET_Y;
+	static const string PROP_TEX_UPPER;
+	static const string PROP_TEX_MIDDLE;
+	static const string PROP_TEX_LOWER;
+	static const string PROP_LIGHT;
+	static const string PROP_LIGHT_ABSOLUTE;
+
 	MapSide(MapSector* sector = nullptr, SLADEMap* parent = nullptr);
-	MapSide(SLADEMap* parent);
-	~MapSide();
+	MapSide(SLADEMap* parent) : MapObject{ Type::Side, parent } {}
+	~MapSide() = default;
 
-	void	copy(MapObject* c) override;
+	void copy(MapObject* c) override;
 
-	bool	isOk() const { return !!sector; }
+	bool isOk() const { return !!sector_; }
 
-	MapSector*	getSector() const { return sector; }
-	MapLine*	getParentLine() const { return parent; }
-	string		getTexUpper() const { return tex_upper; }
-	string		getTexMiddle() const { return tex_middle; }
-	string		getTexLower() const { return tex_lower; }
-	short		getOffsetX() const { return offset_x; }
-	short		getOffsetY() const { return offset_y; }
-	uint8_t		getLight();
+	MapSector* sector() const { return sector_; }
+	MapLine*   parentLine() const { return parent_; }
+	string     texUpper() const { return tex_upper_; }
+	string     texMiddle() const { return tex_middle_; }
+	string     texLower() const { return tex_lower_; }
+	int        offsetX() const { return offset_.x; }
+	int        offsetY() const { return offset_.y; }
+	uint8_t    light();
 
-	void	setSector(MapSector* sector);
-	void	changeLight(int amount);
+	void setSector(MapSector* sector);
+	void changeLight(int amount);
 
-	int		intProperty(const string& key) override;
-	void	setIntProperty(const string& key, int value) override;
-	string	stringProperty(const string& key) override;
-	void	setStringProperty(const string& key, const string& value) override;
-	bool	scriptCanModifyProp(const string& key) override;
+	int    intProperty(const string& key) override;
+	void   setIntProperty(const string& key, int value) override;
+	string stringProperty(const string& key) override;
+	void   setStringProperty(const string& key, const string& value) override;
+	bool   scriptCanModifyProp(const string& key) override;
 
-	void	writeBackup(mobj_backup_t* backup) override;
-	void	readBackup(mobj_backup_t* backup) override;
+	void writeBackup(Backup* backup) override;
+	void readBackup(Backup* backup) override;
 
 private:
 	// Basic data
-	MapSector*	sector;
-	MapLine*	parent;
-	string		tex_upper;
-	string		tex_middle;
-	string		tex_lower;
-	short		offset_x;
-	short		offset_y;
+	MapSector* sector_ = nullptr;
+	MapLine*   parent_ = nullptr;
+	string     tex_upper_;
+	string     tex_middle_;
+	string     tex_lower_;
+	Vec2<int>  offset_;
 };
-
-#endif //__MAPSIDE_H__

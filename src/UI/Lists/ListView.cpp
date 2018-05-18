@@ -1,78 +1,87 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    ListView.cpp
- * Description: An extended version of the default wxListCtrl, in
- *              'report' mode. Provides various commonly used
- *              functionality that doesn't exist in wxListCtrl by
- *              default: selection stuff, basic item addition,
- *              swapping, and setting item colours to various program
- *              defaults ('new', 'modified', etc).
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    ListView.cpp
+// Description: An extended version of the default wxListCtrl, in 'report' mode.
+//              Provides various commonly used functionality that doesn't exist
+//              in wxListCtrl by default: selection stuff, basic item addition,
+//              swapping, and setting item colours to various program defaults
+//              ('new', 'modified', etc).
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ListView.h"
 #include "General/ColourConfiguration.h"
-#include "common.h"
+#include "ListView.h"
+#include "UI/WxUtils.h"
 
 
-/*******************************************************************
- * LISTVIEW CLASS FUNCTIONS
- *******************************************************************/
-
-/* ListView::ListView
- * ListView class constructor
- *******************************************************************/
-ListView::ListView(wxWindow* parent, int id, long style)
-	: wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize, style)
+// -----------------------------------------------------------------------------
+//
+// Functions
+//
+// -----------------------------------------------------------------------------
+namespace
 {
-	icons = true;
-	update_width = true;
-}
-
-/* ListView::~ListView
- * ListView class destructor
- *******************************************************************/
-ListView::~ListView()
+ColRGBA getDisabledColour()
 {
-}
+	wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
+	wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
 
-/* ListView::addItem
- * Adds an item to the list at [index] with [text]
- *******************************************************************/
-bool ListView::addItem(int index, string text)
+	uint8_t red   = fg.Red() * 0.5 + bg.Red() * 0.5;
+	uint8_t green = fg.Green() * 0.5 + bg.Green() * 0.5;
+	uint8_t blue  = fg.Blue() * 0.5 + bg.Blue() * 0.5;
+	return { red, green, blue };
+}
+} // namespace
+
+
+// -----------------------------------------------------------------------------
+//
+// ListView Class Functions
+//
+// -----------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------
+// Adds an item to the list at [index] with [text]
+// -----------------------------------------------------------------------------
+bool ListView::addItem(int index, string_view text)
 {
 	// Check index
-	if (index < 0) index = 0;
-	if (index > GetItemCount()) index = GetItemCount();
+	if (index < 0)
+		index = 0;
+	if (index > GetItemCount())
+		index = GetItemCount();
 
 	// Add the item to the list
 	wxListItem li;
 	li.SetId(index);
 	li.SetColumn(0);
-	li.SetText(text);
+	li.SetText(WxUtils::stringFromView(text));
 	InsertItem(li);
 
 	// Update list size
@@ -81,15 +90,17 @@ bool ListView::addItem(int index, string text)
 	return true;
 }
 
-/* ListView::addItem
- * Adds an item to the list at [index], with [text] in the columns;
- * text[0] goes in column 0, etc
- *******************************************************************/
-bool ListView::addItem(int index, wxArrayString text)
+// -----------------------------------------------------------------------------
+// Adds an item to the list at [index], with [text] in the columns;
+// text[0] goes in column 0, etc
+// -----------------------------------------------------------------------------
+bool ListView::addItem(int index, const vector<string>& text)
 {
 	// Check index
-	if (index < 0) index = 0;
-	if (index > GetItemCount()) index = GetItemCount();
+	if (index < 0)
+		index = 0;
+	if (index > GetItemCount())
+		index = GetItemCount();
 
 	// Add the item to the list
 	wxListItem li;
@@ -106,21 +117,13 @@ bool ListView::addItem(int index, wxArrayString text)
 	return true;
 }
 
-// Compare two integers
-int cmp_int(int* a, int* b)
-{
-	if (*a > *b) return 1;
-	else if (*a < *b) return -1;
-	else return 0;
-}
-
-/* ListView::deleteItems
- * Deletes all items at indices [items]
- *******************************************************************/
-bool ListView::deleteItems(wxArrayInt items)
+// -----------------------------------------------------------------------------
+// Deletes all items at indices [items]
+// -----------------------------------------------------------------------------
+bool ListView::deleteItems(vector<int> items)
 {
 	// Sort items list
-	items.Sort(cmp_int);
+	std::sort(items.begin(), items.end());
 
 	// Go through list backwards and delete each item
 	for (int a = items.size() - 1; a >= 0; a--)
@@ -129,34 +132,24 @@ bool ListView::deleteItems(wxArrayInt items)
 	return true;
 }
 
-rgba_t ListView::getDisabledColour()
-{
-	wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
-	wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
-
-	int red = fg.Red()*0.5 + bg.Red()*0.5;
-	int green = fg.Green()*0.5 + bg.Green()*0.5;
-	int blue = fg.Blue()*0.5 + bg.Blue()*0.5;
-	return rgba_t(red, green, blue);
-}
-
-/* ListView::setItemStatus
- * Sets the 'status' of [item], changing its text colour. Currently
- * there are 5 statuses:
- * LV_STATUS_NORMAL - default colour
- * LV_STATUS_MODIFIED - blue
- * LV_STATUS_NEW - green
- * LV_STATUS_LOCKED - orange
- * LV_STATUS_ERROR - red
- *******************************************************************/
-bool ListView::setItemStatus(int item, int status)
+// -----------------------------------------------------------------------------
+// Sets the 'status' of item [index], changing its text colour.
+// Currently there are 6 statuses:
+// Normal - default colour
+// Modified - blue
+// New - green
+// Locked - orange
+// Error - red
+// Disabled - faded default colour
+// -----------------------------------------------------------------------------
+bool ListView::setItemStatus(int index, ItemStatus status)
 {
 	// Check item id is in range
-	if (item >= GetItemCount())
+	if (index >= GetItemCount())
 		return false;
 
 	// If given a negative item id, set all items in the list to the given status
-	if (item < 0)
+	if (index < 0)
 	{
 		for (int a = 0; a < GetItemCount(); a++)
 			setItemStatus(a, status);
@@ -165,33 +158,24 @@ bool ListView::setItemStatus(int item, int status)
 	}
 
 	// Set item text colour to given status colour
-	switch(status)
+	switch (status)
 	{
-	case LV_STATUS_NORMAL:
-		SetItemTextColour(item, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT));
-		break;
-	case LV_STATUS_MODIFIED:
-		SetItemTextColour(item, WXCOL(ColourConfiguration::getColour("modified")));
-		break;
-	case LV_STATUS_NEW:
-		SetItemTextColour(item, WXCOL(ColourConfiguration::getColour("new")));
-		break;
-	case LV_STATUS_LOCKED:
-		SetItemTextColour(item, WXCOL(ColourConfiguration::getColour("locked")));
-		break;
-	case LV_STATUS_ERROR:
-		SetItemTextColour(item, WXCOL(ColourConfiguration::getColour("error")));
-	case LV_STATUS_DISABLED:
-		SetItemTextColour(item, WXCOL(getDisabledColour()));
+	case ItemStatus::Normal: SetItemTextColour(index, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT)); break;
+	case ItemStatus::Modified: SetItemTextColour(index, WXCOL(ColourConfiguration::colour("modified"))); break;
+	case ItemStatus::New: SetItemTextColour(index, WXCOL(ColourConfiguration::colour("new"))); break;
+	case ItemStatus::Locked: SetItemTextColour(index, WXCOL(ColourConfiguration::colour("locked"))); break;
+	case ItemStatus::Error: SetItemTextColour(index, WXCOL(ColourConfiguration::colour("error")));
+	case ItemStatus::Disabled: SetItemTextColour(index, WXCOL(getDisabledColour()));
+	default: break;
 	}
 
 	return true;
 }
 
-/* ListView::setItemText
- * Sets the text of [item] at [column] to [text]
- *******************************************************************/
-bool ListView::setItemText(int item, int column, string text)
+// -----------------------------------------------------------------------------
+// Sets the text of [item] at [column] to [text]
+// -----------------------------------------------------------------------------
+bool ListView::setItemText(int item, int column, string_view text)
 {
 	// Check if column is in range
 	if (column < 0 || column >= GetColumnCount())
@@ -214,7 +198,7 @@ bool ListView::setItemText(int item, int column, string text)
 	wxListItem li;
 	li.SetId(item);
 	li.SetColumn(column);
-	li.SetText(text);
+	li.SetText(WxUtils::stringFromView(text));
 	SetItem(li);
 
 	// Update widget size
@@ -223,18 +207,18 @@ bool ListView::setItemText(int item, int column, string text)
 	return true;
 }
 
-/* ListView::clearSelection
- * Deselects all list items
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Deselects all list items
+// -----------------------------------------------------------------------------
 void ListView::clearSelection()
 {
 	for (int a = 0; a < GetItemCount(); a++)
-		SetItemState(a, 0x0000, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+		SetItemState(a, 0x0000, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 }
 
-/* ListView::selectItem
- * Selects [item]. Sets the focus to [item] if [focus] is true
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Selects [item]. Sets the focus to [item] if [focus] is true
+// -----------------------------------------------------------------------------
 bool ListView::selectItem(int item, bool focus)
 {
 	// Check item id is in range
@@ -252,16 +236,16 @@ bool ListView::selectItem(int item, bool focus)
 
 	// Select the item (and focus if needed)
 	if (focus)
-		SetItemState(item, 0xFFFF, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+		SetItemState(item, 0xFFFF, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 	else
 		SetItemState(item, 0xFFFF, wxLIST_STATE_SELECTED);
 
 	return true;
 }
 
-/* ListView::deSelectItem
- * Deselects [item]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Deselects [item]
+// -----------------------------------------------------------------------------
 bool ListView::deSelectItem(int item)
 {
 	// Check item id is in range
@@ -281,13 +265,13 @@ bool ListView::deSelectItem(int item)
 	return true;
 }
 
-/* ListView::selectedItems
- * Returns a list with the indices of all selected items
- *******************************************************************/
-wxArrayInt ListView::selectedItems()
+// -----------------------------------------------------------------------------
+// Returns a list with the indices of all selected items
+// -----------------------------------------------------------------------------
+vector<int> ListView::selectedItems() const
 {
 	// Init return array
-	wxArrayInt ret;
+	vector<int> ret;
 
 	// Go through all items
 	long item = -1;
@@ -301,16 +285,16 @@ wxArrayInt ListView::selectedItems()
 			break;
 
 		// Otherwise add the selected index to the vector
-		ret.Add(item);
+		ret.push_back(item);
 	}
 
 	return ret;
 }
 
-/* ListView::showItem
- * Ensures [item] can be seen. If not, the list is scrolled so that
- * it is. (probably not really needed)
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Ensures [item] can be seen. If not, the list is scrolled so that it is.
+// (probably not really needed)
+// -----------------------------------------------------------------------------
 bool ListView::showItem(int item)
 {
 	// Check item id is in range
@@ -322,9 +306,9 @@ bool ListView::showItem(int item)
 	return true;
 }
 
-/* ListView::swapItems
- * Swaps [item1] with [item2]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Swaps [item1] with [item2]
+// -----------------------------------------------------------------------------
 bool ListView::swapItems(int item1, int item2)
 {
 	// Check item id's are in range
@@ -336,41 +320,41 @@ bool ListView::swapItems(int item1, int item2)
 	i1.SetId(item1);
 	i1.SetMask(0xFFFF);
 	GetItem(i1);
-	long state1 = GetItemState(item1, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+	long state1 = GetItemState(item1, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 
 	// Get item 2 info
 	wxListItem i2;
 	i2.SetId(item2);
 	i2.SetMask(0xFFFF);
 	GetItem(i2);
-	long state2 = GetItemState(item2, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+	long state2 = GetItemState(item2, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 
 	// Swap the items
 	i1.SetId(item2);
 	i2.SetId(item1);
 	SetItem(i1);
 	SetItem(i2);
-	SetItemState(item1, state2, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
-	SetItemState(item2, state1, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+	SetItemState(item1, state2, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
+	SetItemState(item2, state1, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 
 	return true;
 }
 
-/* ListView::updateSize
- * As the default wxListCtrl does a terrible job at autosizing
- * itself, this is here and should be called whenever a change is
- * made to the list that could change its size
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// As the default wxListCtrl does a terrible job at autosizing itself, this is
+// here and should be called whenever a change is made to the list that could
+// change its size
+// -----------------------------------------------------------------------------
 bool ListView::updateSize()
 {
 	// Update column widths if enabled
-	if (update_width)
+	if (update_width_)
 	{
 		for (int a = 0; a < GetColumnCount(); a++)
 		{
 			// Get header width
-			int maxsize = 0;
-			SetColumnWidth(a, (a == GetColumnCount() -1 ? wxLIST_AUTOSIZE : wxLIST_AUTOSIZE_USEHEADER));
+			int maxsize;
+			SetColumnWidth(a, (a == GetColumnCount() - 1 ? wxLIST_AUTOSIZE : wxLIST_AUTOSIZE_USEHEADER));
 			maxsize = GetColumnWidth(a);
 
 			// Autosize column
@@ -386,7 +370,7 @@ bool ListView::updateSize()
 		}
 
 		// Add extra width to the first column in linux as wxLIST_AUTOSIZE seems to ignore listitem images on wxGTK
-		if (icons)
+		if (icons_)
 		{
 #ifdef __WXGTK__
 			SetColumnWidth(0, GetColumnWidth(0) + 20);

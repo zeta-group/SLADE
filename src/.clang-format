@@ -1,8 +1,9 @@
 
 AccessModifierOffset: -4
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
 AlignOperands: true
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: false
@@ -38,7 +39,11 @@ MaxEmptyLinesToKeep: 10
 NamespaceIndentation: Inner
 PointerAlignment: Left
 ReflowComments: true
-SortIncludes: false
+SortIncludes: true
+IncludeCategories:
+  - Regex: 'Main.h'
+    Priority: -1
+IncludeBlocks: Preserve
 SpaceAfterCStyleCast: false
 SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true

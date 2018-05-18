@@ -187,6 +187,9 @@
     <Filter Include="UI\Controls">
       <UniqueIdentifier>{df7203c4-44f4-4f91-adaf-0269fe29db65}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External\CPP17">
+      <UniqueIdentifier>{4080a5eb-9d87-4be8-89b1-16acf988e397}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\External\mus2mid\mus2mid.cpp">
@@ -948,9 +951,6 @@
     <ClCompile Include="..\..\src\MainEditor\UI\DocsPage.cpp">
       <Filter>Main Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\AnimatedEntryPanel.cpp">
-      <Filter>Main Editor\UI\EntryPanel</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\ANSIEntryPanel.cpp">
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClCompile>
@@ -976,9 +976,6 @@
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\PaletteEntryPanel.cpp">
-      <Filter>Main Editor\UI\EntryPanel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\SwitchesEntryPanel.cpp">
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\TextEntryPanel.cpp">
@@ -1133,12 +1130,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\MapEditor\Renderer\Overlays\VertexInfoOverlay.cpp">
       <Filter>Map Editor\Renderer\Overlays</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\MainEditor\AnimatedList.cpp">
-      <Filter>Main Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\MainEditor\SwitchesList.cpp">
-      <Filter>Main Editor</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\MainEditor\ExternalEditManager.cpp">
       <Filter>Main Editor</Filter>
@@ -1511,6 +1502,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\UI\Controls\STabCtrl.cpp">
       <Filter>UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Utility\Structs.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Dialogs\GfxColouriseDialog.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Dialogs\GfxTintDialog.cpp">
+      <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2073,9 +2073,6 @@
     <ClInclude Include="..\..\src\MainEditor\UI\DocsPage.h">
       <Filter>Main Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\AnimatedEntryPanel.h">
-      <Filter>Main Editor\UI\EntryPanel</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\ANSIEntryPanel.h">
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClInclude>
@@ -2101,9 +2098,6 @@
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\PaletteEntryPanel.h">
-      <Filter>Main Editor\UI\EntryPanel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\SwitchesEntryPanel.h">
       <Filter>Main Editor\UI\EntryPanel</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\TextEntryPanel.h">
@@ -2265,13 +2259,7 @@
     <ClInclude Include="..\..\src\MapEditor\Renderer\Overlays\VertexInfoOverlay.h">
       <Filter>Map Editor\Renderer\Overlays</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\MainEditor\AnimatedList.h">
-      <Filter>Main Editor</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\MainEditor\BinaryControlLump.h">
-      <Filter>Main Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\MainEditor\SwitchesList.h">
       <Filter>Main Editor</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\UI\WxBasicControls.h">
@@ -2644,6 +2632,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\UI\Controls\STabCtrl.h">
       <Filter>UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\cpp17\string_view.hpp">
+      <Filter>External\CPP17</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\cpp17\variant.hpp">
+      <Filter>External\CPP17</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Dialogs\GfxColouriseDialog.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Dialogs\GfxTintDialog.h">
+      <Filter>Dialogs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

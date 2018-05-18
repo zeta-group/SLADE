@@ -1,6 +1,4 @@
-
-#ifndef __CONVERSIONS_H__
-#define __CONVERSIONS_H__
+#pragma once
 
 class ArchiveEntry;
 
@@ -20,5 +18,3 @@ namespace Conversions
 	bool	rmidToMidi(MemChunk& in, MemChunk& out);
 	bool	addImfHeader(MemChunk& in, MemChunk& out);
 };
-
-#endif//__CONVERSIONS_H__

@@ -1,178 +1,104 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    Property.cpp
- * Description: The Property class. Basically acts as a 'dynamic'
- *              variable type, for use in the PropertyList class.
- *              Can contain a boolean, integer, floating point (double)
- *              or string (wxString) value.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    Property.cpp
+// Description: The Property class. Basically acts as a 'dynamic' variable type,
+//              for use in the PropertyList class. Can contain a boolean,
+//              integer, floating point (double) or std::string value.
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "Property.h"
+#include "Utility/StringUtils.h"
+
+using namespace nonstd::variants;
 
 
-/*******************************************************************
- * PROPERTY CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Property Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* Property::Property
- * Property class default constructor
- *******************************************************************/
-Property::Property(uint8_t type)
+
+// -----------------------------------------------------------------------------
+// Property class default constructor
+// -----------------------------------------------------------------------------
+Property::Property(Type type) : type_{ type }, has_value_{ false }
 {
-	// Set property type
-	this->type = type;
-	this->has_value = false;
-
 	// Set default value depending on type
-	if (type == PROP_BOOL)
-		value.Boolean = false;
-	else if (type == PROP_INT)
-		value.Integer = 0;
-	else if (type == PROP_FLOAT)
-		value.Floating = 0.0f;
-	else if (type == PROP_STRING)
-		val_string = wxEmptyString;
-	else if (type == PROP_FLAG)
-		value.Boolean = true;
-	else if (type == PROP_UINT)
-		value.Unsigned = 0;
-	else
+	switch (type)
 	{
-		// Invalid type given, default to boolean
-		this->type = PROP_BOOL;
-		value.Boolean = true;
+	case Type::Bool: value_ = false; break;
+	case Type::Int: value_ = 0; break;
+	case Type::Float: value_ = 0.; break;
+	case Type::Flag: value_ = true; break;
+	case Type::UInt: value_ = 0u; break;
+	default: break;
 	}
 }
 
-/* Property::Property
- * Property class copy constructor
- *******************************************************************/
-Property::Property(const Property& copy)
-{
-	this->type = copy.type;
-	this->value = copy.value;
-	this->val_string = copy.val_string;
-	this->has_value = copy.has_value;
-}
-
-/* Property::Property
- * Property class constructor (boolean)
- *******************************************************************/
-Property::Property(bool value)
-{
-	// Init boolean property
-	this->type = PROP_BOOL;
-	this->value.Boolean = value;
-	this->has_value = true;
-}
-
-/* Property::Property
- * Property class constructor (integer)
- *******************************************************************/
-Property::Property(int value)
-{
-	// Init integer property
-	this->type = PROP_INT;
-	this->value.Integer = value;
-	this->has_value = true;
-}
-
-/* Property::Property
- * Property class constructor (floating point)
- *******************************************************************/
-Property::Property(double value)
-{
-	// Init float property
-	this->type = PROP_FLOAT;
-	this->value.Floating = value;
-	this->has_value = true;
-}
-
-/* Property::Property
- * Property class constructor (string)
- *******************************************************************/
-Property::Property(string value)
-{
-	// Init string property
-	this->type = PROP_STRING;
-	this->val_string = value;
-	this->has_value = true;
-}
-
-/* Property::Property
- * Property class constructor (unsigned)
- *******************************************************************/
-Property::Property(unsigned value)
-{
-	// Init string property
-	this->type = PROP_UINT;
-	this->value.Unsigned = value;
-	this->has_value = true;
-}
-
-/* Property::~Property
- * Property class destructor
- *******************************************************************/
-Property::~Property()
-{
-}
-
-/* Property::getBoolValue
- * Returns the property value as a bool. If [warn_wrong_type] is
- * true, a warning message is written to the log if the property is
- * not of boolean type
- *******************************************************************/
-bool Property::getBoolValue(bool warn_wrong_type) const
+// -----------------------------------------------------------------------------
+// Returns the property value as a bool.
+// If [warn_wrong_type] is true, a warning message is written to the log if the
+// property is not of boolean type
+// -----------------------------------------------------------------------------
+bool Property::boolValue(bool warn_wrong_type) const
 {
 	// If this is a flag, just return boolean 'true' (or equivalent)
-	if (type == PROP_FLAG)
+	if (type_ == Type::Flag)
 		return true;
 
 	// If the value is undefined, default to false
-	if (!has_value)
+	if (!has_value_)
 		return false;
 
 	// Write warning to log if needed
-	if (warn_wrong_type && type != PROP_BOOL)
+	if (warn_wrong_type && type_ != Type::Bool)
 		LOG_MESSAGE(1, "Warning: Requested Boolean value of a %s Property", typeString());
 
 	// Return value (convert if needed)
-	if (type == PROP_BOOL)
-		return value.Boolean;
-	else if (type == PROP_INT)
-		return !!value.Integer;
-	else if (type == PROP_UINT)
-		return !!value.Unsigned;
-	else if (type == PROP_FLOAT)
-		return !!((int)value.Floating);
-	else if (type == PROP_STRING)
+	if (type_ == Type::Bool)
+		return get<bool>(value_);
+	else if (type_ == Type::Int)
+		return !!get<int>(value_);
+	else if (type_ == Type::UInt)
+		return !!get<unsigned>(value_);
+	else if (type_ == Type::Float)
+		return !!((int)get<double>(value_));
+	else if (type_ == Type::String)
 	{
+		static const char* zero      = "0";
+		static const char* no        = "no";
+		static const char* false_str = "false";
+
 		// Anything except "0", "no" or "false" is considered true
-		if (!val_string.Cmp("0") || !val_string.CmpNoCase("no") || !val_string.CmpNoCase("false"))
+		const auto& val_string = get<string>(value_);
+		if (val_string == zero || StrUtil::equalCI(val_string, no) || StrUtil::equalCI(val_string, false_str))
 			return false;
 		else
 			return true;
@@ -182,277 +108,278 @@ bool Property::getBoolValue(bool warn_wrong_type) const
 	return true;
 }
 
-/* Property::getIntValue
- * Returns the property value as an int. If [warn_wrong_type] is
- * true, a warning message is written to the log if the property is
- * not of integer type
- *******************************************************************/
-int Property::getIntValue(bool warn_wrong_type) const
+// -----------------------------------------------------------------------------
+// Returns the property value as an int.
+// If [warn_wrong_type] is true, a warning message is written to the log if the
+// property is not of integer type
+// -----------------------------------------------------------------------------
+int Property::intValue(bool warn_wrong_type) const
 {
 	// If this is a flag, just return boolean 'true' (or equivalent)
-	if (type == PROP_FLAG)
+	if (type_ == Type::Flag)
 		return 1;
 
 	// If the value is undefined, default to 0
-	if (!has_value)
+	if (!has_value_)
 		return 0;
 
 	// Write warning to log if needed
-	if (warn_wrong_type && type != PROP_INT)
+	if (warn_wrong_type && type_ != Type::Int)
 		LOG_MESSAGE(1, "Warning: Requested Integer value of a %s Property", typeString());
 
 	// Return value (convert if needed)
-	if (type == PROP_INT)
-		return value.Integer;
-	else if (type == PROP_UINT)
-		return (int)value.Unsigned;
-	else if (type == PROP_BOOL)
-		return (int)value.Boolean;
-	else if (type == PROP_FLOAT)
-		return (int)value.Floating;
-	else if (type == PROP_STRING)
-		return atoi(CHR(val_string));
+	if (type_ == Type::Int)
+		return get<int>(value_);
+	else if (type_ == Type::UInt)
+		return (int)get<unsigned>(value_);
+	else if (type_ == Type::Bool)
+		return (int)get<bool>(value_);
+	else if (type_ == Type::Float)
+		return (int)get<double>(value_);
+	else if (type_ == Type::String)
+		return std::stoi(get<string>(value_));
 
 	// Return default integer value
 	return 0;
 }
 
-/* Property::getFloatValue
- * Returns the property value as a double. If [warn_wrong_type] is
- * true, a warning message is written to the log if the property is
- * not of floating point type
- *******************************************************************/
-double Property::getFloatValue(bool warn_wrong_type) const
+// -----------------------------------------------------------------------------
+// Returns the property value as a double.
+// If [warn_wrong_type] is true, a warning message is written to the log if the
+// property is not of floating point type
+// -----------------------------------------------------------------------------
+double Property::floatValue(bool warn_wrong_type) const
 {
 	// If this is a flag, just return boolean 'true' (or equivalent)
-	if (type == PROP_FLAG)
+	if (type_ == Type::Flag)
 		return 1;
 
 	// If the value is undefined, default to 0
-	if (!has_value)
+	if (!has_value_)
 		return 0;
 
 	// Write warning to log if needed
-	if (warn_wrong_type && type != PROP_FLOAT)
+	if (warn_wrong_type && type_ != Type::Float)
 		LOG_MESSAGE(1, "Warning: Requested Float value of a %s Property", typeString());
 
 	// Return value (convert if needed)
-	if (type == PROP_FLOAT)
-		return value.Floating;
-	else if (type == PROP_BOOL)
-		return (double)value.Boolean;
-	else if (type == PROP_INT)
-		return (double)value.Integer;
-	else if (type == PROP_UINT)
-		return (double)value.Unsigned;
-	else if (type == PROP_STRING)
-		return (double)atof(CHR(val_string));
+	if (type_ == Type::Float)
+		return get<double>(value_);
+	else if (type_ == Type::Bool)
+		return (double)get<bool>(value_);
+	else if (type_ == Type::Int)
+		return (double)get<int>(value_);
+	else if (type_ == Type::UInt)
+		return (double)get<unsigned>(value_);
+	else if (type_ == Type::String)
+		return std::stod(get<string>(value_));
 
 	// Return default float value
 	return 0.0f;
 }
 
-/* Property::getStringValue
- * Returns the property value as a string. If [warn_wrong_type] is
- * true, a warning message is written to the log if the property is
- * not of string type
- *******************************************************************/
-string Property::getStringValue(bool warn_wrong_type) const
+// -----------------------------------------------------------------------------
+// Returns the property value as a string.
+// If [warn_wrong_type] is true, a warning message is written to the log if the
+// property is not of string type
+// -----------------------------------------------------------------------------
+string Property::stringValue(bool warn_wrong_type) const
 {
 	// If this is a flag, just return boolean 'true' (or equivalent)
-	if (type == PROP_FLAG)
+	if (type_ == Type::Flag)
 		return "1";
 
 	// If the value is undefined, default to null
-	if (!has_value)
+	if (!has_value_)
 		return "";
 
 	// Write warning to log if needed
-	if (warn_wrong_type && type != PROP_STRING)
+	if (warn_wrong_type && type_ != Type::String)
 		LOG_MESSAGE(1, "Warning: Requested String value of a %s Property", typeString());
 
 	// Return value (convert if needed)
-	if (type == PROP_STRING)
-		return val_string;
-	else if (type == PROP_INT)
-		return S_FMT("%d", value.Integer);
-	else if (type == PROP_UINT)
-		return S_FMT("%d", value.Unsigned);
-	else if (type == PROP_BOOL)
+	if (type_ == Type::String)
+		return get<string>(value_);
+	else if (type_ == Type::Int)
+		return S_FMT("%d", get<int>(value_));
+	else if (type_ == Type::UInt)
+		return S_FMT("%d", get<unsigned>(value_));
+	else if (type_ == Type::Bool)
 	{
-		if (value.Boolean)
+		if (get<bool>(value_))
 			return "true";
 		else
 			return "false";
 	}
-	else if (type == PROP_FLOAT)
-		return S_FMT("%f", value.Floating);
+	else if (type_ == Type::Float)
+		return S_FMT("%f", get<double>(value_));
 
 	// Return default string value
-	return wxEmptyString;
+	return {};
 }
 
-/* Property::getUnsignedValue
- * Returns the property value as an unsigned int. If [warn_wrong_type]
- * is true, a warning message is written to the log if the property is
- * not of integer type
- *******************************************************************/
-unsigned Property::getUnsignedValue(bool warn_wrong_type) const
+// -----------------------------------------------------------------------------
+// Returns the property value as a (const) string reference.
+// If the property type is not a string this will return either
+// StrUtil::BOOL_TRUE/FALSE (for bool/flag types) or StrUtil::EMPTY
+// -----------------------------------------------------------------------------
+const string& Property::stringValueRef() const
+{
+	switch (type_)
+	{
+	case Type::Bool: return get<bool>(value_) ? StrUtil::BOOL_TRUE : StrUtil::BOOL_FALSE;
+	case Type::String: return get<string>(value_);
+	case Type::Flag: return StrUtil::BOOL_TRUE;
+	default: return StrUtil::EMPTY;
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Returns the property value as an unsigned int.
+// If [warn_wrong_type] is true, a warning message is written to the log if the
+// property is not of integer type
+// -----------------------------------------------------------------------------
+unsigned Property::unsignedValue(bool warn_wrong_type) const
 {
 	// If this is a flag, just return boolean 'true' (or equivalent)
-	if (type == PROP_FLAG)
+	if (type_ == Type::Flag)
 		return 1;
 
 	// If the value is undefined, default to 0
-	if (!has_value)
+	if (!has_value_)
 		return 0;
 
 	// Write warning to log if needed
-	if (warn_wrong_type && type != PROP_INT)
+	if (warn_wrong_type && type_ != Type::Int)
 		LOG_MESSAGE(1, "Warning: Requested Integer value of a %s Property", typeString());
 
 	// Return value (convert if needed)
-	if (type == PROP_INT)
-		return value.Integer;
-	else if (type == PROP_BOOL)
-		return (int)value.Boolean;
-	else if (type == PROP_FLOAT)
-		return (int)value.Floating;
-	else if (type == PROP_STRING)
-		return atoi(CHR(val_string));
-	else if (type == PROP_UINT)
-		return value.Unsigned;
+	if (type_ == Type::Int)
+		return get<int>(value_);
+	else if (type_ == Type::Bool)
+		return (int)get<bool>(value_);
+	else if (type_ == Type::Float)
+		return (int)get<double>(value_);
+	else if (type_ == Type::String)
+		return std::stoi(get<string>(value_));
+	else if (type_ == Type::UInt)
+		return get<unsigned>(value_);
 
 	// Return default integer value
 	return 0;
 }
 
-/* Property::setValue
- * Sets the property to [val], and changes its type to boolean
- * if necessary
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sets the property to [val], and changes its type to boolean if necessary
+// -----------------------------------------------------------------------------
 void Property::setValue(bool val)
 {
 	// Change type if necessary
-	if (type != PROP_BOOL)
-		changeType(PROP_BOOL);
+	if (type_ != Type::Bool)
+		changeType(Type::Bool);
 
 	// Set value
-	value.Boolean = val;
-	has_value = true;
+	value_     = val;
+	has_value_ = true;
 }
 
-/* Property::setValue
- * Sets the property to [val], and changes its type to integer
- * if necessary
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sets the property to [val], and changes its type to integer if necessary
+// -----------------------------------------------------------------------------
 void Property::setValue(int val)
 {
 	// Change type if necessary
-	if (type != PROP_INT)
-		changeType(PROP_INT);
+	if (type_ != Type::Int)
+		changeType(Type::Int);
 
 	// Set value
-	value.Integer = val;
-	has_value = true;
+	value_     = val;
+	has_value_ = true;
 }
 
-/* Property::setValue
- * Sets the property to [val], and changes its type to floating
- * point if necessary
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sets the property to [val], and changes its type to floating point if
+// necessary
+// -----------------------------------------------------------------------------
 void Property::setValue(double val)
 {
 	// Change type if necessary
-	if (type != PROP_FLOAT)
-		changeType(PROP_FLOAT);
+	if (type_ != Type::Float)
+		changeType(Type::Float);
 
 	// Set value
-	value.Floating = val;
-	has_value = true;
+	value_     = val;
+	has_value_ = true;
 }
 
-/* Property::setValue
- * Sets the property to [val], and changes its type to string
- * if necessary
- *******************************************************************/
-void Property::setValue(string val)
+// -----------------------------------------------------------------------------
+// Sets the property to [val], and changes its type to string if necessary
+// -----------------------------------------------------------------------------
+void Property::setValue(const string& val)
 {
 	// Change type if necessary
-	if (type != PROP_STRING)
-		changeType(PROP_STRING);
+	if (type_ != Type::String)
+		changeType(Type::String);
 
 	// Set value
-	val_string = val;
-	has_value = true;
+	value_     = val;
+	has_value_ = true;
 }
 
-/* Property::setValue
- * Sets the property to [val], and changes its type to unsigned int
- * if necessary
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sets the property to [val], and changes its type to unsigned int if necessary
+// -----------------------------------------------------------------------------
 void Property::setValue(unsigned val)
 {
 	// Change type if necessary
-	if (type != PROP_UINT)
-		changeType(PROP_UINT);
+	if (type_ != Type::UInt)
+		changeType(Type::UInt);
 
 	// Set value
-	value.Unsigned = val;
-	has_value = true;
+	value_     = val;
+	has_value_ = true;
 }
 
-/* Property::changeType
- * Changes the property's value type and gives it a default value
- *******************************************************************/
-void Property::changeType(uint8_t newtype)
+// -----------------------------------------------------------------------------
+// Changes the property's value type and gives it a default value
+// -----------------------------------------------------------------------------
+void Property::changeType(Type newtype)
 {
 	// Do nothing if changing to same type
-	if (type == newtype)
+	if (type_ == newtype)
 		return;
 
-	// Clear string data if changing from string
-	if (type == PROP_STRING)
-		val_string.Clear();
-
 	// Update type
-	type = newtype;
+	type_ = newtype;
 
 	// Update value
-	if (type == PROP_BOOL)
-		value.Boolean = true;
-	else if (type == PROP_INT)
-		value.Integer = 0;
-	else if (type == PROP_FLOAT)
-		value.Floating = 0.0f;
-	else if (type == PROP_STRING)
-		val_string = wxEmptyString;
-	else if (type == PROP_FLAG)
-		value.Boolean = true;
-	else if (type == PROP_UINT)
-		value.Unsigned = 0;
+	if (type_ == Type::Bool)
+		value_ = true;
+	else if (type_ == Type::Int)
+		value_ = 0;
+	else if (type_ == Type::Float)
+		value_ = 0.;
+	else if (type_ == Type::String)
+		value_ = StrUtil::EMPTY;
+	else if (type_ == Type::Flag)
+		value_ = true;
+	else if (type_ == Type::UInt)
+		value_ = 0u;
 }
 
-/* Property::typeString
- * Returns a string representing the property's value type
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns a string representing the property's value type
+// -----------------------------------------------------------------------------
 string Property::typeString() const
 {
-	switch (type)
+	switch (type_)
 	{
-	case PROP_BOOL:
-		return "Boolean";
-	case PROP_INT:
-		return "Integer";
-	case PROP_FLOAT:
-		return "Float";
-	case PROP_STRING:
-		return "String";
-	case PROP_FLAG:
-		return "Flag";
-	case PROP_UINT:
-		return "Unsigned";
-	default:
-		return "Unknown";
+	case Type::Bool: return "Boolean";
+	case Type::Int: return "Integer";
+	case Type::Float: return "Float";
+	case Type::String: return "String";
+	case Type::Flag: return "Flag";
+	case Type::UInt: return "Unsigned";
+	default: return "Unknown";
 	}
 }

@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,21 +15,21 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
@@ -58,56 +58,54 @@
 #include "Utility/StringUtils.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Variables
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 namespace App
 {
-	wxStopWatch	timer;
-	int			temp_fail_count = 0;
-	bool		init_ok = false;
-	bool		exiting = false;
+wxStopWatch timer;
+int         temp_fail_count = 0;
+bool        init_ok         = false;
+bool        exiting         = false;
 
-	// Directory paths
-	string	dir_data = "";
-	string	dir_user = "";
-	string	dir_app = "";
-	string	dir_res = "";
+// Directory paths
+string dir_data;
+string dir_user;
+string dir_app;
+string dir_res;
 #ifdef WIN32
-	string	dir_separator = "\\";
+string dir_separator = "\\";
 #else
-	string	dir_separator = "/";
+string dir_separator = "/";
 #endif
 
-	// App objects (managers, etc.)
-	Console			console_main;
-	PaletteManager	palette_manager;
-	ArchiveManager	archive_manager;
-}
+// App objects (managers, etc.)
+Console        console_main;
+PaletteManager palette_manager;
+ArchiveManager archive_manager;
+} // namespace App
 
 CVAR(Int, temp_location, 0, CVAR_SAVE)
 CVAR(String, temp_location_custom, "", CVAR_SAVE)
 CVAR(Bool, setup_wizard_run, false, CVAR_SAVE)
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Global Functions (from Main.h)
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// formatString
-//
+// -----------------------------------------------------------------------------
 // Formats [str] using c-style (printf, etc.) formatting
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 string formatString(const string fmt, ...)
 {
 	std::vector<char> str(100, '\0');
-	va_list ap;
+	va_list           ap;
 
 	while (true)
 	{
@@ -125,279 +123,236 @@ string formatString(const string fmt, ...)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// stringEqualNoCase
-//
-// Returns true if both strings are equal, ignoring case
-// ----------------------------------------------------------------------------
-bool stringEqualNoCase(string left, string right)
-{
-	if (left.length() == right.length())
-	{
-		transform(left.begin(), left.end(), left.begin(), ::toupper);
-		transform(right.begin(), right.end(), right.begin(), ::toupper);
-		return left == right;
-	}
 
-	return false;
-}
-
-
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // App Namespace Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 namespace App
 {
-	// ------------------------------------------------------------------------
-	// initDirectories
-	//
-	// Checks for and creates necessary application directories. Returns true
-	// if all directories existed and were created successfully if needed,
-	// false otherwise
-	// ------------------------------------------------------------------------
-	bool initDirectories()
-	{
-		// If we're passed in a INSTALL_PREFIX (from CMAKE_INSTALL_PREFIX),
-		// use this for the installation prefix
+// -----------------------------------------------------------------------------
+// Checks for and creates necessary application directories. Returns true
+// if all directories existed and were created successfully if needed,
+// false otherwise
+// -----------------------------------------------------------------------------
+bool initDirectories()
+{
+	// If we're passed in a INSTALL_PREFIX (from CMAKE_INSTALL_PREFIX),
+	// use this for the installation prefix
 #if defined(__WXGTK__) && defined(INSTALL_PREFIX)
-		wxStandardPaths::Get().SetInstallPrefix(INSTALL_PREFIX);
-#endif//defined(__UNIX__) && defined(INSTALL_PREFIX)
+	wxStandardPaths::Get().SetInstallPrefix(INSTALL_PREFIX);
+#endif // defined(__UNIX__) && defined(INSTALL_PREFIX)
 
-		// Setup app dir
-		dir_app = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
+	// Setup app dir
+	dir_app = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
 
-		// Check for portable install
-		if (wxFileExists(path("portable", Dir::Executable)))
-		{
-			// Setup portable user/data dirs
-			dir_data = dir_app;
-			dir_res = dir_app;
-			dir_user = dir_app + dir_separator + "config";
-		}
-		else
-		{
-			// Setup standard user/data dirs
-			dir_user = wxStandardPaths::Get().GetUserDataDir();
-			dir_data = wxStandardPaths::Get().GetDataDir();
-			dir_res = wxStandardPaths::Get().GetResourcesDir();
-		}
-
-		// Create user dir if necessary
-		if (!wxDirExists(dir_user))
-		{
-			if (!wxMkdir(dir_user))
-			{
-				wxMessageBox(
-					S_FMT("Unable to create user directory \"%s\"", dir_user),
-					"Error",
-					wxICON_ERROR
-				);
-				return false;
-			}
-		}
-
-		// Check data dir
-		if (!wxDirExists(dir_data))
-			dir_data = dir_app;	// Use app dir if data dir doesn't exist
-
-		// Check res dir
-		if (!wxDirExists(dir_res))
-			dir_res = dir_app;	// Use app dir if res dir doesn't exist
-
-		return true;
+	// Check for portable install
+	if (wxFileExists(path("portable", Dir::Executable)))
+	{
+		// Setup portable user/data dirs
+		dir_data = dir_app;
+		dir_res  = dir_app;
+		dir_user = dir_app + dir_separator + "config";
+	}
+	else
+	{
+		// Setup standard user/data dirs
+		dir_user = wxStandardPaths::Get().GetUserDataDir();
+		dir_data = wxStandardPaths::Get().GetDataDir();
+		dir_res  = wxStandardPaths::Get().GetResourcesDir();
 	}
 
-	// ------------------------------------------------------------------------
-	// readConfigFile
-	//
-	// Reads and parses the SLADE configuration file
-	// ------------------------------------------------------------------------
-	void readConfigFile()
+	// Create user dir if necessary
+	if (!wxDirExists(dir_user))
 	{
-		// Open SLADE.cfg
-		Tokenizer tz;
-		if (!tz.openFile(App::path("slade3.cfg", App::Dir::User)))
-			return;
-
-		// Go through the file with the tokenizer
-		while (!tz.atEnd())
+		if (!wxMkdir(dir_user))
 		{
-			// If we come across a 'cvars' token, read in the cvars section
-			if (tz.advIf("cvars", 2))
-			{
-				// Keep reading name/value pairs until we hit the ending '}'
-				while (!tz.checkOrEnd("}"))
-				{
-					read_cvar(tz.current().text, tz.peek().text);
-					tz.adv(2);
-				}
-
-				tz.adv(); // Skip ending }
-			}
-
-			// Read base resource archive paths
-			if (tz.advIf("base_resource_paths", 2))
-			{
-				while (!tz.checkOrEnd("}"))
-				{
-					archive_manager.addBaseResourcePath(
-						wxString::FromUTF8(UTF8(tz.current().text))
-					);
-					tz.adv();
-				}
-
-				tz.adv(); // Skip ending }
-			}
-
-			// Read recent files list
-			if (tz.advIf("recent_files", 2))
-			{
-				while (!tz.checkOrEnd("}"))
-				{
-					archive_manager.addRecentFile(
-						wxString::FromUTF8(UTF8(tz.current().text))
-					);
-					tz.adv();
-				}
-
-				tz.adv(); // Skip ending }
-			}
-
-			// Read keybinds
-			if (tz.advIf("keys", 2))
-				KeyBind::readBinds(tz);
-
-			// Read nodebuilder paths
-			if (tz.advIf("nodebuilder_paths", 2))
-			{
-				while (!tz.checkOrEnd("}"))
-				{
-					NodeBuilders::addBuilderPath(tz.current().text, tz.peek().text);
-					tz.adv(2);
-				}
-
-				tz.adv(); // Skip ending }
-			}
-
-			// Read game exe paths
-			if (tz.advIf("executable_paths", 2))
-			{
-				while (!tz.checkOrEnd("}"))
-				{
-					Executables::setGameExePath(tz.current().text, tz.peek().text);
-					tz.adv(2);
-				}
-
-				tz.adv(); // Skip ending }
-			}
-
-			// Read window size/position info
-			if (tz.advIf("window_info", 2))
-				Misc::readWindowInfo(tz);
-
-			// Next token
-			tz.adv();
+			wxMessageBox(S_FMT("Unable to create user directory \"%s\"", dir_user), "Error", wxICON_ERROR);
+			return false;
 		}
 	}
 
-	vector<string> processCommandLine(vector<string>& args)
+	// Check data dir
+	if (!wxDirExists(dir_data))
+		dir_data = dir_app; // Use app dir if data dir doesn't exist
+
+	// Check res dir
+	if (!wxDirExists(dir_res))
+		dir_res = dir_app; // Use app dir if res dir doesn't exist
+
+	return true;
+}
+
+// -----------------------------------------------------------------------------
+// Reads and parses the SLADE configuration file
+// -----------------------------------------------------------------------------
+void readConfigFile()
+{
+	// Open SLADE.cfg
+	Tokenizer tz;
+	if (!tz.openFile(App::path("slade3.cfg", App::Dir::User)))
+		return;
+
+	// Go through the file with the tokenizer
+	while (!tz.atEnd())
 	{
-		vector<string> to_open;
-
-		// Process command line args (except the first as it is normally the executable name)
-		for (auto& arg : args)
+		// If we come across a 'cvars' token, read in the cvars section
+		if (tz.advIf("cvars", 2))
 		{
-			// -nosplash: Disable splash window
-			if (S_CMPNOCASE(arg, "-nosplash"))
-				UI::enableSplash(false);
-
-			// -debug: Enable debug mode
-			else if (S_CMPNOCASE(arg, "-debug"))
+			// Keep reading name/value pairs until we hit the ending '}'
+			while (!tz.checkOrEnd("}"))
 			{
-				Global::debug = true;
-				Log::info("Debugging stuff enabled");
+				read_cvar(tz.current().text, tz.peek().text);
+				tz.adv(2);
 			}
 
-			// Other (no dash), open as archive
-			else if (!arg.StartsWith("-"))
-				to_open.push_back(arg);
-
-			// Unknown parameter
-			else
-				Log::warning(S_FMT("Unknown command line parameter: \"%s\"", CHR(arg)));
+			tz.adv(); // Skip ending }
 		}
 
-		return to_open;
+		// Read base resource archive paths
+		if (tz.advIf("base_resource_paths", 2))
+		{
+			while (!tz.checkOrEnd("}"))
+			{
+				archive_manager.addBaseResourcePath(tz.current().text);
+				tz.adv();
+			}
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Read recent files list
+		if (tz.advIf("recent_files", 2))
+		{
+			while (!tz.checkOrEnd("}"))
+			{
+				archive_manager.addRecentFile(tz.current().text);
+				tz.adv();
+			}
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Read keybinds
+		if (tz.advIf("keys", 2))
+			KeyBind::readBinds(tz);
+
+		// Read nodebuilder paths
+		if (tz.advIf("nodebuilder_paths", 2))
+		{
+			while (!tz.checkOrEnd("}"))
+			{
+				NodeBuilders::addBuilderPath(tz.current().text, tz.peek().text);
+				tz.adv(2);
+			}
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Read game exe paths
+		if (tz.advIf("executable_paths", 2))
+		{
+			while (!tz.checkOrEnd("}"))
+			{
+				Executables::setGameExePath(tz.current().text, tz.peek().text);
+				tz.adv(2);
+			}
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Read window size/position info
+		if (tz.advIf("window_info", 2))
+			Misc::readWindowInfo(tz);
+
+		// Next token
+		tz.adv();
 	}
 }
 
-// ----------------------------------------------------------------------------
-// App::isInitialised
-//
+vector<string> processCommandLine(vector<string>& args)
+{
+	vector<string> to_open;
+
+	// Process command line args (except the first as it is normally the executable name)
+	for (auto& arg : args)
+	{
+		// -nosplash: Disable splash window
+		if (StrUtil::equalCI(arg, "-nosplash"))
+			UI::enableSplash(false);
+
+		// -debug: Enable debug mode
+		else if (StrUtil::equalCI(arg, "-debug"))
+		{
+			Global::debug = true;
+			Log::info("Debugging stuff enabled");
+		}
+
+		// Other (no dash), open as archive
+		else if (arg[0] != '-')
+			to_open.push_back(arg);
+
+		// Unknown parameter
+		else
+			Log::warning(S_FMT("Unknown command line parameter: \"%s\"", arg));
+	}
+
+	return to_open;
+}
+} // namespace App
+
+// -----------------------------------------------------------------------------
 // Returns true if the application has been initialised
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool App::isInitialised()
 {
 	return init_ok;
 }
 
-// ----------------------------------------------------------------------------
-// App::console
-//
+// -----------------------------------------------------------------------------
 // Returns the global Console
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 Console* App::console()
 {
 	return &console_main;
 }
 
-// ----------------------------------------------------------------------------
-// App::paletteManager
-//
+// -----------------------------------------------------------------------------
 // Returns the Palette Manager
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 PaletteManager* App::paletteManager()
 {
 	return &palette_manager;
 }
 
-// ----------------------------------------------------------------------------
-// App::archiveManager
-//
+// -----------------------------------------------------------------------------
 // Returns the Archive Manager
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ArchiveManager& App::archiveManager()
 {
 	return archive_manager;
 }
 
-// ----------------------------------------------------------------------------
-// App::runTimer
-//
+// -----------------------------------------------------------------------------
 // Returns the number of ms elapsed since the application was started
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 long App::runTimer()
 {
 	return timer.Time();
 }
 
-// ----------------------------------------------------------------------------
-// App::isExiting
-//
+// -----------------------------------------------------------------------------
 // Returns true if the application is exiting
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool App::isExiting()
 {
 	return exiting;
 }
 
-// ----------------------------------------------------------------------------
-// App::init
-//
+// -----------------------------------------------------------------------------
 // Application initialisation
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool App::init(vector<string>& args, double ui_scale)
 {
 	// Set locale to C so that the tokenizer will work properly
@@ -430,8 +385,7 @@ bool App::init(vector<string>& args, double ui_scale)
 			"Unable to find slade.pk3, make sure it exists in the same directory as the "
 			"SLADE executable",
 			"Error",
-			wxICON_ERROR
-		);
+			wxICON_ERROR);
 		return false;
 	}
 
@@ -535,11 +489,9 @@ bool App::init(vector<string>& args, double ui_scale)
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// App::saveConfigFile
-//
+// -----------------------------------------------------------------------------
 // Saves the SLADE configuration file
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void App::saveConfigFile()
 {
 	// Open SLADE.cfg for writing text
@@ -563,7 +515,7 @@ void App::saveConfigFile()
 	for (size_t a = 0; a < archive_manager.numBaseResourcePaths(); a++)
 	{
 		string path = archive_manager.getBaseResourcePath(a);
-		StringUtils::replace(path, "\\", "/");
+		StrUtil::replaceIP(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
@@ -573,7 +525,7 @@ void App::saveConfigFile()
 	for (int a = archive_manager.numRecentFiles() - 1; a >= 0; a--)
 	{
 		string path = archive_manager.recentFile(a);
-		StringUtils::replace(path, "\\", "/");
+		StrUtil::replaceIP(path, "\\", "/");
 		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
@@ -601,12 +553,10 @@ void App::saveConfigFile()
 	file.Write("\n// End Configuration File\n\n");
 }
 
-// ----------------------------------------------------------------------------
-// App::exit
-//
+// -----------------------------------------------------------------------------
 // Application exit, shuts down and cleans everything up. If [save_config] is
 // true, saves all configuration related files
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void App::exit(bool save_config)
 {
 	exiting = true;
@@ -647,7 +597,7 @@ void App::exit(bool save_config)
 	wxDir temp;
 	temp.Open(App::path("", App::Dir::Temp));
 	wxString filename;
-	bool files = temp.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
+	bool     files = temp.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
 	while (files)
 	{
 		if (!wxRemoveFile(App::path((string)filename, App::Dir::Temp)))
@@ -665,15 +615,13 @@ void App::exit(bool save_config)
 	wxTheApp->Exit();
 }
 
-// ----------------------------------------------------------------------------
-// App::path
-//
+// -----------------------------------------------------------------------------
 // Prepends an application-related path to a filename,
 // App::Dir::Data: SLADE application data directory (for SLADE.pk3)
 // App::Dir::User: User configuration and resources directory
 // App::Dir::Executable: Directory of the SLADE executable
 // App::Dir::Temp: Temporary files directory
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 string App::path(string filename, Dir dir)
 {
 	if (dir == Dir::Data)

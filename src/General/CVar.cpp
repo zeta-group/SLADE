@@ -29,6 +29,7 @@
  * INCLUDES
  *******************************************************************/
 #include "Main.h"
+#include "Utility/StringUtils.h"
 
 
 /*******************************************************************
@@ -76,16 +77,16 @@ void dump_cvars()
 		if (!(cvars[c]->flags & CVAR_SECRET))
 		{
 			if (cvars[c]->type == CVAR_INTEGER)
-				printf("%s %d\n", CHR(cvars[c]->name), cvars[c]->GetValue().Int);
+				printf("%s %d\n", cvars[c]->name, cvars[c]->GetValue().Int);
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				printf("%s %d\n", CHR(cvars[c]->name), cvars[c]->GetValue().Bool);
+				printf("%s %d\n", cvars[c]->name, cvars[c]->GetValue().Bool);
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				printf("%s %1.5f\n", CHR(cvars[c]->name), cvars[c]->GetValue().Float);
+				printf("%s %1.5f\n", cvars[c]->name, cvars[c]->GetValue().Float);
 
 			if (cvars[c]->type == CVAR_STRING)
-				printf("%s \"%s\"\n", CHR(cvars[c]->name), CHR(((CStringCVar*)cvars[c])->value));
+				printf("%s \"%s\"\n", cvars[c]->name, ((CStringCVar*)cvars[c])->value);
 		}
 	}
 }
@@ -136,9 +137,9 @@ void save_cvars(wxFile& file)
 
 			if (cvars[c]->type == CVAR_STRING)
 			{
-				string value = ((CStringCVar*)cvars[c])->value;
-				value.Replace("\\", "/");
-				value.Replace("\"", "\\\"");
+				string value = StrUtil::escapedString(((CStringCVar*)cvars[c])->value, true);
+				//value.Replace("\\", "/");
+				//value.Replace("\"", "\\\"");
 				file.Write(S_FMT("\"%s\"\n", value), wxConvUTF8);
 			}
 		}
@@ -151,23 +152,23 @@ void save_cvars(wxFile& file)
  * Reads [value] into the CVar with matching [name], or does nothing
  * if no CVar [name] exists
  *******************************************************************/
-void read_cvar(string name, string value)
+void read_cvar(string name, const string& value)
 {
 	for (uint16_t c = 0; c < n_cvars; c++)
 	{
 		if (name == cvars[c]->name)
 		{
 			if (cvars[c]->type == CVAR_INTEGER)
-				*((CIntCVar*) cvars[c]) = atoi(CHR(value));
+				*((CIntCVar*) cvars[c]) = std::stoi(value);
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				*((CBoolCVar*) cvars[c]) = !!(atoi(CHR(value)));
+				*((CBoolCVar*) cvars[c]) = !!(std::stoi(value));
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				*((CFloatCVar*) cvars[c]) = atof(CHR(value));
+				*((CFloatCVar*) cvars[c]) = std::stof(value);
 
 			if (cvars[c]->type == CVAR_STRING)
-				*((CStringCVar*) cvars[c]) = wxString::FromUTF8(CHR(value));
+				*((CStringCVar*) cvars[c]) = value;
 		}
 	}
 }

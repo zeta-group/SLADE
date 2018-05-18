@@ -15,7 +15,7 @@ private:
 	int					status;
 
 public:
-	AnimatedEntry(animated_t entry);
+	AnimatedEntry(AnimatedEntry entry);
 	~AnimatedEntry();
 
 	string		getFirst()	{ return first; }

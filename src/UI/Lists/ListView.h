@@ -1,53 +1,49 @@
-
-#ifndef __LISTVIEW_H__
-#define __LISTVIEW_H__
-
-#include "common.h"
-
-enum
-{
-	LV_STATUS_NORMAL,
-	LV_STATUS_MODIFIED,
-	LV_STATUS_NEW,
-	LV_STATUS_LOCKED,
-	LV_STATUS_ERROR,
-	LV_STATUS_DISABLED,
-};
+#pragma once
 
 class ListView : public wxListCtrl
 {
-private:
-	bool		icons;
-	bool		update_width;
-
 public:
-	ListView(wxWindow* parent, int id, long style = wxLC_REPORT);
+	enum class ItemStatus
+	{
+		Normal,
+		Modified,
+		New,
+		Locked,
+		Error,
+		Disabled
+	};
 
-	~ListView();
-	bool	showIcons() { return icons; }
-	void	showIcons(bool show) { icons = show; }
-	bool	enableSizeUpdate() { return update_width; }
-	void	enableSizeUpdate(bool update) { update_width = update; }
+	ListView(wxWindow* parent, int id, long style = wxLC_REPORT) :
+		wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize, style)
+	{
+	}
+	~ListView() = default;
 
-	bool	addItem(int index, string text);
-	bool	addItem(int index, wxArrayString text);
+	bool showIcons() const { return icons_; }
+	void showIcons(bool show) { icons_ = show; }
+	bool enableSizeUpdate() const { return update_width_; }
+	void enableSizeUpdate(bool update) { update_width_ = update; }
 
-	bool	deleteItems(wxArrayInt items);
+	bool addItem(int index, string_view text);
+	bool addItem(int index, const vector<string>& text);
 
-	rgba_t	getDisabledColour();
-	bool	setItemStatus(int item, int status);
-	bool	setItemText(int item, int column, string text);
+	bool deleteItems(vector<int> items);
 
-	void	clearSelection();
-	bool	selectItem(int item, bool focus = true);
-	bool	deSelectItem(int item);
+	bool setItemStatus(int index, ItemStatus status);
+	bool setItemText(int item, int column, string_view text);
 
-	wxArrayInt	selectedItems();
+	void clearSelection();
+	bool selectItem(int item, bool focus = true);
+	bool deSelectItem(int item);
 
-	bool	showItem(int item);
-	bool	swapItems(int item1, int item2);
+	vector<int> selectedItems() const;
 
-	bool	updateSize();
+	bool showItem(int item);
+	bool swapItems(int item1, int item2);
+
+	bool updateSize();
+
+private:
+	bool icons_        = true;
+	bool update_width_ = true;
 };
-
-#endif//__LISTVIEW_H__

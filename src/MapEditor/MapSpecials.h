@@ -1,60 +1,51 @@
-#include "common.h"
+#pragma once
+
 #include "SLADEMap/MapLine.h"
 #include "SLADEMap/MapSector.h"
 #include "SLADEMap/MapThing.h"
 
-#ifndef __MAP_SPECIALS_H__
-#define __MAP_SPECIALS_H__
-
 class SLADEMap;
 class ArchiveEntry;
 
-WX_DECLARE_HASH_MAP(MapVertex*, double, wxPointerHash, wxPointerEqual, VertexHeightMap);
-
 class MapSpecials
 {
-	struct sector_colour_t
-	{
-		int		tag;
-		rgba_t	colour;
-	};
-
-	vector<sector_colour_t> sector_colours;
-	vector<sector_colour_t> sector_fadecolours;
-
-	void	processZDoomSlopes(SLADEMap* map);
-	void  processEternitySlopes(SLADEMap* map);
-	template<PlaneType>
-	void	applyPlaneAlign(MapLine* line, MapSector* sector, MapSector* model_sector);
-	template<PlaneType>
-	void	applyLineSlopeThing(SLADEMap* map, MapThing* thing);
-	template<PlaneType>
-	void	applySectorTiltThing(SLADEMap* map, MapThing* thing);
-	template<PlaneType>
-	void	applyVavoomSlopeThing(SLADEMap* map, MapThing* thing);
-	template<PlaneType>
-	double	vertexHeight(MapVertex* vertex, MapSector* sector);
-	template<PlaneType>
-	void	applyVertexHeightSlope(MapSector* target, vector<MapVertex*>& vertices, VertexHeightMap& heights);
-
 public:
-	void	reset();
+	void reset();
 
-	void	processMapSpecials(SLADEMap* map);
-	void	processLineSpecial(MapLine* line);
+	void processMapSpecials(SLADEMap* map) const;
+	void processLineSpecial(MapLine* line) const;
 
-	bool	getTagColour(int tag, rgba_t* colour);
-	bool	getTagFadeColour(int tag, rgba_t *colour);
-	bool	tagColoursSet();
-	bool	tagFadeColoursSet();
-	void	updateTaggedSectors(SLADEMap* map);
+	bool getTagColour(int tag, ColRGBA* colour);
+	bool getTagFadeColour(int tag, ColRGBA* colour);
+	bool tagColoursSet() const;
+	bool tagFadeColoursSet() const;
+	void updateTaggedSectors(SLADEMap* map);
 
 	// ZDoom
-	void	processZDoomMapSpecials(SLADEMap* map);
-	void	processZDoomLineSpecial(MapLine* line);
-	void	updateZDoomSector(MapSector* line);
-	void	processACSScripts(ArchiveEntry* entry);
-	void	setModified(SLADEMap *map, int tag);
-};
+	void processZDoomMapSpecials(SLADEMap* map) const;
+	void processZDoomLineSpecial(MapLine* line) const;
+	void processACSScripts(ArchiveEntry* entry);
 
-#endif//__MAP_SPECIALS_H__
+private:
+	struct SectorColour
+	{
+		int    tag    = 0;
+		ColRGBA colour = ColRGBA::WHITE;
+	};
+
+	typedef std::map<MapVertex*, double> VertexHeightMap;
+
+	vector<SectorColour> sector_colours_;
+	vector<SectorColour> sector_fadecolours_;
+
+	void processZDoomSlopes(SLADEMap* map) const;
+	void processEternitySlopes(SLADEMap* map) const;
+
+	template<MapSector::SurfaceType>
+	void applyPlaneAlign(MapLine* line, MapSector* sector, MapSector* model_sector) const;
+	template<MapSector::SurfaceType> void applyLineSlopeThing(SLADEMap* map, MapThing* thing) const;
+	template<MapSector::SurfaceType> void applySectorTiltThing(SLADEMap* map, MapThing* thing) const;
+	template<MapSector::SurfaceType> void applyVavoomSlopeThing(SLADEMap* map, MapThing* thing) const;
+	template<MapSector::SurfaceType>
+	void applyVertexHeightSlope(MapSector* target, vector<MapVertex*>& vertices, VertexHeightMap& heights) const;
+};

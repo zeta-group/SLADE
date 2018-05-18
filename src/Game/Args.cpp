@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,113 +15,106 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "Args.h"
 #include "Utility/Parser.h"
+#include "Utility/StringUtils.h"
 
 using namespace Game;
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Local Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 namespace
 {
-	// ------------------------------------------------------------------------
-	// customFlags
-	//
-	// Returns a string representation of [value] for a 'custom flags' type
-	// arg, given [custom_flags]
-	// ------------------------------------------------------------------------
-	string customFlags(int value, const vector<ArgValue>& custom_flags)
+// ------------------------------------------------------------------------
+// Returns a string representation of [value] for a 'custom flags' type
+// arg, given [custom_flags]
+// ------------------------------------------------------------------------
+string customFlags(int value, const vector<ArgValue>& custom_flags)
+{
+	// This has to go in REVERSE order to correctly handle multi-bit
+	// enums (so we see 3 before 1 and 2)
+	vector<string> flags;
+	size_t         final_length   = 0;
+	int            last_group     = 0;
+	int            original_value = value;
+	bool           has_flag;
+	for (auto it = custom_flags.rbegin(); it != custom_flags.rend(); ++it)
 	{
-		// This has to go in REVERSE order to correctly handle multi-bit
-		// enums (so we see 3 before 1 and 2)
-		vector<string> flags;
-		size_t final_length = 0;
-		int last_group = 0;
-		int original_value = value;
-		bool has_flag;
-		for (auto it = custom_flags.rbegin();
-			it != custom_flags.rend();
-			++it)
+		if ((it->value & (it->value - 1)) != 0)
+			// Not a power of two, so must be a group
+			last_group = value;
+
+		if (value == 0)
+			// Zero is special: it only counts as a flag value if the
+			// most recent "group" is empty
+			has_flag = (last_group && (original_value & last_group) == 0);
+		else
+			has_flag = ((value & it->value) == it->value);
+
+		if (has_flag)
 		{
-			if ((it->value & (it->value - 1)) != 0)
-				// Not a power of two, so must be a group
-				last_group = value;
-
-			if (value == 0)
-				// Zero is special: it only counts as a flag value if the
-				// most recent "group" is empty
-				has_flag = (last_group && (original_value & last_group) == 0);
-			else
-				has_flag = ((value & it->value) == it->value);
-
-			if (has_flag)
-			{
-				value &= ~it->value;
-				flags.push_back(it->name);
-				final_length += it->name.size() + 3;
-			}
+			value &= ~it->value;
+			flags.push_back(it->name);
+			final_length += it->name.size() + 3;
 		}
-
-		if (value || !flags.size())
-			flags.push_back(S_FMT("%d", value));
-
-		// Join 'em, in reverse again, to restore the original order
-		string out;
-		out.Alloc(final_length);
-		auto it = flags.rbegin();
-		while (true)
-		{
-			out += *it;
-			++it;
-			if (it == flags.rend())
-				break;
-			out += " + ";
-		}
-		return out;
 	}
+
+	if (value || flags.empty())
+		flags.push_back(S_FMT("%d", value));
+
+	// Join 'em, in reverse again, to restore the original order
+	string out;
+	out.resize(final_length);
+	auto it = flags.rbegin();
+	while (true)
+	{
+		out += *it;
+		++it;
+		if (it == flags.rend())
+			break;
+		out += " + ";
+	}
+	return out;
 }
+} // namespace
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Arg Struct Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// Arg::valueString
-//
+// -----------------------------------------------------------------------------
 // Returns a string representation of [value] depending on the arg's type
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 string Arg::valueString(int value) const
 {
 	switch (type)
 	{
-	case YesNo:
-		return (value > 0) ? "Yes" : "No";
-	case NoYes:
-		return (value > 0) ? "No" : "Yes";
+	case YesNo: return (value > 0) ? "Yes" : "No";
+	case NoYes: return (value > 0) ? "No" : "Yes";
 
 	// Custom list of choices
 	case Choice:
@@ -133,12 +126,11 @@ string Arg::valueString(int value) const
 	}
 
 	// Custom list of flags
-	case Flags:
-		return customFlags(value, custom_flags);
+	case Flags: return customFlags(value, custom_flags);
 
 	// Angle
 	case Angle:
-		return S_FMT("%d Degrees", value);  // TODO: E/S/W/N/etc
+		return S_FMT("%d Degrees", value); // TODO: E/S/W/N/etc
 
 	// Speed
 	case Speed:
@@ -150,19 +142,16 @@ string Arg::valueString(int value) const
 			return S_FMT("%d (%s)", value, speed_label);
 	}
 
-	default:
-		break;
+	default: break;
 	}
 
 	// Any other type
 	return S_FMT("%d", value);
 }
 
-// ----------------------------------------------------------------------------
-// Arg::speedLabel
-//
+// -----------------------------------------------------------------------------
 // Returns a string representation of speed [value]
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 string Arg::speedLabel(int value) const
 {
 	// Speed can optionally have a set of predefined values, most taken
@@ -185,12 +174,10 @@ string Arg::speedLabel(int value) const
 	return "";
 }
 
-// ----------------------------------------------------------------------------
-// Arg::parse
-//
+// -----------------------------------------------------------------------------
 // Parses an arg definition from [node], using [shared_args] for predeclared
 // args if it is given
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 {
 	// Check for simple definition
@@ -200,8 +187,9 @@ void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 		string shared_arg_name;
 
 		// Names beginning with a dollar sign are references to predeclared args
-		if (shared_args && name.StartsWith("$", &shared_arg_name))
+		if (shared_args && name[0] == '$')
 		{
+			shared_arg_name.assign(name.begin() + 1, name.end());
 			auto it = shared_args->find(shared_arg_name);
 			if (it == shared_args->end())
 				// Totally bogus reference; silently ignore this arg
@@ -215,7 +203,8 @@ void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 			this->name = node->stringValue();
 
 			// Set description (if specified)
-			if (node->nValues() > 1) desc = node->stringValue(1);
+			if (node->nValues() > 1)
+				desc = node->stringValue(1);
 		}
 	}
 	else
@@ -224,27 +213,30 @@ void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 
 		// Name
 		auto val = node->getChildPTN("name");
-		if (val) name = val->stringValue();
+		if (val)
+			name = val->stringValue();
 
 		// Description
 		val = node->getChildPTN("desc");
-		if (val) desc = val->stringValue();
+		if (val)
+			desc = val->stringValue();
 
 		// Type
 		val = node->getChildPTN("type");
 		string atype;
-		if (val) atype = val->stringValue();
-		if (S_CMPNOCASE(atype, "yesno"))
+		if (val)
+			atype = val->stringValue();
+		if (StrUtil::equalCI(atype, "yesno"))
 			type = YesNo;
-		else if (S_CMPNOCASE(atype, "noyes"))
+		else if (StrUtil::equalCI(atype, "noyes"))
 			type = NoYes;
-		else if (S_CMPNOCASE(atype, "angle"))
+		else if (StrUtil::equalCI(atype, "angle"))
 			type = Angle;
-		else if (S_CMPNOCASE(atype, "choice"))
+		else if (StrUtil::equalCI(atype, "choice"))
 			type = Choice;
-		else if (S_CMPNOCASE(atype, "flags"))
+		else if (StrUtil::equalCI(atype, "flags"))
 			type = Flags;
-		else if (S_CMPNOCASE(atype, "speed"))
+		else if (StrUtil::equalCI(atype, "speed"))
 			type = Speed;
 		else
 			type = Number;
@@ -254,31 +246,29 @@ void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 		if (val)
 		{
 			for (auto cv : val->allChildren())
-				custom_values.push_back({ Parser::node(cv)->stringValue(), atoi(CHR(cv->getName())) });
+				custom_values.push_back({ Parser::node(cv)->stringValue(), std::stoi(cv->name().to_string()) });
 		}
 
 		val = node->getChildPTN("custom_flags");
 		if (val)
 		{
 			for (auto cf : val->allChildren())
-				custom_flags.push_back({ Parser::node(cf)->stringValue(), atoi(CHR(cf->getName())) });
+				custom_flags.push_back({ Parser::node(cf)->stringValue(), std::stoi(cf->name().to_string()) });
 		}
 	}
 }
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // ArgSpec Struct Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// ArgSpec::stringDesc
-//
+// -----------------------------------------------------------------------------
 // Returns a string representation of [values] depending on the spec arg types
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 string ArgSpec::stringDesc(int values[5], string values_str[2]) const
 {
 	string ret;
@@ -287,12 +277,12 @@ string ArgSpec::stringDesc(int values[5], string values_str[2]) const
 	for (unsigned a = 0; a < 5; a++)
 	{
 		// Skip if the arg name is undefined and the arg value is 0
-		if (values[a] == 0 && args[a].name.StartsWith("Arg"))
+		if (values[a] == 0 && StrUtil::startsWith(args[a].name, "Arg"))
 			continue;
 
 		ret += args[a].name;
 		ret += ": ";
-		if (a < 2 && values[a] == 0 && !values_str[a].IsEmpty())
+		if (a < 2 && values[a] == 0 && !values_str[a].empty())
 			ret += values_str[a];
 		else
 			ret += args[a].valueString(values[a]);
@@ -300,8 +290,8 @@ string ArgSpec::stringDesc(int values[5], string values_str[2]) const
 	}
 
 	// Cut ending ", "
-	if (!ret.IsEmpty())
-		ret.RemoveLast(2);
+	if (!ret.empty())
+		ret.erase(ret.size() - 2);
 
 	return ret;
 }

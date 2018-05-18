@@ -2,16 +2,9 @@
 #include "Main.h"
 #include "MapInfo.h"
 #include "Archive/Archive.h"
+#include "Utility/StringUtils.h"
 
 using namespace Game;
-
-MapInfo::MapInfo()
-{
-}
-
-MapInfo::~MapInfo()
-{
-}
 
 void MapInfo::clear(bool maps, bool editor_nums)
 {
@@ -25,7 +18,7 @@ void MapInfo::clear(bool maps, bool editor_nums)
 		this->editor_nums_.clear();
 }
 
-MapInfo::Map& MapInfo::getMap(const string& name)
+MapInfo::Map& MapInfo::getMap(string_view name)
 {
 	for (auto& map : maps_)
 		if (map.entry_name == name)
@@ -47,11 +40,11 @@ bool MapInfo::addOrUpdateMap(Map& map)
 	return false;
 }
 
-int MapInfo::doomEdNumForClass(const string& actor_class)
+int MapInfo::doomEdNumForClass(string_view actor_class)
 {
 	// Find DoomEdNum def with matching class
 	for (auto& i : editor_nums_)
-		if (S_CMPNOCASE(i.second.actor_class, actor_class))
+		if (StrUtil::equalCI(i.second.actor_class, actor_class))
 			return i.first;
 
 	// Invalid
@@ -66,15 +59,15 @@ bool MapInfo::readMapInfo(Archive* archive)
 	for (auto entry : entries)
 	{
 		// ZMapInfo
-		if (entry->getType()->id() == "zmapinfo")
+		if (entry->type()->id() == "zmapinfo")
 			parseZMapInfo(entry);
 
 		// TODO: EMapInfo
-		else if (entry->getType()->id() == "emapinfo")
+		else if (entry->type()->id() == "emapinfo")
 			Log::info("EMAPINFO not implemented");
 
 		// MapInfo
-		else if (entry->getType()->id() == "mapinfo")
+		else if (entry->type()->id() == "mapinfo")
 		{
 			// Detect format
 			auto format = detectMapInfoType(entry);
@@ -89,57 +82,23 @@ bool MapInfo::readMapInfo(Archive* archive)
 	return false;
 }
 
-bool MapInfo::checkEqualsToken(Tokenizer& tz, const string& parsing) const
+bool MapInfo::checkEqualsToken(Tokenizer& tz, string_view parsing) const
 {
 	if (tz.next() != "=")
 	{
-		Log::error(S_FMT(
-			"Error Parsing %s: Expected \"=\", got \"%s\" at line %d",
-			CHR(parsing),
-			CHR(tz.current().text),
-			tz.lineNo()
-		));
+		Log::error(
+			S_FMT(R"(Error Parsing %s: Expected "=", got "%s" at line %d)", parsing, tz.current().text, tz.lineNo()));
 		return false;
 	}
 
 	return true;
 }
 
-bool MapInfo::strToCol(const string& str, rgba_t& col)
-{
-	wxColor wxcol;
-	if (!wxcol.Set(str))
-	{
-		// Parse RR GG BB string
-		auto components = wxSplit(str, ' ');
-		if (components.size() >= 3)
-		{
-			long tmp;
-			components[0].ToLong(&tmp, 16);
-			col.r = tmp;
-			components[1].ToLong(&tmp, 16);
-			col.g = tmp;
-			components[2].ToLong(&tmp, 16);
-			col.b = tmp;
-			return true;
-		}
-	}
-	else
-	{
-		col.r = wxcol.Red();
-		col.g = wxcol.Green();
-		col.b = wxcol.Blue();
-		return true;
-	}
-
-	return false;
-}
-
 bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 {
 	Tokenizer tz;
 	tz.setReadLowerCase(true);
-	tz.openMem(entry->getMCData(), entry->getName());
+	tz.openMem(entry->data(), entry->name());
 
 	while (!tz.atEnd())
 	{
@@ -147,25 +106,22 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 		if (tz.check("include"))
 		{
 			// Get entry at include path
-			ArchiveEntry* include_entry = entry->getParent()->entryAtPath(tz.next().text);
+			ArchiveEntry* include_entry = entry->parent()->entryAtPath(tz.next().text);
 
 			if (!include_entry)
 			{
 				Log::warning(S_FMT(
-					"Warning - Parsing ZMapInfo \"%s\": Unable to include \"%s\" at line %d",
-					CHR(entry->getName()),
-					CHR(tz.current().text),
-					tz.lineNo()
-				));
+					R"(Warning - Parsing ZMapInfo "%s": Unable to include "%s" at line %d)",
+					entry->name(),
+					tz.current().text,
+					tz.lineNo()));
 			}
 			else if (!parseZMapInfo(include_entry))
 				return false;
 		}
 
 		// Map
-		else if (tz.check("map") ||
-			tz.check("defaultmap") ||
-			tz.check("adddefaultmap"))
+		else if (tz.check("map") || tz.check("defaultmap") || tz.check("adddefaultmap"))
 		{
 			if (!parseZMap(tz, tz.current().text))
 				return false;
@@ -181,10 +137,7 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 		// Unknown block (skip it)
 		else if (tz.check("{"))
 		{
-			Log::warning(2, S_FMT(
-				"Warning - Parsing ZMapInfo \"%s\": Skipping {} block",
-				entry->getName()
-			));
+			Log::warning(2, S_FMT("Warning - Parsing ZMapInfo \"%s\": Skipping {} block", entry->name()));
 
 			tz.adv();
 			tz.skipSection("{", "}");
@@ -194,17 +147,14 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 		// Unknown
 		else
 		{
-			Log::warning(2, S_FMT(
-				"Warning - Parsing ZMapInfo \"%s\": Unknown token \"%s\"",
-				CHR(entry->getName()),
-				CHR(tz.current().text)
-			));
+			Log::warning(
+				2, S_FMT(R"(Warning - Parsing ZMapInfo "%s": Unknown token "%s")", entry->name(), tz.current().text));
 		}
 
 		tz.adv();
 	}
 
-	LOG_MESSAGE(2, "Parsed ZMapInfo entry %s successfully", entry->getName());
+	LOG_MESSAGE(2, "Parsed ZMapInfo entry %s successfully", entry->name());
 
 	return true;
 }
@@ -226,12 +176,12 @@ bool MapInfo::parseZMap(Tokenizer& tz, string type)
 		if (tz.check("lookup"))
 		{
 			map.lookup_name = true;
-			map.name = tz.next().text;
+			map.name        = tz.next().text;
 		}
 		else
 		{
 			map.lookup_name = false;
-			map.name = tz.current().text;
+			map.name        = tz.current().text;
 		}
 
 		tz.adv();
@@ -239,11 +189,8 @@ bool MapInfo::parseZMap(Tokenizer& tz, string type)
 
 	if (!tz.advIf("{"))
 	{
-		Log::error(S_FMT(
-			"Error Parsing ZMapInfo: Expecting \"{\", got \"%s\" at line %d",
-			CHR(tz.current().text),
-			tz.lineNo()
-		));
+		Log::error(
+			S_FMT(R"(Error Parsing ZMapInfo: Expecting "{", got "%s" at line %d)", tz.current().text, tz.lineNo()));
 		return false;
 	}
 
@@ -374,13 +321,13 @@ bool MapInfo::parseZMap(Tokenizer& tz, string type)
 	if (type == "map")
 	{
 		LOG_MESSAGE(2, "Parsed ZMapInfo Map %s (%s) successfully", map.entry_name, map.name);
-		
+
 		// Update existing map
 		bool updated = false;
 		for (auto& m : maps_)
 			if (m.entry_name == map.entry_name)
 			{
-				m = map;
+				m       = map;
 				updated = true;
 				break;
 			}
@@ -400,11 +347,7 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 	// Opening brace
 	if (!tz.advIfNext("{", 2))
 	{
-		Log::error(S_FMT(
-			"Error Parsing ZMapInfo: Expecting \"{\", got \"%s\" at line %d",
-			CHR(tz.peek().text),
-			tz.lineNo()
-		));
+		Log::error(S_FMT(R"(Error Parsing ZMapInfo: Expecting "{", got "%s" at line %d)", tz.peek().text, tz.lineNo()));
 		return false;
 	}
 
@@ -415,26 +358,24 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 		{
 			Log::error(S_FMT(
 				"Error Parsing ZMapInfo DoomEdNums: Expecting editor number, got \"%s\" at line %d",
-				CHR(tz.current().text),
-				tz.lineNo()
-			));
+				tz.current().text,
+				tz.lineNo()));
 			return false;
 		}
 
 		// Reset editor number values
-		auto number = tz.current().asInt();
+		auto number                  = tz.current().asInt();
 		editor_nums_[number].special = "";
-		for (int a = 0; a < 5; a++)
-			editor_nums_[number].args[a] = 0;
+		for (int& arg : editor_nums_[number].args)
+			arg = 0;
 
 		// =
 		if (!tz.advIfNext("="))
 		{
 			Log::error(S_FMT(
-				"Error Parsing ZMapInfo DoomEdNums: Expecting \"=\", got \"%s\" at line %d",
-				CHR(tz.current().text),
-				tz.lineNo()
-			));
+				R"(Error Parsing ZMapInfo DoomEdNums: Expecting "=", got "%s" at line %d)",
+				tz.current().text,
+				tz.lineNo()));
 			return false;
 		}
 
@@ -459,9 +400,8 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 				{
 					Log::error(S_FMT(
 						"Error Parsing ZMapInfo DoomEdNums: Expecting arg value, got \"%s\" at line %d",
-						CHR(tz.current().text),
-						tz.current().line_no
-					));
+						tz.current().text,
+						tz.current().line_no));
 					return false;
 				}
 
@@ -478,10 +418,31 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 	return true;
 }
 
+void MapInfo::dumpDoomEdNums()
+{
+	for (auto& num : editor_nums_)
+	{
+		if (num.second.actor_class.empty())
+			continue;
+
+		LOG_MESSAGE(
+			1,
+			"DoomEdNum %d: Class \"%s\", Special \"%s\", Args %d,%d,%d,%d,%d",
+			num.first,
+			num.second.actor_class,
+			num.second.special,
+			num.second.args[0],
+			num.second.args[1],
+			num.second.args[2],
+			num.second.args[3],
+			num.second.args[4]);
+	}
+}
+
 MapInfo::Format MapInfo::detectMapInfoType(ArchiveEntry* entry)
 {
 	Tokenizer tz;
-	tz.openMem(entry->getMCData(), entry->getName());
+	tz.openMem(entry->data(), entry->name());
 	tz.setSpecialCharacters("={}[]+,|");
 
 	string prev;
@@ -515,33 +476,41 @@ MapInfo::Format MapInfo::detectMapInfoType(ArchiveEntry* entry)
 	return Format::Hexen;
 }
 
-void MapInfo::dumpDoomEdNums()
+bool MapInfo::strToCol(const string& str, ColRGBA& col)
 {
-	for (auto& num : editor_nums_)
+	wxColor wxcol;
+	if (!wxcol.Set(str))
 	{
-		if (num.second.actor_class == "")
-			continue;
-
-		LOG_MESSAGE(
-			1,
-			"DoomEdNum %d: Class \"%s\", Special \"%s\", Args %d,%d,%d,%d,%d",
-			num.first,
-			num.second.actor_class,
-			num.second.special,
-			num.second.args[0],
-			num.second.args[1],
-			num.second.args[2],
-			num.second.args[3],
-			num.second.args[4]
-		);
+		// Parse RR GG BB string
+		auto components = wxSplit(str, ' ');
+		if (components.size() >= 3)
+		{
+			long tmp;
+			components[0].ToLong(&tmp, 16);
+			col.r = tmp;
+			components[1].ToLong(&tmp, 16);
+			col.g = tmp;
+			components[2].ToLong(&tmp, 16);
+			col.b = tmp;
+			return true;
+		}
 	}
+	else
+	{
+		col.r = wxcol.Red();
+		col.g = wxcol.Green();
+		col.b = wxcol.Blue();
+		return true;
+	}
+
+	return false;
 }
 
 
 
 // TEMP TESTING STUFF
-#include "MainEditor/MainEditor.h"
 #include "General/Console/Console.h"
+#include "MainEditor/MainEditor.h"
 
 CONSOLE_COMMAND(test_parse_zmapinfo, 1, false)
 {

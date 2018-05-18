@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -14,74 +14,71 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
-#include "UI/WxUtils.h"
-#include "Graphics/Icons.h"
 #include "General/UI.h"
+#include "Graphics/Icons.h"
+#include "UI/WxUtils.h"
+#include "Utility/StringUtils.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Variables
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 CVAR(String, font_monospace, "Consolas,Lucida Console", CVAR_SAVE)
 CVAR(Int, tab_style, 1, CVAR_SAVE)
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // WxUtils Namespace Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// WxUtils::createMenuItem
-//
+// -----------------------------------------------------------------------------
 // Creates a wxMenuItem from the given parameters, including giving it an icon
 // from slade.pk3 if specified
-// ----------------------------------------------------------------------------
-wxMenuItem* WxUtils::createMenuItem(wxMenu* menu, int id, const string& label, const string& help, const string& icon)
+// -----------------------------------------------------------------------------
+wxMenuItem* WxUtils::createMenuItem(wxMenu* menu, int id, string_view label, string_view help, string_view icon)
 {
-	auto item = new wxMenuItem(menu, id, label, help);
+	auto item = new wxMenuItem(menu, id, { label.data(), label.size() }, { help.data(), help.size() });
 
-	if (!icon.IsEmpty())
-		item->SetBitmap(Icons::getIcon(-1, icon));
+	if (!icon.empty())
+		item->SetBitmap(Icons::getIcon(Icons::Any, icon));
 
 	return item;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::getMonospaceFont
-//
+// -----------------------------------------------------------------------------
 // Returns a copy of the font [base] with a monospace face/family
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 wxFont WxUtils::getMonospaceFont(wxFont base)
 {
 	wxFont font(base.GetPointSize(), wxFONTFAMILY_MODERN, base.GetStyle(), base.GetWeight());
 
-	auto split = wxSplit(font_monospace, ',');
-	for (unsigned a = 0; a < split.size(); a++)
+	auto split = wxSplit(font_monospace.value, ',');
+	for (const auto& a : split)
 	{
-		if (base.SetFaceName(split[a]))
+		if (base.SetFaceName(a))
 		{
-			font.SetFaceName(split[a]);
+			font.SetFaceName(a);
 			break;
 		}
 	}
@@ -89,22 +86,18 @@ wxFont WxUtils::getMonospaceFont(wxFont base)
 	return font;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::createSmallImageList
-//
+// -----------------------------------------------------------------------------
 // Creates an image list with a DPI-scaled 'small' image size (for lists, etc.)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 wxImageList* WxUtils::createSmallImageList()
 {
 	auto icon_size = UI::scaleFactor() > 1.25 ? 32 : 16;
 	return new wxImageList(icon_size, icon_size, false, 0);
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::createPadPanel
-//
+// -----------------------------------------------------------------------------
 // Creates a wxPanel and places [control] on it, with [pad] padding around it
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 wxPanel* WxUtils::createPadPanel(wxWindow* parent, wxWindow* control, int pad)
 {
 	if (pad < 0)
@@ -118,12 +111,10 @@ wxPanel* WxUtils::createPadPanel(wxWindow* parent, wxWindow* control, int pad)
 	return panel;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::createLabelHBox
-//
-// Creates a simple horizontal box sizer with a [label] on the left and
-// [widget] on the right
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Creates a simple horizontal box sizer with a [label] on the left and [widget]
+// on the right
+// -----------------------------------------------------------------------------
 wxSizer* WxUtils::createLabelHBox(wxWindow* parent, const string& label, wxWindow* widget)
 {
 	auto hbox = new wxBoxSizer(wxHORIZONTAL);
@@ -132,6 +123,10 @@ wxSizer* WxUtils::createLabelHBox(wxWindow* parent, const string& label, wxWindo
 	return hbox;
 }
 
+// -----------------------------------------------------------------------------
+// Creates a simple horizontal box sizer with a [label] on the left and another
+// [sizer] on the right
+// -----------------------------------------------------------------------------
 wxSizer* WxUtils::createLabelHBox(wxWindow* parent, const string& label, wxSizer* sizer)
 {
 	auto hbox = new wxBoxSizer(wxHORIZONTAL);
@@ -140,13 +135,11 @@ wxSizer* WxUtils::createLabelHBox(wxWindow* parent, const string& label, wxSizer
 	return hbox;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::createLabelVBox
-//
+// -----------------------------------------------------------------------------
 // Creates a simple vertical box sizer with a [label] on the top and [widget]
 // on the bottom
-// ----------------------------------------------------------------------------
-wxSizer *::WxUtils::createLabelVBox(wxWindow *parent, const string &label, wxWindow *widget)
+// -----------------------------------------------------------------------------
+wxSizer* ::WxUtils::createLabelVBox(wxWindow* parent, const string& label, wxWindow* widget)
 {
 	auto vbox = new wxBoxSizer(wxVERTICAL);
 	vbox->Add(new wxStaticText(parent, -1, label), 0, wxBOTTOM, UI::px(UI::Size::PadMinimum));
@@ -154,6 +147,10 @@ wxSizer *::WxUtils::createLabelVBox(wxWindow *parent, const string &label, wxWin
 	return vbox;
 }
 
+// -----------------------------------------------------------------------------
+// Creates a simple vertical box sizer with a [label] on the top and another
+// [sizer] on the bottom
+// -----------------------------------------------------------------------------
 wxSizer* WxUtils::createLabelVBox(wxWindow* parent, const string& label, wxSizer* sizer)
 {
 	auto vbox = new wxBoxSizer(wxVERTICAL);
@@ -162,13 +159,11 @@ wxSizer* WxUtils::createLabelVBox(wxWindow* parent, const string& label, wxSizer
 	return vbox;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::layoutHorizontally
-//
+// -----------------------------------------------------------------------------
 // Returns a horizontal box sizer containing [widgets].
 // [widgets] can contain a combination of wxWindow and wxSizer objects
-// ----------------------------------------------------------------------------
-wxSizer* WxUtils::layoutHorizontally(vector<wxObject*> widgets, int expand_col)
+// -----------------------------------------------------------------------------
+wxSizer* WxUtils::layoutHorizontally(const vector<wxObject*>& widgets, int expand_col)
 {
 	auto hbox = new wxBoxSizer(wxHORIZONTAL);
 
@@ -182,10 +177,9 @@ wxSizer* WxUtils::layoutHorizontally(vector<wxObject*> widgets, int expand_col)
 		{
 			hbox->Add(
 				(wxWindow*)widget,
-				expand_col == a ? 1 : 0,
+				expand_col == (int)a ? 1 : 0,
 				widget == widgets[0] ? wxEXPAND : wxEXPAND | wxLEFT,
-				UI::pad()
-			);
+				UI::pad());
 		}
 
 		// Sizer
@@ -193,34 +187,33 @@ wxSizer* WxUtils::layoutHorizontally(vector<wxObject*> widgets, int expand_col)
 		{
 			hbox->Add(
 				(wxSizer*)widget,
-				expand_col == a ? 1 : 0,
+				expand_col == (int)a ? 1 : 0,
 				widget == widgets[0] ? wxEXPAND : wxEXPAND | wxLEFT,
-				UI::pad()
-			);
+				UI::pad());
 		}
 	}
 
 	return hbox;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::layoutHorizontally
-//
+// -----------------------------------------------------------------------------
 // Same as above, however instead of returning a new sizer, it adds it to the
 // given [sizer] with [flags]
-// ----------------------------------------------------------------------------
-void WxUtils::layoutHorizontally(wxSizer* sizer, vector<wxObject*> widgets, wxSizerFlags flags, int expand_col)
+// -----------------------------------------------------------------------------
+void WxUtils::layoutHorizontally(
+	wxSizer*                 sizer,
+	const vector<wxObject*>& widgets,
+	const wxSizerFlags&      flags,
+	int                      expand_col)
 {
 	sizer->Add(layoutHorizontally(widgets, expand_col), flags);
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::layoutVertically
-//
+// -----------------------------------------------------------------------------
 // Returns a vertical box sizer containing [widgets].
 // [widgets] can contain a combination of wxWindow and wxSizer objects
-// ----------------------------------------------------------------------------
-wxSizer* WxUtils::layoutVertically(vector<wxObject*> widgets, int expand_row)
+// -----------------------------------------------------------------------------
+wxSizer* WxUtils::layoutVertically(const vector<wxObject*>& widgets, int expand_row)
 {
 	auto vbox = new wxBoxSizer(wxVERTICAL);
 
@@ -234,10 +227,9 @@ wxSizer* WxUtils::layoutVertically(vector<wxObject*> widgets, int expand_row)
 		{
 			vbox->Add(
 				(wxWindow*)widget,
-				expand_row == a ? 1 : 0,
+				expand_row == (int)a ? 1 : 0,
 				widget == widgets[0] ? wxEXPAND : wxEXPAND | wxTOP,
-				UI::pad()
-			);
+				UI::pad());
 		}
 
 		// Sizer
@@ -245,51 +237,75 @@ wxSizer* WxUtils::layoutVertically(vector<wxObject*> widgets, int expand_row)
 		{
 			vbox->Add(
 				(wxSizer*)widget,
-				expand_row == a ? 1 : 0,
+				expand_row == (int)a ? 1 : 0,
 				widget == widgets[0] ? wxEXPAND : wxEXPAND | wxTOP,
-				UI::pad()
-			);
+				UI::pad());
 		}
 	}
 
 	return vbox;
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::layoutVertically
-//
+// -----------------------------------------------------------------------------
 // Same as above, however instead of returning a new sizer, it adds it to the
 // given [sizer] with [flags]
-// ----------------------------------------------------------------------------
-void WxUtils::layoutVertically(wxSizer* sizer, vector<wxObject*> widgets, wxSizerFlags flags, int expand_row)
+// -----------------------------------------------------------------------------
+void WxUtils::layoutVertically(
+	wxSizer*                 sizer,
+	const vector<wxObject*>& widgets,
+	const wxSizerFlags&      flags,
+	int                      expand_row)
 {
 	sizer->Add(layoutVertically(widgets, expand_row), flags);
 }
 
-// ----------------------------------------------------------------------------
-// WxUtils::arrayString
-//
+// -----------------------------------------------------------------------------
 // Returns a wxArrayString containing the strings in [vector]
-// ----------------------------------------------------------------------------
-wxArrayString WxUtils::arrayString(vector<string> vector)
+// -----------------------------------------------------------------------------
+wxArrayString WxUtils::arrayString(const vector<string>& vector)
 {
-	return wxArrayString{ vector.size(), vector.data() };
+	wxArrayString array;
+	for (const auto& str : vector)
+		array.Add(str);
+	return array;
 }
 
+vector<string> WxUtils::vectorString(const wxArrayString& list)
+{
+	vector<string> vec;
+	for (const auto& wxs : list)
+		vec.push_back(wxs.ToStdString());
+	return vec;
+}
+
+// -----------------------------------------------------------------------------
+// Returns a DPI-scaled wxSize [x,y]
+// -----------------------------------------------------------------------------
 wxSize WxUtils::scaledSize(int x, int y)
 {
-	return wxSize(
-		x < 0 ? -1 : UI::scalePx(x),
-		y < 0 ? -1 : UI::scalePx(y)
-	);
+	return { x < 0 ? -1 : UI::scalePx(x), y < 0 ? -1 : UI::scalePx(y) };
 }
 
+// -----------------------------------------------------------------------------
+// Returns a DPI-scaled wxPoint [x,y]
+// -----------------------------------------------------------------------------
 wxPoint WxUtils::scaledPoint(int x, int y)
 {
-	return wxPoint(UI::scalePx(x), UI::scalePx(y));
+	return { UI::scalePx(x), UI::scalePx(y) };
 }
 
+// -----------------------------------------------------------------------------
+// Returns a DPI-scaled wxRect at [x,y] of size [width,height]
+// -----------------------------------------------------------------------------
 wxRect WxUtils::scaledRect(int x, int y, int width, int height)
 {
-	return wxRect(UI::scalePx(x), UI::scalePx(y), UI::scalePx(width), UI::scalePx(height));
+	return { UI::scalePx(x), UI::scalePx(y), UI::scalePx(width), UI::scalePx(height) };
+}
+
+// -----------------------------------------------------------------------------
+// Creates and returns a wxString from a string_view [view]
+// -----------------------------------------------------------------------------
+wxString WxUtils::stringFromView(string_view view)
+{
+	return wxString{ view.data(), view.size() };
 }

@@ -1,57 +1,118 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    MapTextureBrowser.cpp
- * Description: Specialisation of BrowserWindow to show and browse
- *              for map textures/flats
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    MapTextureBrowser.cpp
+// Description: Specialisation of BrowserWindow to show and browse for map
+//              textures/flats
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
+#include "MapTextureBrowser.h"
+#include "Dialogs/Preferences/InputPrefsPanel.h"
 #include "Game/Configuration.h"
-#include "General/ResourceManager.h"
 #include "MapEditor/MapEditor.h"
 #include "MapEditor/MapTextureManager.h"
 #include "MapEditor/SLADEMap/SLADEMap.h"
-#include "MapTextureBrowser.h"
 
 
-/*******************************************************************
- * VARIABLES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Variables
+//
+// -----------------------------------------------------------------------------
 CVAR(Int, map_tex_sort, 2, CVAR_SAVE)
 CVAR(String, map_tex_treespec, "type,archive,category", CVAR_SAVE)
 
 
-/*******************************************************************
- * MAPTEXBROWSERITEM CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Functions
+//
+// -----------------------------------------------------------------------------
+namespace
+{
+// -----------------------------------------------------------------------------
+// Builds and returns the tree item path for [info]
+// -----------------------------------------------------------------------------
+string determineTexturePath(Archive* archive, MapTextureManager::Category category, string_view type, string_view path)
+{
+	using TexCat     = MapTextureManager::Category;
+	auto   tree_spec = StrUtil::splitToViews(map_tex_treespec, ',');
+	string ret;
+	for (const auto& spec : tree_spec)
+	{
+		if (spec == "archive")
+			ret += archive->filename(false);
+		else if (spec == "type")
+			ret.append(type.data(), type.size());
+		else if (spec == "category")
+		{
+			switch (category)
+			{
+			case TexCat::TEXTUREX: ret += "TEXTUREx"; break;
+			case TexCat::TEXTURES: ret += "TEXTURES"; break;
+			case TexCat::HIRES: ret += "HIRESTEX"; break;
+			case TexCat::TX: ret += "Single (TX)"; break;
+			default: continue;
+			}
+		}
 
-/* MapTexBrowserItem::MapTexBrowserItem
- * MapTexBrowserItem class constructor
- *******************************************************************/
-MapTexBrowserItem::MapTexBrowserItem(string name, int type, unsigned index) : BrowserItem(name, index)
+		ret += "/";
+	}
+
+	return ret.append(path.data(), path.size());
+}
+
+// -----------------------------------------------------------------------------
+// Returns true if [left] has higher usage count than [right].
+// If both are equal it will go alphabetically by name
+// -----------------------------------------------------------------------------
+bool sortBIUsage(BrowserItem* left, BrowserItem* right)
+{
+	// Sort alphabetically if usage counts are equal
+	if (((MapTexBrowserItem*)left)->usageCount() == ((MapTexBrowserItem*)right)->usageCount())
+		return left->name() < right->name();
+	else
+		return ((MapTexBrowserItem*)left)->usageCount() > ((MapTexBrowserItem*)right)->usageCount();
+}
+} // namespace
+
+
+// -----------------------------------------------------------------------------
+//
+// MapTexBrowserItem Class Functions
+//
+// -----------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------
+// MapTexBrowserItem class constructor
+// -----------------------------------------------------------------------------
+MapTexBrowserItem::MapTexBrowserItem(string_view name, int type, unsigned index) : BrowserItem{ name, index }
 {
 	if (type == 0)
 		this->type_ = "texture";
@@ -61,29 +122,20 @@ MapTexBrowserItem::MapTexBrowserItem(string name, int type, unsigned index) : Br
 	// Check for blank texture
 	if (name == "-" && type == 0)
 		blank_ = true;
-
-	usage_count = 0;
 }
 
-/* MapTexBrowserItem::~MapTexBrowserItem
- * MapTexBrowserItem class destructor
- *******************************************************************/
-MapTexBrowserItem::~MapTexBrowserItem()
-{
-}
-
-/* MapTexBrowserItem::loadImage
- * Loads the item image
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Loads the item image
+// -----------------------------------------------------------------------------
 bool MapTexBrowserItem::loadImage()
 {
 	GLTexture* tex = nullptr;
 
 	// Get texture or flat depending on type
 	if (type_ == "texture")
-		tex = MapEditor::textureManager().getTexture(name_, false);
+		tex = MapEditor::textureManager().texture(name_, false);
 	else if (type_ == "flat")
-		tex = MapEditor::textureManager().getFlat(name_, false);
+		tex = MapEditor::textureManager().flat(name_, false);
 
 	if (tex)
 	{
@@ -94,9 +146,9 @@ bool MapTexBrowserItem::loadImage()
 		return false;
 }
 
-/* MapTexBrowserItem::itemInfo
- * Returns a string with extra information about the texture/flat
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns a string with extra information about the texture/flat
+// -----------------------------------------------------------------------------
 string MapTexBrowserItem::itemInfo()
 {
 	string info;
@@ -122,61 +174,66 @@ string MapTexBrowserItem::itemInfo()
 		info += ", Scaled";
 
 	// Add usage count
-	info += S_FMT(", Used %d times", usage_count);
+	info += S_FMT(", Used %d times", usage_count_);
 
 	return info;
 }
 
 
-/*******************************************************************
- * MAPTEXTUREBROWSER CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// MapTextureBrowser Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* MapTextureBrowser::MapTextureBrowser
- * MapTextureBrowser class constructor
- *******************************************************************/
-MapTextureBrowser::MapTextureBrowser(wxWindow* parent, int type, string texture, SLADEMap* map) : BrowserWindow(parent)
+
+// -----------------------------------------------------------------------------
+// MapTextureBrowser class constructor
+// -----------------------------------------------------------------------------
+MapTextureBrowser::MapTextureBrowser(wxWindow* parent, int type, string_view texture, SLADEMap* map) :
+	BrowserWindow(parent),
+	type_{ type },
+	map_{ map }
 {
 	// Init variables
-	this->type = type;
-	this->map = map;
-	this->truncate_names_ = true;
+	truncate_names_ = true;
 
 	// Init sorting
 	addSortType("Usage Count");
 	setSortType(map_tex_sort);
 
 	// Set window title
-	SetTitle("Browse Map Textures");
+	wxDialog::SetTitle("Browse Map Textures");
 
 	// Textures
 	if (type == 0 || Game::configuration().featureSupported(Game::Feature::MixTexFlats))
 	{
 		addGlobalItem(new MapTexBrowserItem("-", 0, 0));
 
-		vector<map_texinfo_t>& textures = MapEditor::textureManager().getAllTexturesInfo();
-		for (unsigned a = 0; a < textures.size(); a++)
+		auto& textures = MapEditor::textureManager().allTexturesInfo();
+		for (auto& tex : textures)
 		{
 			// Add browser item
-			addItem(new MapTexBrowserItem(textures[a].name, 0, textures[a].index),
-				determineTexturePath(textures[a].archive, textures[a].category, "Textures", textures[a].path));
+			addItem(
+				new MapTexBrowserItem(tex.name, 0, tex.index),
+				determineTexturePath(tex.archive, tex.category, "Textures", tex.path));
 		}
 	}
 
 	// Flats
 	if (type == 1 || Game::configuration().featureSupported(Game::Feature::MixTexFlats))
 	{
-		vector<map_texinfo_t>& flats = MapEditor::textureManager().getAllFlatsInfo();
-		for (unsigned a = 0; a < flats.size(); a++)
+		auto& flats = MapEditor::textureManager().allFlatsInfo();
+		for (auto& flat : flats)
 		{
 			// Determine tree path
-			string path = determineTexturePath(flats[a].archive, flats[a].category, "Flats", flats[a].path);
+			string path = determineTexturePath(flat.archive, flat.category, "Flats", flat.path);
 
 			// Add browser item
-			if (flats[a].category == MapTextureManager::TC_TEXTURES)
-				addItem(new MapTexBrowserItem(flats[a].name, 0, flats[a].index), path);
+			if (flat.category == MapTextureManager::Category::TEXTURES)
+				addItem(new MapTexBrowserItem(flat.name, 0, flat.index), path);
 			else
-				addItem(new MapTexBrowserItem(flats[a].name, 1, flats[a].index), path);
+				addItem(new MapTexBrowserItem(flat.name, 1, flat.index), path);
 		}
 	}
 
@@ -186,65 +243,9 @@ MapTextureBrowser::MapTextureBrowser(wxWindow* parent, int type, string texture,
 	selectItem(texture);
 }
 
-/* MapTextureBrowser::~MapTextureBrowser
- * MapTextureBrowser class destructor
- *******************************************************************/
-MapTextureBrowser::~MapTextureBrowser()
-{
-}
-
-/* MapTextureBrowser::determineTexturePath
- * Builds and returns the tree item path for [info]
- *******************************************************************/
-string MapTextureBrowser::determineTexturePath(Archive* archive, uint8_t category, string type, string path)
-{
-	wxArrayString tree_spec = wxSplit(map_tex_treespec, ',');
-	string ret;
-	for (unsigned b = 0; b < tree_spec.size(); b++)
-	{
-		if (tree_spec[b] == "archive")
-			ret += archive->filename(false);
-		else if (tree_spec[b] == "type")
-			ret += type;
-		else if (tree_spec[b] == "category")
-		{
-			switch (category)
-			{
-			case MapTextureManager::TC_TEXTUREX:
-				ret += "TEXTUREx"; break;
-			case MapTextureManager::TC_TEXTURES:
-				ret += "TEXTURES"; break;
-			case MapTextureManager::TC_HIRES:
-				ret += "HIRESTEX"; break;
-			case MapTextureManager::TC_TX:
-				ret += "Single (TX)"; break;
-			default:
-				continue;
-			}
-		}
-
-		ret += "/";
-	}
-
-	return ret + path;
-}
-
-/* sortBIUsage
- * Returns true if [left] has higher usage count than [right]. If
- * both are equal it will go alphabetically by name
- *******************************************************************/
-bool sortBIUsage(BrowserItem* left, BrowserItem* right)
-{
-	// Sort alphabetically if usage counts are equal
-	if (((MapTexBrowserItem*)left)->usageCount() == ((MapTexBrowserItem*)right)->usageCount())
-		return left->name() < right->name();
-	else
-		return ((MapTexBrowserItem*)left)->usageCount() > ((MapTexBrowserItem*)right)->usageCount();
-}
-
-/* MapTextureBrowser::doSort
- * Sort the current items depending on [sort_type]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sort the current items depending on [sort_type]
+// -----------------------------------------------------------------------------
 void MapTextureBrowser::doSort(unsigned sort_type)
 {
 	map_tex_sort = sort_type;
@@ -262,21 +263,21 @@ void MapTextureBrowser::doSort(unsigned sort_type)
 	}
 }
 
-/* MapTextureBrowser::updateUsage
- * Updates usage counts for all browser items
- *******************************************************************/
-void MapTextureBrowser::updateUsage()
+// -----------------------------------------------------------------------------
+// Updates usage counts for all browser items
+// -----------------------------------------------------------------------------
+void MapTextureBrowser::updateUsage() const
 {
-	if (!map)
+	if (!map_)
 		return;
 
-	vector<BrowserItem*>& items = canvas_->itemList();
-	for (unsigned i = 0; i < items.size(); i++)
+	auto& items = canvas_->itemList();
+	for (auto& i : items)
 	{
-		MapTexBrowserItem* item = (MapTexBrowserItem*)items[i];
-		if (type == 0)
-			item->setUsage(map->texUsageCount(item->name()));
+		auto item = (MapTexBrowserItem*)i;
+		if (type_ == 0)
+			item->setUsage(map_->texUsageCount(item->name()));
 		else
-			item->setUsage(map->flatUsageCount(item->name()));
+			item->setUsage(map_->flatUsageCount(item->name()));
 	}
 }

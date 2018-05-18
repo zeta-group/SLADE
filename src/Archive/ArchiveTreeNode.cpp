@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,100 +15,91 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "ArchiveTreeNode.h"
 #include "General/Misc.h"
+#include "MapEditor/Edit/Input.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // ArchiveTreeNode Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::ArchiveTreeNode
-//
+// -----------------------------------------------------------------------------
 // ArchiveTreeNode class constructor
-// ----------------------------------------------------------------------------
-ArchiveTreeNode::ArchiveTreeNode(ArchiveTreeNode* parent, Archive* archive) :
-	STreeNode{ parent },
-	archive_{ archive }
+// -----------------------------------------------------------------------------
+ArchiveTreeNode::ArchiveTreeNode(ArchiveTreeNode* parent, Archive* archive) : STreeNode{ parent }, archive_{ archive }
 {
 	// Init dir entry
-	dir_entry_ = std::make_unique<ArchiveEntry>();
-	dir_entry_->type = EntryType::folderType();
-	dir_entry_->parent = parent;
+	dir_entry_          = std::make_unique<ArchiveEntry>();
+	dir_entry_->type_   = EntryType::folderType();
+	dir_entry_->parent_ = parent;
 
 	if (parent)
 		allow_duplicate_names_ = parent->allow_duplicate_names_;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::addChild
-//
+// -----------------------------------------------------------------------------
 // Override of STreeNode::addChild to also set the child node's directory entry
 // parent to this node
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ArchiveTreeNode::addChild(STreeNode* child)
 {
 	// Do default child add
 	STreeNode::addChild(child);
 
 	// The child node's dir_entry should have this as parent
-	((ArchiveTreeNode*)child)->dir_entry_->parent = this;
+	((ArchiveTreeNode*)child)->dir_entry_->parent_ = this;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::archive
-//
+// -----------------------------------------------------------------------------
 // Returns the parent archive of this node (gets the parent archive of the
 // *root* parent of this node)
-// ----------------------------------------------------------------------------
-Archive* ArchiveTreeNode::archive()
+// -----------------------------------------------------------------------------
+Archive* ArchiveTreeNode::archive() const
 {
-	if (parent)
-		return ((ArchiveTreeNode*)parent)->archive();
+	if (parent_)
+		return ((ArchiveTreeNode*)parent_)->archive();
 	else
 		return archive_;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::getName
-//
+// -----------------------------------------------------------------------------
 // Returns the node (directory) name
-// ----------------------------------------------------------------------------
-string ArchiveTreeNode::getName()
+// -----------------------------------------------------------------------------
+string_view ArchiveTreeNode::name() const
 {
+	static auto err = "ERROR"; // So we're not returning a temporary
+
 	// Check dir entry exists
 	if (!dir_entry_)
-		return "ERROR";
+		return err;
 
-	return dir_entry_->getName();
+	return dir_entry_->name();
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::entryIndex
-//
+// -----------------------------------------------------------------------------
 // Returns the index of [entry] within this directory, or -1 if the entry
 // doesn't exist
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 {
 	// Check entry was given
@@ -117,32 +108,32 @@ int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 
 	// Search for it
 	const size_t size = entries_.size();
-	if (entry->index_guess < startfrom || entry->index_guess >= size)
+	if (entry->index_guess_ < startfrom || entry->index_guess_ >= size)
 	{
 		for (auto a = startfrom; a < size; a++)
 		{
 			if (entries_[a].get() == entry)
 			{
-				entry->index_guess = a;
+				entry->index_guess_ = a;
 				return (int)a;
 			}
 		}
 	}
 	else
 	{
-		for (auto a = entry->index_guess; a < size; a++)
+		for (auto a = entry->index_guess_; a < size; a++)
 		{
 			if (entries_[a].get() == entry)
 			{
-				entry->index_guess = a;
+				entry->index_guess_ = a;
 				return (int)a;
 			}
 		}
-		for (auto a = startfrom; a < entry->index_guess; a++)
+		for (auto a = startfrom; a < entry->index_guess_; a++)
 		{
 			if (entries_[a].get() == entry)
 			{
-				entry->index_guess = a;
+				entry->index_guess_ = a;
 				return (int)a;
 			}
 		}
@@ -152,39 +143,34 @@ int ArchiveTreeNode::entryIndex(ArchiveEntry* entry, size_t startfrom)
 	return -1;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::allEntries
-//
+// -----------------------------------------------------------------------------
 // Returns a flat list of all entries in this directory, including entries in
 // subdirectories (recursively)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 vector<ArchiveEntry::SPtr> ArchiveTreeNode::allEntries()
 {
 	vector<ArchiveEntry::SPtr> entries;
 
 	// Recursive lambda function to build entry list
 	std::function<void(vector<ArchiveEntry::SPtr>&, ArchiveTreeNode*)> build_list =
-	[&](vector<ArchiveEntry::SPtr>& list, ArchiveTreeNode* dir)
-	{
-		const auto n_subdirs = dir->nChildren();
-		for (unsigned a = 0; a < n_subdirs; a++)
-			build_list(list, (ArchiveTreeNode*)dir->getChild(a));
+		[&](vector<ArchiveEntry::SPtr>& list, ArchiveTreeNode* dir) {
+			const auto n_subdirs = dir->nChildren();
+			for (unsigned a = 0; a < n_subdirs; a++)
+				build_list(list, (ArchiveTreeNode*)dir->childAt(a));
 
-		for (auto& entry : dir->entries_)
-			list.push_back(entry);
-	};
+			for (auto& entry : dir->entries_)
+				list.push_back(entry);
+		};
 
 	build_list(entries, this);
 
 	return entries;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::entryAt
-//
+// -----------------------------------------------------------------------------
 // Returns the entry at [index] in this directory, or null if [index] is out of
 // bounds
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ArchiveEntry* ArchiveTreeNode::entryAt(unsigned index)
 {
 	// Check index
@@ -194,12 +180,10 @@ ArchiveEntry* ArchiveTreeNode::entryAt(unsigned index)
 	return entries_[index].get();
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::sharedEntryAt
-//
+// -----------------------------------------------------------------------------
 // Returns a shared pointer to the entry at [index] in this directory, or null
 // if [index] is out of bounds
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ArchiveEntry::SPtr ArchiveTreeNode::sharedEntryAt(unsigned index)
 {
 	// Check index
@@ -209,13 +193,11 @@ ArchiveEntry::SPtr ArchiveTreeNode::sharedEntryAt(unsigned index)
 	return entries_[index];
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::entry
-//
+// -----------------------------------------------------------------------------
 // Returns the entry matching [name] in this directory, or null if no entries
 // match
-// ----------------------------------------------------------------------------
-ArchiveEntry* ArchiveTreeNode::entry(const string& name, bool cut_ext)
+// -----------------------------------------------------------------------------
+ArchiveEntry* ArchiveTreeNode::entry(string_view name, bool cut_ext)
 {
 	// Check name was given
 	if (name.empty())
@@ -225,7 +207,7 @@ ArchiveEntry* ArchiveTreeNode::entry(const string& name, bool cut_ext)
 	for (auto& entry : entries_)
 	{
 		// Check for (non-case-sensitive) name match
-		if (S_CMPNOCASE(entry->getName(cut_ext), name))
+		if (StrUtil::equalCI(cut_ext ? entry->nameNoExt() : entry->name(), name))
 			return entry.get();
 	}
 
@@ -233,13 +215,11 @@ ArchiveEntry* ArchiveTreeNode::entry(const string& name, bool cut_ext)
 	return nullptr;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::sharedEntry
-//
+// -----------------------------------------------------------------------------
 // Returns a shared pointer to the entry matching [name] in this directory, or
 // null if no entries match
-// ----------------------------------------------------------------------------
-ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(const string& name, bool cut_ext)
+// -----------------------------------------------------------------------------
+ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(string_view name, bool cut_ext)
 {
 	// Check name was given
 	if (name.empty())
@@ -249,7 +229,7 @@ ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(const string& name, bool cut_ext
 	for (auto& entry : entries_)
 	{
 		// Check for (non-case-sensitive) name match
-		if (S_CMPNOCASE(entry->getName(cut_ext), name))
+		if (StrUtil::equalCI(cut_ext ? entry->nameNoExt() : entry->name(), name))
 			return entry;
 	}
 
@@ -257,12 +237,10 @@ ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(const string& name, bool cut_ext
 	return nullptr;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::sharedEntry
-//
+// -----------------------------------------------------------------------------
 // Returns a shared pointer to [entry] in this directory, or null if no entries
 // match
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(ArchiveEntry* entry)
 {
 	// Find entry
@@ -274,11 +252,9 @@ ArchiveEntry::SPtr ArchiveTreeNode::sharedEntry(ArchiveEntry* entry)
 	return nullptr;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::numEntries
-//
+// -----------------------------------------------------------------------------
 // Returns the number of entries in this directory
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 unsigned ArchiveTreeNode::numEntries(bool inc_subdirs)
 {
 	if (!inc_subdirs)
@@ -286,30 +262,28 @@ unsigned ArchiveTreeNode::numEntries(bool inc_subdirs)
 	else
 	{
 		unsigned count = entries_.size();
-		for (auto& subdir : children)
+		for (auto& subdir : children_)
 			count += ((ArchiveTreeNode*)subdir)->numEntries(true);
 
 		return count;
 	}
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::linkEntries
-//
+// -----------------------------------------------------------------------------
 // Links two entries. [first] must come before [second] in the list
-// ----------------------------------------------------------------------------
-void ArchiveTreeNode::linkEntries(ArchiveEntry* first, ArchiveEntry* second)
+// -----------------------------------------------------------------------------
+void ArchiveTreeNode::linkEntries(ArchiveEntry* first, ArchiveEntry* second) const
 {
-	if (first) first->next = second;
-	if (second) second->prev = first;
+	if (first)
+		first->next_ = second;
+	if (second)
+		second->prev_ = first;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::addEntry
-//
+// -----------------------------------------------------------------------------
 // Adds [entry] to this directory at [index], or at the end if [index] is out
 // of bounds
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool ArchiveTreeNode::addEntry(ArchiveEntry* entry, unsigned index)
 {
 	// Check entry
@@ -324,10 +298,10 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry* entry, unsigned index)
 		// Link entry
 		if (!entries_.empty())
 		{
-			entries_.back()->next = entry;
-			entry->prev = entries_.back().get();
+			entries_.back()->next_ = entry;
+			entry->prev_           = entries_.back().get();
 		}
-		entry->next = nullptr;
+		entry->next_ = nullptr;
 
 		// Add it to end
 		entries_.push_back(ArchiveEntry::SPtr(entry));
@@ -337,18 +311,18 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry* entry, unsigned index)
 		// Link entry
 		if (index > 0)
 		{
-			entries_[index-1]->next = entry;
-			entry->prev = entries_[index-1].get();
+			entries_[index - 1]->next_ = entry;
+			entry->prev_               = entries_[index - 1].get();
 		}
-		entries_[index]->prev = entry;
-		entry->next = entries_[index].get();
+		entries_[index]->prev_ = entry;
+		entry->next_           = entries_[index].get();
 
 		// Add it at index
 		entries_.insert(entries_.begin() + index, ArchiveEntry::SPtr(entry));
 	}
 
 	// Set entry's parent to this node
-	entry->parent = this;
+	entry->parent_ = this;
 
 	// Check entry name if duplicate names aren't allowed
 	if (!allow_duplicate_names_)
@@ -357,12 +331,10 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry* entry, unsigned index)
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::addEntry
-//
+// -----------------------------------------------------------------------------
 // Adds [entry] to this directory at [index], or at the end if [index] is out
 // of bounds
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool ArchiveTreeNode::addEntry(ArchiveEntry::SPtr& entry, unsigned index)
 {
 	// Check entry
@@ -377,10 +349,10 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry::SPtr& entry, unsigned index)
 		// Link entry
 		if (!entries_.empty())
 		{
-			entries_.back()->next = entry.get();
-			entry->prev = entries_.back().get();
+			entries_.back()->next_ = entry.get();
+			entry->prev_           = entries_.back().get();
 		}
-		entry->next = nullptr;
+		entry->next_ = nullptr;
 
 		// Add it to end
 		entries_.push_back(ArchiveEntry::SPtr(entry));
@@ -390,18 +362,18 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry::SPtr& entry, unsigned index)
 		// Link entry
 		if (index > 0)
 		{
-			entries_[index-1]->next = entry.get();
-			entry->prev = entries_[index-1].get();
+			entries_[index - 1]->next_ = entry.get();
+			entry->prev_               = entries_[index - 1].get();
 		}
-		entries_[index]->prev = entry.get();
-		entry->next = entries_[index].get();
+		entries_[index]->prev_ = entry.get();
+		entry->next_           = entries_[index].get();
 
 		// Add it at index
 		entries_.insert(entries_.begin() + index, ArchiveEntry::SPtr(entry));
 	}
 
 	// Set entry's parent to this node
-	entry->parent = this;
+	entry->parent_ = this;
 
 	// Check entry name if duplicate names aren't allowed
 	if (!allow_duplicate_names_)
@@ -410,12 +382,10 @@ bool ArchiveTreeNode::addEntry(ArchiveEntry::SPtr& entry, unsigned index)
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::removeEntry
-//
+// -----------------------------------------------------------------------------
 // Removes the entry at [index] in this directory . Returns false if [index]
 // was out of bounds, true otherwise
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool ArchiveTreeNode::removeEntry(unsigned index)
 {
 	// Check index
@@ -423,13 +393,15 @@ bool ArchiveTreeNode::removeEntry(unsigned index)
 		return false;
 
 	// De-parent entry
-	entries_[index]->parent = nullptr;
+	entries_[index]->parent_ = nullptr;
 
 	// De-link entry
-	entries_[index]->prev = nullptr;
-	entries_[index]->next = nullptr;
-	if (index > 0) entries_[index-1]->next = entryAt(index+1);
-	if (index < entries_.size()-1) entries_[index+1]->prev = entryAt(index-1);
+	entries_[index]->prev_ = nullptr;
+	entries_[index]->next_ = nullptr;
+	if (index > 0)
+		entries_[index - 1]->next_ = entryAt(index + 1);
+	if (index < entries_.size() - 1)
+		entries_[index + 1]->prev_ = entryAt(index - 1);
 
 	// Remove it from the entry list
 	entries_.erase(entries_.begin() + index);
@@ -437,16 +409,14 @@ bool ArchiveTreeNode::removeEntry(unsigned index)
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::swapEntries
-//
+// -----------------------------------------------------------------------------
 // Swaps the entry at [index1] with the entry at [index2] within this directory
 // Returns false if either index was invalid, true otherwise
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool ArchiveTreeNode::swapEntries(unsigned index1, unsigned index2)
 {
 	// Check indices
-	if (index1 >= entries_.size() || index2 >= entries_.size() || index1==index2)
+	if (index1 >= entries_.size() || index2 >= entries_.size() || index1 == index2)
 		return false;
 
 	// Get entries to swap
@@ -457,58 +427,52 @@ bool ArchiveTreeNode::swapEntries(unsigned index1, unsigned index2)
 	entries_[index1].swap(entries_[index2]);
 
 	// Update links
-	linkEntries(entryAt(index1-1), entry2);
-	linkEntries(entry2, entryAt(index1+1));
-	linkEntries(entryAt(index2-1), entry1);
-	linkEntries(entry1, entryAt(index2+1));
+	linkEntries(entryAt(index1 - 1), entry2);
+	linkEntries(entry2, entryAt(index1 + 1));
+	linkEntries(entryAt(index2 - 1), entry1);
+	linkEntries(entry1, entryAt(index2 + 1));
 
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::clear
-//
+// -----------------------------------------------------------------------------
 // Clears all entries and subdirs
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ArchiveTreeNode::clear()
 {
 	// Clear entries
 	entries_.clear();
 
 	// Clear subdirs
-	for (auto& subdir : children)
+	for (auto& subdir : children_)
 		delete subdir;
-	children.clear();
+	children_.clear();
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::clone
-//
+// -----------------------------------------------------------------------------
 // Returns a clone of this node
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ArchiveTreeNode* ArchiveTreeNode::clone()
 {
 	// Create copy
 	ArchiveTreeNode* copy = new ArchiveTreeNode();
-	copy->setName(dir_entry_->getName());
+	copy->setName(dir_entry_->name());
 
 	// Copy entries
 	for (auto& entry : entries_)
 		copy->addEntry(new ArchiveEntry(*entry));
 
 	// Copy subdirectories
-	for (auto& subdir : children)
+	for (auto& subdir : children_)
 		copy->addChild(((ArchiveTreeNode*)subdir)->clone());
 
 	return copy;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::merge
-//
+// -----------------------------------------------------------------------------
 // Merges [node] with this node. Entries within [node] are added at [position]
 // within this node. Returns false if [node] is invalid, true otherwise
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 bool ArchiveTreeNode::merge(ArchiveTreeNode* node, unsigned position, int state)
 {
 	// Check node was given to merge
@@ -519,7 +483,7 @@ bool ArchiveTreeNode::merge(ArchiveTreeNode* node, unsigned position, int state)
 	for (unsigned a = 0; a < node->numEntries(); a++)
 	{
 		if (node->entryAt(a))
-			node->entryAt(a)->setName(Misc::lumpNameToFileName(node->entryAt(a)->getName()));
+			node->entryAt(a)->setName(node->entryAt(a)->name());
 
 		ArchiveEntry* nentry = new ArchiveEntry(*(node->entryAt(a)));
 		addEntry(nentry, position);
@@ -532,59 +496,62 @@ bool ArchiveTreeNode::merge(ArchiveTreeNode* node, unsigned position, int state)
 	// Merge subdirectories
 	for (unsigned a = 0; a < node->nChildren(); a++)
 	{
-		ArchiveTreeNode* child = (ArchiveTreeNode*)STreeNode::addChild(node->getChild(a)->getName());
-		child->merge((ArchiveTreeNode*)node->getChild(a));
+		ArchiveTreeNode* child = (ArchiveTreeNode*)STreeNode::addChild(node->childAt(a)->name());
+		child->merge((ArchiveTreeNode*)node->childAt(a));
 		child->dirEntry()->setState(state, true);
 	}
 
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::exportTo
-//
+// -----------------------------------------------------------------------------
 // Exports all entries and subdirs to the filesystem at [path]
-// ----------------------------------------------------------------------------
-bool ArchiveTreeNode::exportTo(string path)
+// -----------------------------------------------------------------------------
+bool ArchiveTreeNode::exportTo(string_view path)
 {
 	// Create directory if needed
-	if (!wxDirExists(path))
-		wxMkdir(path);
+	wxString wxpath{ path.data(), path.size() };
+	if (!wxDirExists(wxpath))
+		wxMkdir(wxpath);
 
 	// Export entries as files
 	for (auto& entry : entries_)
 	{
 		// Setup entry filename
-		wxFileName fn(entry->getName());
-		fn.SetPath(path);
+		wxFileName fn({ entry->name().data(), entry->name().size() });
+		fn.SetPath(wxpath);
 
 		// Add file extension if it doesn't exist
 		if (!fn.HasExt())
-			fn.SetExt(entry->getType()->extension());
+			fn.SetExt(entry->type()->extension());
 
 		// Do export
-		entry->exportFile(fn.GetFullPath());
+		entry->exportFile(fn.GetFullPath().ToStdString());
 	}
 
 	// Export subdirectories
-	for (auto& subdir : children)
-		((ArchiveTreeNode*)subdir)->exportTo(path + "/" + subdir->getName());
+	for (auto& subdir : children_)
+	{
+		auto sub_path = path.to_string();
+		sub_path.push_back('/');
+		sub_path.append(subdir->name().data(), subdir->name().size());
+
+		((ArchiveTreeNode*)subdir)->exportTo(sub_path);
+	}
 
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-// ArchiveTreeNode::ensureUniqueName
-//
+// -----------------------------------------------------------------------------
 // Ensures [entry] has an unique name within this directory
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 {
-	unsigned index = 0;
-	unsigned number = 0;
+	unsigned   index     = 0;
+	unsigned   number    = 0;
 	const auto n_entries = entries_.size();
-	wxFileName fn(entry->getName());
-	string name = fn.GetFullName();
+	wxFileName fn({ entry->name().data(), entry->name().size() });
+	wxString   name = fn.GetFullName();
 	while (index < n_entries)
 	{
 		if (entries_[index].get() == entry)
@@ -593,10 +560,10 @@ void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 			continue;
 		}
 
-		if (S_CMPNOCASE(entries_[index]->getName(false), name))
+		if (StrUtil::equalCI(entries_[index]->name(), name))
 		{
-			fn.SetName(S_FMT("%s%d", CHR(entry->getName(true)), ++number));
-			name = fn.GetFullName();
+			fn.SetName(S_FMT("%s%d", entry->nameNoExt(), ++number));
+			name  = fn.GetFullName();
 			index = 0;
 			continue;
 		}
@@ -605,5 +572,5 @@ void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 	}
 
 	if (number > 0)
-		entry->rename(name);
+		entry->rename({ name.data(), name.size() });
 }

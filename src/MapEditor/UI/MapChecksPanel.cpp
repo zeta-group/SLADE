@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -16,82 +16,79 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "MapChecksPanel.h"
 #include "MapEditor/MapChecks.h"
+#include "MapEditor/MapEditContext.h"
 #include "MapEditor/MapEditor.h"
 #include "MapEditor/SLADEMap/SLADEMap.h"
-#include "Utility/SFileDialog.h"
-#include "MapEditor/MapEditContext.h"
 #include "UI/WxUtils.h"
+#include "Utility/SFileDialog.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Variables
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 namespace
 {
-	vector<std::pair<MapCheck::StandardCheck, string>> std_checks =
-	{
-		{ MapCheck::MissingTexture, "Check for missing textures" },
-		{ MapCheck::SpecialTag, "Check for missing tags" },
-		{ MapCheck::IntersectingLine, "Check for intersecting lines" },
-		{ MapCheck::OverlappingLine, "Check for overlapping lines" },
-		{ MapCheck::OverlappingThing, "Check for unknown wall textures" },
-		{ MapCheck::UnknownTexture, "Check for unknown flats" },
-		{ MapCheck::UnknownFlat, "Check for unknown thing types" },
-		{ MapCheck::UnknownThingType, "Check for overlapping things" },
-		{ MapCheck::StuckThing, "Check for stuck things" },
-		{ MapCheck::SectorReference, "Check sector references" },
-		{ MapCheck::InvalidLine, "Check for invalid lines" },
-		{ MapCheck::MissingTagged, "Check for missing tagged objects" },
-		{ MapCheck::UnknownSector, "Check for unknown sector types" },
-		{ MapCheck::UnknownSpecial, "Check for unknown line and thing specials" },
-		{ MapCheck::ObsoleteThing, "Check for obsolete things" },
-	};
+vector<std::pair<MapCheck::StandardCheck, string>> std_checks = {
+	{ MapCheck::MissingTexture, "Check for missing textures" },
+	{ MapCheck::SpecialTag, "Check for missing tags" },
+	{ MapCheck::IntersectingLine, "Check for intersecting lines" },
+	{ MapCheck::OverlappingLine, "Check for overlapping lines" },
+	{ MapCheck::OverlappingThing, "Check for unknown wall textures" },
+	{ MapCheck::UnknownTexture, "Check for unknown flats" },
+	{ MapCheck::UnknownFlat, "Check for unknown thing types" },
+	{ MapCheck::UnknownThingType, "Check for overlapping things" },
+	{ MapCheck::StuckThing, "Check for stuck things" },
+	{ MapCheck::SectorReference, "Check sector references" },
+	{ MapCheck::InvalidLine, "Check for invalid lines" },
+	{ MapCheck::MissingTagged, "Check for missing tagged objects" },
+	{ MapCheck::UnknownSector, "Check for unknown sector types" },
+	{ MapCheck::UnknownSpecial, "Check for unknown line and thing specials" },
+	{ MapCheck::ObsoleteThing, "Check for obsolete things" },
+};
 }
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // MapChecksPanel Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::MapChecksPanel
-//
+// -----------------------------------------------------------------------------
 // MapChecksPanel class constructor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 MapChecksPanel::MapChecksPanel(wxWindow* parent, SLADEMap* map) : DockPanel{ parent }, map_{ map }
 {
 	// Create controls
 	clb_active_checks_ = new wxCheckListBox(this, -1);
-	lb_errors_ = new wxListBox(this, -1);
-	btn_edit_object_ = new wxButton(this, -1, "Edit Object Properties");
-	btn_fix1_ = new wxButton(this, -1, "(Fix1)");
-	btn_fix2_ = new wxButton(this, -1, "(Fix2)");
-	label_status_ = new wxStaticText(this, -1, "Click Check to begin");
-	btn_export_ = new wxButton(this, -1, "Export Results");
-	btn_check_ = new wxButton(this, -1, "Check");
+	lb_errors_         = new wxListBox(this, -1);
+	btn_edit_object_   = new wxButton(this, -1, "Edit Object Properties");
+	btn_fix1_          = new wxButton(this, -1, "(Fix1)");
+	btn_fix2_          = new wxButton(this, -1, "(Fix2)");
+	label_status_      = new wxStaticText(this, -1, "Click Check to begin");
+	btn_export_        = new wxButton(this, -1, "Export Results");
+	btn_check_         = new wxButton(this, -1, "Check");
 
 	// Populate checks list
 	for (auto& check : std_checks)
@@ -118,54 +115,42 @@ MapChecksPanel::MapChecksPanel(wxWindow* parent, SLADEMap* map) : DockPanel{ par
 	btn_export_->Enable(false);
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::updateStatusText
-//
+// -----------------------------------------------------------------------------
 // Updates the check status label text
-// ----------------------------------------------------------------------------
-void MapChecksPanel::updateStatusText(string text)
+// -----------------------------------------------------------------------------
+void MapChecksPanel::updateStatusText(string_view text)
 {
-	label_status_->SetLabel(text);
+	label_status_->SetLabel(WxUtils::stringFromView(text));
 	Update();
 	Refresh();
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::showCheckItem
-//
+// -----------------------------------------------------------------------------
 // Shows the selected problem on the map view and sets up fix buttons
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::showCheckItem(unsigned index)
 {
 	if (index < check_items_.size())
 	{
 		// Set edit mode to object type
 		MapObject* obj = check_items_[index].check->getObject(check_items_[index].index);
-		switch (obj->getObjType())
+		switch (obj->objType())
 		{
-		case MOBJ_VERTEX:
-			MapEditor::editContext().setEditMode(MapEditor::Mode::Vertices);
-			break;
-		case MOBJ_LINE:
-			MapEditor::editContext().setEditMode(MapEditor::Mode::Lines);
-			break;
-		case MOBJ_SECTOR:
-			MapEditor::editContext().setEditMode(MapEditor::Mode::Sectors);
-			break;
-		case MOBJ_THING:
-			MapEditor::editContext().setEditMode(MapEditor::Mode::Things);
-			break;
+		case MapObject::Type::Vertex: MapEditor::editContext().setEditMode(MapEditor::Mode::Vertices); break;
+		case MapObject::Type::Line: MapEditor::editContext().setEditMode(MapEditor::Mode::Lines); break;
+		case MapObject::Type::Sector: MapEditor::editContext().setEditMode(MapEditor::Mode::Sectors); break;
+		case MapObject::Type::Thing: MapEditor::editContext().setEditMode(MapEditor::Mode::Things); break;
 		default: break;
 		}
 
 		// Scroll to object
-		MapEditor::editContext().showItem(obj->getIndex());
+		MapEditor::editContext().showItem(obj->index());
 
 		// Update UI
 		btn_edit_object_->Enable(true);
 
 		string fix1 = check_items_[index].check->fixText(0, check_items_[index].index);
-		if (fix1 != "")
+		if (!fix1.empty())
 		{
 			// Show first fix button
 			btn_fix1_->SetLabel(fix1);
@@ -175,7 +160,7 @@ void MapChecksPanel::showCheckItem(unsigned index)
 			btn_fix1_->Show(false);
 
 		string fix2 = check_items_[index].check->fixText(1, check_items_[index].index);
-		if (fix2 != "")
+		if (!fix2.empty())
 		{
 			// Show second fix button
 			btn_fix2_->SetLabel(fix2);
@@ -194,23 +179,21 @@ void MapChecksPanel::showCheckItem(unsigned index)
 	Layout();
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::refreshList
-//
+// -----------------------------------------------------------------------------
 // Refreshes the problems list
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::refreshList()
 {
 	int selected = lb_errors_->GetSelection();
 	lb_errors_->Clear();
 	check_items_.clear();
 
-	for (unsigned a = 0; a < active_checks_.size(); a++)
+	for (auto& active_check : active_checks_)
 	{
-		for (unsigned b = 0; b < active_checks_[a]->nProblems(); b++)
+		for (unsigned b = 0; b < active_check->nProblems(); b++)
 		{
-			lb_errors_->Append(active_checks_[a]->problemDesc(b));
-			check_items_.push_back(CheckItem(active_checks_[a], b));
+			lb_errors_->Append(active_check->problemDesc(b));
+			check_items_.emplace_back(active_check.get(), b);
 		}
 	}
 
@@ -232,11 +215,9 @@ void MapChecksPanel::refreshList()
 	}
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::reset
-//
+// -----------------------------------------------------------------------------
 // Resets all map checks and panel controls
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::reset()
 {
 	// Clear interface
@@ -248,20 +229,16 @@ void MapChecksPanel::reset()
 	check_items_.clear();
 
 	// Clear previous checks
-	for (unsigned a = 0; a < active_checks_.size(); a++)
-		delete active_checks_[a];
 	active_checks_.clear();
 
 	refreshList();
 	lb_errors_->Show(true);
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::layoutVertical
-//
+// -----------------------------------------------------------------------------
 // Lays out panel controls vertically
 // (for when the panel is docked vertically)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::layoutVertical()
 {
 	auto sizer = new wxBoxSizer(wxVERTICAL);
@@ -286,16 +263,13 @@ void MapChecksPanel::layoutVertical()
 		WxUtils::layoutHorizontally(vector<wxObject*>{ btn_fix1_, btn_fix2_ }),
 		0,
 		wxLEFT | wxRIGHT | wxBOTTOM,
-		UI::pad()
-	);
+		UI::pad());
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::layoutHorizontal
-//
+// -----------------------------------------------------------------------------
 // Lays out panel controls horizontally
 // (for when the panel is docked horizontally)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::layoutHorizontal()
 {
 	SetSizer(new wxBoxSizer(wxVERTICAL));
@@ -320,18 +294,16 @@ void MapChecksPanel::layoutHorizontal()
 }
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // MapChecksPanel Class Events
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onBtnCheck
-//
+// -----------------------------------------------------------------------------
 // Called when the 'check' button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onBtnCheck(wxCommandEvent& e)
 {
 	// Clear interface
@@ -344,8 +316,6 @@ void MapChecksPanel::onBtnCheck(wxCommandEvent& e)
 	check_items_.clear();
 
 	// Clear previous checks
-	for (unsigned a = 0; a < active_checks_.size(); a++)
-		delete active_checks_[a];
 	active_checks_.clear();
 
 	// Setup checks
@@ -354,27 +324,22 @@ void MapChecksPanel::onBtnCheck(wxCommandEvent& e)
 		if (clb_active_checks_->IsChecked(a))
 		{
 			active_checks_.push_back(
-				MapCheck::standardCheck(
-					(MapCheck::StandardCheck)a,
-					map_,
-					&MapEditor::textureManager()
-				)
-			);
+				MapCheck::standardCheck((MapCheck::StandardCheck)a, map_, &MapEditor::textureManager()));
 		}
 	}
 
 	// Run checks
-	for (unsigned a = 0; a < active_checks_.size(); a++)
+	for (auto& active_check : active_checks_)
 	{
 		// Check
-		updateStatusText(active_checks_[a]->progressText());
-		active_checks_[a]->doCheck();
+		updateStatusText(active_check->progressText());
+		active_check->doCheck();
 
 		// Add results to list
-		for (unsigned b = 0; b < active_checks_[a]->nProblems(); b++)
+		for (unsigned b = 0; b < active_check->nProblems(); b++)
 		{
-			lb_errors_->Append(active_checks_[a]->problemDesc(b));
-			check_items_.push_back(CheckItem(active_checks_[a], b));
+			lb_errors_->Append(active_check->problemDesc(b));
+			check_items_.emplace_back(active_check.get(), b);
 		}
 	}
 
@@ -389,11 +354,9 @@ void MapChecksPanel::onBtnCheck(wxCommandEvent& e)
 		updateStatusText("No problems found");
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onListBoxItem
-//
+// -----------------------------------------------------------------------------
 // Called when a list item is selected
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onListBoxItem(wxCommandEvent& e)
 {
 	int selected = lb_errors_->GetSelection();
@@ -401,23 +364,18 @@ void MapChecksPanel::onListBoxItem(wxCommandEvent& e)
 		showCheckItem(selected);
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onBtnFix1
-//
+// -----------------------------------------------------------------------------
 // Called when the first fix button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onBtnFix1(wxCommandEvent& e)
 {
 	int selected = lb_errors_->GetSelection();
 	if (selected >= 0 && selected < (int)check_items_.size())
 	{
-		MapEditor::editContext().beginUndoRecord(btn_fix1_->GetLabel());
+		MapEditor::editContext().beginUndoRecord(btn_fix1_->GetLabel().ToStdString());
 		MapEditor::editContext().selection().clear();
-		bool fixed = check_items_[selected].check->fixProblem(
-			check_items_[selected].index,
-			0,
-			&MapEditor::editContext()
-		);
+		bool fixed =
+			check_items_[selected].check->fixProblem(check_items_[selected].index, 0, &MapEditor::editContext());
 		MapEditor::editContext().endUndoRecord(fixed);
 		if (fixed)
 		{
@@ -427,23 +385,18 @@ void MapChecksPanel::onBtnFix1(wxCommandEvent& e)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onBtnFix2
-//
+// -----------------------------------------------------------------------------
 // Called when the second fix button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onBtnFix2(wxCommandEvent& e)
 {
 	int selected = lb_errors_->GetSelection();
 	if (selected >= 0 && selected < (int)check_items_.size())
 	{
-		MapEditor::editContext().beginUndoRecord(btn_fix2_->GetLabel());
+		MapEditor::editContext().beginUndoRecord(btn_fix2_->GetLabel().ToStdString());
 		MapEditor::editContext().selection().clear();
-		bool fixed = check_items_[selected].check->fixProblem(
-			check_items_[selected].index,
-			1,
-			&MapEditor::editContext()
-		);
+		bool fixed =
+			check_items_[selected].check->fixProblem(check_items_[selected].index, 1, &MapEditor::editContext());
 		MapEditor::editContext().endUndoRecord(fixed);
 		if (fixed)
 		{
@@ -453,11 +406,9 @@ void MapChecksPanel::onBtnFix2(wxCommandEvent& e)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onBtnEditObject
-//
+// -----------------------------------------------------------------------------
 // Called when the 'edit object' button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onBtnEditObject(wxCommandEvent& e)
 {
 	int selected = lb_errors_->GetSelection();
@@ -469,24 +420,23 @@ void MapChecksPanel::onBtnEditObject(wxCommandEvent& e)
 	}
 }
 
-// ----------------------------------------------------------------------------
-// MapChecksPanel::onBtnExport
-//
+// -----------------------------------------------------------------------------
 // Called when the 'Export Results' button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void MapChecksPanel::onBtnExport(wxCommandEvent& e)
 {
-	string map_name = MapEditor::editContext().mapDesc().name;
-	SFileDialog::fd_info_t info;
+	string                map_name = MapEditor::editContext().mapDesc().name;
+	SFileDialog::FileInfo info;
 	if (SFileDialog::saveFile(
-		info,
-		"Export Map Check Results",
-		"Text Files (*.txt)|*.txt",
-		MapEditor::windowWx(), map_name + "-Problems"))
+			info,
+			"Export Map Check Results",
+			"Text Files (*.txt)|*.txt",
+			MapEditor::windowWx(),
+			map_name + "-Problems"))
 	{
-		string text = S_FMT("%d problems found in map %s:\n\n", check_items_.size(), CHR(map_name));
-		for (unsigned a = 0; a < check_items_.size(); a++)
-			text += check_items_[a].check->problemDesc(check_items_[a].index) + "\n";
+		string text = S_FMT("%d problems found in map %s:\n\n", check_items_.size(), map_name);
+		for (auto& check_item : check_items_)
+			text += check_item.check->problemDesc(check_item.index) + "\n";
 		wxFile file;
 		file.Open(info.filenames[0], wxFile::write);
 		if (file.IsOpened())

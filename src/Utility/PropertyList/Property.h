@@ -1,71 +1,96 @@
-
-#ifndef __PROPERTY_H__
-#define __PROPERTY_H__
-
-// Define property types
-#define PROP_BOOL	0
-#define PROP_INT	1
-#define PROP_FLOAT	2
-#define PROP_STRING	3
-#define PROP_FLAG	4	// The 'flag' property type mimics a boolean property that is always true
-#define PROP_UINT	5
-
-// Union for (most) property values
-union prop_value { bool Boolean; int Integer; double Floating; unsigned Unsigned; };
+#pragma once
 
 class Property
 {
-private:
-	uint8_t		type;
-	prop_value	value;
-	string		val_string;	// I *would* put this in the union but i'm not sure about using const char* there
-	bool		has_value;
-
 public:
-	Property(uint8_t type = PROP_BOOL);	// Default property type is bool
-	Property(const Property& copy);
-	Property(bool value);
-	Property(int value);
-	Property(float value);
-	Property(double value);
-	Property(string value);
-	Property(unsigned value);
-	~Property();
+	enum class Type
+	{
+		Bool,
+		Int,
+		Float,
+		String,
+		Flag, // The 'flag' property type mimics a boolean property that is always true
+		UInt
+	};
 
-	uint8_t		getType() const { return type; }
-	bool		isType(uint8_t type) const { return this->type == type; }
-	bool		hasValue() const { return has_value; }
+	typedef variant<bool, int, double, unsigned, string> Value;
 
-	void	changeType(uint8_t newtype);
-	void	setHasValue(bool hv) { has_value = hv; }
+	Property(Type type = Type::Bool); // Default property type is bool
+	Property(const Property& copy) : type_{ copy.type_ }, value_{ copy.value_ }, has_value_{ copy.has_value_ } {}
+	Property(bool value) : type_{ Type::Bool }, value_{ value }, has_value_{ true } {}
+	Property(int value) : type_{ Type::Int }, value_{ value }, has_value_{ true } {}
+	Property(double value) : type_{ Type::Float }, value_{ value }, has_value_{ true } {}
+	Property(const string& value) : type_{ Type::String }, value_{ value }, has_value_{ true } {}
+	Property(unsigned value) : type_{ Type::UInt }, value_{ value }, has_value_{ true } {}
+	~Property() = default;
 
-	inline operator bool () const { return getBoolValue(); }
-	inline operator int () const { return getIntValue(); }
-	inline operator float () const { return (float)getFloatValue(); }
-	inline operator double () const { return getFloatValue(); }
-	inline operator string () const { return getStringValue(); }
-	inline operator unsigned () const { return getUnsignedValue(); }
+	Type type() const { return type_; }
+	bool isType(Type type) const { return this->type_ == type; }
+	bool hasValue() const { return has_value_; }
 
-	inline bool operator= (bool val) { setValue(val); return val; }
-	inline int operator= (int val) { setValue(val); return val; }
-	inline float operator= (float val) { setValue((double)val); return val; }
-	inline double operator= (double val) { setValue(val); return val; }
-	inline string operator= (string val) { setValue(val); return val; }
-	inline unsigned operator= (unsigned val) { setValue(val); return val; }
+	void changeType(Type newtype);
+	void setHasValue(bool hv) { has_value_ = hv; }
 
-	bool		getBoolValue(bool warn_wrong_type = false) const;
-	int			getIntValue(bool warn_wrong_type = false) const;
-	double		getFloatValue(bool warn_wrong_type = false) const;
-	string		getStringValue(bool warn_wrong_type = false) const;
-	unsigned	getUnsignedValue(bool warn_wrong_type = false) const;
+	operator bool() const { return boolValue(); }
+	operator int() const { return intValue(); }
+	operator float() const { return (float)floatValue(); }
+	operator double() const { return floatValue(); }
+	operator string() const { return stringValue(); }
+	operator unsigned() const { return unsignedValue(); }
 
-	void	setValue(bool val);
-	void	setValue(int val);
-	void	setValue(double val);
-	void	setValue(string val);
-	void	setValue(unsigned val);
+	Property& operator=(bool val)
+	{
+		value_ = val;
+		return *this;
+	}
 
-	string	typeString() const;
+	Property& operator=(int val)
+	{
+		value_ = val;
+		return *this;
+	}
+
+	Property& operator=(float val)
+	{
+		value_ = (double)val;
+		return *this;
+	}
+
+	Property& operator=(double val)
+	{
+		value_ = val;
+		return *this;
+	}
+
+	Property& operator=(const string& val)
+	{
+		value_ = val;
+		return *this;
+	}
+
+	Property& operator=(unsigned val)
+	{
+		value_ = val;
+		return *this;
+	}
+
+	bool          boolValue(bool warn_wrong_type = false) const;
+	int           intValue(bool warn_wrong_type = false) const;
+	double        floatValue(bool warn_wrong_type = false) const;
+	string        stringValue(bool warn_wrong_type = false) const;
+	const string& stringValueRef() const;
+	unsigned      unsignedValue(bool warn_wrong_type = false) const;
+
+	void setValue(bool val);
+	void setValue(int val);
+	void setValue(double val);
+	void setValue(const string& val);
+	void setValue(unsigned val);
+
+	string typeString() const;
+
+private:
+	Type  type_;
+	Value value_;
+	bool  has_value_;
 };
-
-#endif//__PROPERTY_H__

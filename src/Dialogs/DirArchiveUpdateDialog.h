@@ -1,6 +1,4 @@
-
-#ifndef __DIR_ARCHIVE_UPDATE_DIALOG__
-#define __DIR_ARCHIVE_UPDATE_DIALOG__
+#pragma once
 
 #include "Archive/Formats/DirArchive.h"
 #include "UI/SDialog.h"
@@ -10,17 +8,15 @@ class DirArchiveUpdateDialog : public SDialog
 {
 public:
 	DirArchiveUpdateDialog(wxWindow* parent, DirArchive* archive, vector<DirEntryChange>& changes);
-	~DirArchiveUpdateDialog();
+	~DirArchiveUpdateDialog() = default;
 
-	void	populateChangeList();
-
-	// Events
-	void	onBtnOKClicked(wxCommandEvent& e);
+	void populateChangeList();
 
 private:
-	DirArchive*				archive_;
-	vector<DirEntryChange>	changes_;
-	wxDataViewListCtrl*		list_changes_;
-};
+	DirArchive*            archive_;
+	vector<DirEntryChange> changes_;
+	wxDataViewListCtrl*    list_changes_;
 
-#endif//__DIR_ARCHIVE_UPDATE_DIALOG__
+	// Events
+	void onBtnOKClicked(wxCommandEvent& e);
+};

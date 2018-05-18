@@ -1,54 +1,39 @@
+#pragma once
 
-#ifndef __MAP_PREVIEW_CANVAS_H__
-#define __MAP_PREVIEW_CANVAS_H__
-
-#include "OGLCanvas.h"
 #include "Archive/Archive.h"
+#include "OGLCanvas.h"
+#include "OpenGL/GLTexture.h"
 
-// Structs for basic map features
-struct mep_vertex_t
-{
-	double x;
-	double y;
-	mep_vertex_t(double x, double y) { this->x = x; this->y = y; }
-};
-
-struct mep_line_t
-{
-	unsigned	v1;
-	unsigned	v2;
-	bool		twosided;
-	bool		special;
-	bool		macro;
-	bool		segment;
-	mep_line_t(unsigned v1, unsigned v2) { this->v1 = v1; this->v2 = v2; }
-};
-
-struct mep_thing_t
-{
-	double	x;
-	double	y;
-};
-
-class GLTexture;
 class MapPreviewCanvas : public OGLCanvas
 {
-private:
-	vector<mep_vertex_t>	verts;
-	vector<mep_line_t>		lines;
-	vector<mep_thing_t>		things;
-	unsigned				n_sides;
-	unsigned				n_sectors;
-	double					zoom;
-	double					offset_x;
-	double					offset_y;
-	Archive*				temp_archive;
-	GLTexture*				tex_thing;
-	bool					tex_loaded;
-
 public:
-	MapPreviewCanvas(wxWindow* parent);
-	~MapPreviewCanvas();
+	// Structs for basic map features
+	struct Vertex
+	{
+		double x;
+		double y;
+		Vertex(double x, double y) : x{ x }, y{ y } {}
+	};
+
+	struct Line
+	{
+		unsigned v1;
+		unsigned v2;
+		bool     twosided = false;
+		bool     special  = false;
+		bool     macro    = false;
+		bool     segment  = false;
+		Line(unsigned v1, unsigned v2) : v1{ v1 }, v2{ v2 } {}
+	};
+
+	struct Thing
+	{
+		double x;
+		double y;
+	};
+
+	MapPreviewCanvas(wxWindow* parent) : OGLCanvas(parent, -1), tex_thing_{ false } {}
+	~MapPreviewCanvas() = default;
 
 	void addVertex(double x, double y);
 	void addLine(unsigned v1, unsigned v2, bool twosided, bool special, bool macro = false);
@@ -59,16 +44,25 @@ public:
 	bool readThings(ArchiveEntry* map_head, ArchiveEntry* map_end, int map_format);
 	void clearMap();
 	void showMap();
-	void draw();
+	void draw() override;
 	void createImage(ArchiveEntry& ae, int width, int height);
 
-	unsigned	nVertices();
-	unsigned	nSides();
-	unsigned	nLines();
-	unsigned	nSectors();
-	unsigned	nThings();
-	unsigned	getWidth();
-	unsigned	getHeight();
-};
+	unsigned nVertices();
+	unsigned nSides() const { return n_sides_; }
+	unsigned nLines() const { return lines_.size(); }
+	unsigned nSectors() const { return n_sectors_; }
+	unsigned nThings() const { return things_.size(); }
+	unsigned totalWidth();
+	unsigned totalHeight();
 
-#endif//__MAP_PREVIEW_CANVAS_H__
+private:
+	vector<Vertex> verts_;
+	vector<Line>   lines_;
+	vector<Thing>  things_;
+	unsigned       n_sides_   = 0;
+	unsigned       n_sectors_ = 0;
+	double         zoom_      = 1.;
+	Vec2<double>   offset_;
+	GLTexture      tex_thing_;
+	bool           tex_loaded_ = false;
+};

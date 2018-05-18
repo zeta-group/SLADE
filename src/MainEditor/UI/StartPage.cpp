@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -17,50 +17,50 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
+#include "StartPage.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "General/SAction.h"
 #include "General/Web.h"
-#include "StartPage.h"
+#include "UI/WxUtils.h"
+#include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Variables
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 CVAR(Bool, web_dark_theme, false, CVAR_SAVE)
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // SStartPage Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// SStartPage::SStartPage
-//
+// -----------------------------------------------------------------------------
 // SStartPage class constructor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 SStartPage::SStartPage(wxWindow* parent) : wxPanel(parent, -1)
 {
 	wxPanel::SetName("startpage");
@@ -69,38 +69,20 @@ SStartPage::SStartPage(wxWindow* parent) : wxPanel(parent, -1)
 	SetSizer(sizer);
 }
 
-// ----------------------------------------------------------------------------
-// SStartPage::init
-//
+// -----------------------------------------------------------------------------
 // Initialises the start page
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void SStartPage::init()
 {
 	// wxWebView
 #ifdef USE_WEBVIEW_STARTPAGE
 	html_startpage_ = wxWebView::New(
-		this,
-		-1,
-		wxEmptyString,
-		wxDefaultPosition,
-		wxDefaultSize,
-		wxWebViewBackendDefault,
-		wxBORDER_NONE
-	);
-	html_startpage_->SetZoomType(
-		App::platform() == App::MacOS ? wxWEBVIEW_ZOOM_TYPE_TEXT : wxWEBVIEW_ZOOM_TYPE_LAYOUT
-	);
+		this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxWebViewBackendDefault, wxBORDER_NONE);
+	html_startpage_->SetZoomType(App::platform() == App::MacOS ? wxWEBVIEW_ZOOM_TYPE_TEXT : wxWEBVIEW_ZOOM_TYPE_LAYOUT);
 
 	// wxHtmlWindow
 #else
-	html_startpage_ = new wxHtmlWindow(
-		this,
-		-1,
-		wxDefaultPosition,
-		wxDefaultSize,
-		wxHW_SCROLLBAR_NEVER,
-		"startpage"
-	);
+	html_startpage_ = new wxHtmlWindow(this, -1, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_NEVER, "startpage");
 #endif
 
 	// Add to sizer
@@ -110,27 +92,21 @@ void SStartPage::init()
 #ifdef USE_WEBVIEW_STARTPAGE
 	html_startpage_->Bind(wxEVT_WEBVIEW_NAVIGATING, &SStartPage::onHTMLLinkClicked, this);
 
-	html_startpage_->Bind(wxEVT_WEBVIEW_ERROR, [&](wxWebViewEvent& e)
-	{
-		Log::error(S_FMT("wxWebView Error: %s", CHR(e.GetString())));
-	});
+	html_startpage_->Bind(
+		wxEVT_WEBVIEW_ERROR, [&](wxWebViewEvent& e) { Log::error(S_FMT("wxWebView Error: %s", e.GetString())); });
 
 	if (App::platform() == App::Platform::Windows)
 	{
-		html_startpage_->Bind(wxEVT_WEBVIEW_LOADED, [&](wxWebViewEvent& e)
-		{
-			html_startpage_->Reload();
-		});
+		html_startpage_->Bind(wxEVT_WEBVIEW_LOADED, [&](wxWebViewEvent& e) { html_startpage_->Reload(); });
 	}
 
-	Bind(wxEVT_THREAD_WEBGET_COMPLETED, [&](wxThreadEvent& e)
-	{
+	Bind(wxEVT_THREAD_WEBGET_COMPLETED, [&](wxThreadEvent& e) {
 		latest_news_ = e.GetString();
-		latest_news_.Trim();
+		StrUtil::trimIP(latest_news_);
 
 		if (latest_news_ == "connect_failed" || latest_news_.empty())
 			latest_news_ = "<center>Unable to load latest SLADE news</center>";
-		
+
 		load(false);
 	});
 
@@ -142,13 +118,10 @@ void SStartPage::init()
 	auto res_archive = App::archiveManager().programResourceArchive();
 	if (res_archive)
 	{
-		entry_base_html_ = res_archive->entryAtPath(
-			App::useWebView() ? "html/startpage.htm" : "html/startpage_basic.htm"
-		);
+		entry_base_html_ =
+			res_archive->entryAtPath(App::useWebView() ? "html/startpage.htm" : "html/startpage_basic.htm");
 
-		entry_css_ = res_archive->entryAtPath(
-			web_dark_theme ? "html/theme-dark.css" : "html/theme-light.css"
-		);
+		entry_css_ = res_archive->entryAtPath(web_dark_theme ? "html/theme-dark.css" : "html/theme-light.css");
 
 		entry_export_.push_back(res_archive->entryAtPath("html/base.css"));
 		entry_export_.push_back(res_archive->entryAtPath("fonts/FiraSans-Regular.woff"));
@@ -172,8 +145,8 @@ void SStartPage::init()
 		if (entry_tips)
 		{
 			Tokenizer tz;
-			tz.openMem((const char*)entry_tips->getData(), entry_tips->getSize(), entry_tips->getName());
-			while (!tz.atEnd() && tz.peekToken() != "")
+			tz.openMem((const char*)entry_tips->dataRaw(), entry_tips->size(), entry_tips->name());
+			while (!tz.atEnd() && !tz.peekToken().empty())
 				tips_.push_back(tz.getToken());
 		}
 	}
@@ -182,16 +155,14 @@ void SStartPage::init()
 
 #ifdef USE_WEBVIEW_STARTPAGE
 
-// ----------------------------------------------------------------------------
-// SStartPage::load
-//
+// -----------------------------------------------------------------------------
 // Loads the start page (wxWebView implementation). If [new_tip] is true, a new
 // random 'tip of the day' is shown
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void SStartPage::load(bool new_tip)
 {
 	// Get latest news post
-	if (latest_news_ == "")
+	if (latest_news_.empty())
 		Web::getHttpAsync("slade.mancubus.net", "/news-latest.php", this);
 
 	// Can't do anything without html entry
@@ -201,18 +172,17 @@ void SStartPage::load(bool new_tip)
 		html_startpage_->SetPage(
 			"<html><head><title>SLADE</title></head><body><center><h1>"
 			"Something is wrong with slade.pk3 :(</h1><center></body></html>",
-			wxEmptyString
-		);
+			wxEmptyString);
 		return;
 	}
 
 	// Get html as string
-	string html = wxString::FromAscii((const char*)(entry_base_html_->getData()), entry_base_html_->getSize());
+	string html{ (const char*)(entry_base_html_->dataRaw()), entry_base_html_->size() };
 
 	// Read css
 	string css;
 	if (entry_css_)
-		css = wxString::FromAscii((const char*)(entry_css_->getData()), entry_css_->getSize());
+		css = wxString::FromAscii((const char*)(entry_css_->dataRaw()), entry_css_->size());
 
 	// Generate tip of the day string
 	string tip;
@@ -224,11 +194,14 @@ void SStartPage::load(bool new_tip)
 		if (new_tip || last_tip_index_ <= 0)
 		{
 			// Don't show same tip twice in a row
-			do { tipindex = 1 + rand() % (tips_.size() - 1); } while (tipindex == last_tip_index_);
+			do
+			{
+				tipindex = 1 + rand() % (tips_.size() - 1);
+			} while (tipindex == last_tip_index_);
 		}
 
 		last_tip_index_ = tipindex;
-		tip = tips_[tipindex];
+		tip             = tips_[tipindex];
 	}
 
 	// Generate recent files string
@@ -238,14 +211,15 @@ void SStartPage::load(bool new_tip)
 		for (unsigned a = 0; a < 12; a++)
 		{
 			if (a >= App::archiveManager().numRecentFiles())
-				break;	// No more recent files
+				break; // No more recent files
 
 			// Determine icon
-			string fn = App::archiveManager().recentFile(a);
+			string fn   = App::archiveManager().recentFile(a);
+			auto   ext  = StrUtil::Path::extensionOf(fn);
 			string icon = "archive";
-			if (fn.EndsWith(".wad"))
+			if (ext == "wad")
 				icon = "wad";
-			else if (fn.EndsWith(".zip") || fn.EndsWith(".pk3") || fn.EndsWith(".pke"))
+			else if (ext == "zip" || ext == "pk3" || ext == "pke")
 				icon = "zip";
 			else if (wxDirExists(fn))
 				icon = "folder";
@@ -258,27 +232,26 @@ void SStartPage::load(bool new_tip)
 				"</div>",
 				icon,
 				a,
-				fn
-			);
+				fn);
 		}
 	}
 	else
 		recent = "No recently opened files";
 
 	// Replace placeholders in the html (theme css, recent files, tip, etc.)
-	html.Replace("/*#theme#*/", css);
-	html.Replace("#recent#", recent);
-	html.Replace("#totd#", tip);
-	html.Replace("#news#", latest_news_);
-	html.Replace("#version#", Global::version);
+	StrUtil::replaceIP(html, "/*#theme#*/", css);
+	StrUtil::replaceIP(html, "#recent#", recent);
+	StrUtil::replaceIP(html, "#totd#", tip);
+	StrUtil::replaceIP(html, "#news#", latest_news_);
+	StrUtil::replaceIP(html, "#version#", Global::version);
 	if (update_version_.empty())
-		html.Replace("/*#hideupdate#*/", "#update { display: none; }");
+		StrUtil::replaceIP(html, "/*#hideupdate#*/", "#update { display: none; }");
 	else
-		html.Replace("#updateversion#", update_version_);
+		StrUtil::replaceIP(html, "#updateversion#", update_version_);
 
 	// Write html and images to temp folder
-	for (unsigned a = 0; a < entry_export_.size(); a++)
-		entry_export_[a]->exportFile(App::path(entry_export_[a]->getName(), App::Dir::Temp));
+	for (auto& entry : entry_export_)
+		entry->exportFile(App::path(entry->name(), App::Dir::Temp));
 	string html_file = App::path("startpage.htm", App::Dir::Temp);
 	wxFile outfile(html_file, wxFile::write);
 	outfile.Write(html);
@@ -297,12 +270,10 @@ void SStartPage::load(bool new_tip)
 
 #else
 
-// ----------------------------------------------------------------------------
-// SStartPage::load
-//
+// -----------------------------------------------------------------------------
 // Loads the start page (wxHtmlWindow implementation). If [new_tip] is true, a
 // new random 'tip of the day' is shown
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void SStartPage::load(bool new_tip)
 {
 	// Get relevant resource entries
@@ -316,12 +287,14 @@ void SStartPage::load(bool new_tip)
 	// Can't do anything without html entry
 	if (!entry_html)
 	{
-		html_startpage_->SetPage("<html><head><title>SLADE</title></head><body><center><h1>Something is wrong with slade.pk3 :(</h1><center></body></html>");
+		html_startpage_->SetPage(
+			"<html><head><title>SLADE</title></head><body><center><h1>Something is wrong with slade.pk3 "
+			":(</h1><center></body></html>");
 		return;
 	}
 
 	// Get html as string
-	string html = wxString::FromAscii((const char*)(entry_html->getData()), entry_html->getSize());
+	string html = { (const char*)(entry_html->dataRaw()), entry_html->size() };
 
 	// Generate tip of the day string
 	string tip;
@@ -333,12 +306,15 @@ void SStartPage::load(bool new_tip)
 		if (new_tip || last_tip_index_ <= 0)
 		{
 			// Don't show same tip twice in a row
-			do { tipindex = 1 + rand() % (tips_.size() - 1); } while (tipindex == last_tip_index_);
+			do
+			{
+				tipindex = 1 + rand() % (tips_.size() - 1);
+			} while (tipindex == last_tip_index_);
 		}
 
 		last_tip_index_ = tipindex;
 		tip = tips_[tipindex];
-		Log::debug(S_FMT("Tip index %d/%d", last_tip_index_, (int) tips_.size()));
+		Log::debug(S_FMT("Tip index %d/%d", last_tip_index_, (int)tips_.size()));
 	}
 
 	// Generate recent files string
@@ -346,21 +322,23 @@ void SStartPage::load(bool new_tip)
 	for (unsigned a = 0; a < 12; a++)
 	{
 		if (a >= App::archiveManager().numRecentFiles())
-			break;	// No more recent files
+			break; // No more recent files
 
 		// Add line break if needed
-		if (a > 0) recent += "<br/>\n";
+		if (a > 0)
+			recent += "<br/>\n";
 
 		// Add recent file link
 		recent += S_FMT("<a href=\"recent://%d\">%s</a>", a, App::archiveManager().recentFile(a));
 	}
 
 	// Insert tip and recent files into html
-	html.Replace("#recent#", recent);
-	html.Replace("#totd#", tip);
+	StrUtil::replaceIP(html, "#recent#", recent);
+	StrUtil::replaceIP(html, "#totd#", tip);
 
 	// Write html and images to temp folder
-	if (entry_logo) entry_logo->exportFile(App::path("logo.png", App::Dir::Temp));
+	if (entry_logo)
+		entry_logo->exportFile(App::path("logo.png", App::Dir::Temp));
 	string html_file = App::path("startpage_basic.htm", App::Dir::Temp);
 	wxFile outfile(html_file, wxFile::write);
 	outfile.Write(html);
@@ -376,49 +354,43 @@ void SStartPage::load(bool new_tip)
 
 #endif
 
-// ----------------------------------------------------------------------------
-// SStartPage::refresh
-//
+// -----------------------------------------------------------------------------
 // Refreshes the page (wxWebView only)
-// ----------------------------------------------------------------------------
-void SStartPage::refresh()
+// -----------------------------------------------------------------------------
+void SStartPage::refresh() const
 {
 #ifdef USE_WEBVIEW_STARTPAGE
 	html_startpage_->Reload();
 #endif
 }
 
-// ----------------------------------------------------------------------------
-// SStartPage::updateAvailable
-//
+// -----------------------------------------------------------------------------
 // Updates the start page to show that an update to [version_name] is available
-// ----------------------------------------------------------------------------
-void SStartPage::updateAvailable(string version_name)
+// -----------------------------------------------------------------------------
+void SStartPage::updateAvailable(string_view version_name)
 {
-	update_version_ = version_name;
+	S_SET_VIEW(update_version_, version_name);
 	load(false);
 }
 
 
 #ifdef USE_WEBVIEW_STARTPAGE
 
-// ----------------------------------------------------------------------------
-// SStartPage::onHTMLLinkClicked
-//
+// -----------------------------------------------------------------------------
 // Called when a link is clicked on the start page, so that external (http)
 // links are opened in the default browser (wxWebView implementation)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void SStartPage::onHTMLLinkClicked(wxEvent& e)
 {
-	wxWebViewEvent& ev = (wxWebViewEvent&)e;
-	string href = ev.GetURL();
+	wxWebViewEvent& ev   = (wxWebViewEvent&)e;
+	wxString        href = ev.GetURL();
 
 #ifdef __WXGTK__
 	if (!href.EndsWith("startpage.htm"))
 		href.Replace("file://", "");
 #endif
 
-	//LOG_MESSAGE(2, "URL %s", href);
+	// LOG_MESSAGE(2, "URL %s", href);
 
 	if (href.EndsWith("/"))
 		href.RemoveLast(1);
@@ -431,7 +403,7 @@ void SStartPage::onHTMLLinkClicked(wxEvent& e)
 	else if (href.StartsWith("recent://"))
 	{
 		// Recent file
-		string rs = href.Mid(9);
+		wxString      rs    = href.Mid(9);
 		unsigned long index = 0;
 		rs.ToULong(&index);
 		SActionHandler::setWxIdOffset(index);
@@ -468,7 +440,7 @@ void SStartPage::onHTMLLinkClicked(wxEvent& e)
 				load(false);
 			}
 		}
-		
+
 		html_startpage_->Reload();
 	}
 	else if (wxFileExists(href))
@@ -477,37 +449,35 @@ void SStartPage::onHTMLLinkClicked(wxEvent& e)
 		string page = App::path("startpage.htm", App::Dir::Temp);
 		if (wxFileName(href).GetLongPath() != wxFileName(page).GetLongPath())
 		{
-			App::archiveManager().openArchive(href);
+			App::archiveManager().openArchive(WxUtils::stringToView(href));
 			ev.Veto();
 		}
 	}
 	else if (wxDirExists(href))
 	{
 		// Navigating to folder, open it
-		App::archiveManager().openDirArchive(href);
+		App::archiveManager().openDirArchive(WxUtils::stringToView(href));
 		ev.Veto();
 	}
 }
 
 #else
 
-// ----------------------------------------------------------------------------
-// SStartPage::onHTMLLinkClicked
-//
+// -----------------------------------------------------------------------------
 // Called when a link is clicked on the start page, so that external (http)
 // links are opened in the default browser (wxHtmlWindow implementation)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void SStartPage::onHTMLLinkClicked(wxEvent& e)
 {
 	wxHtmlLinkEvent& ev = (wxHtmlLinkEvent&)e;
-	string href = ev.GetLinkInfo().GetHref();
+	wxString href = ev.GetLinkInfo().GetHref();
 
 	if (href.StartsWith("http://"))
 		wxLaunchDefaultBrowser(ev.GetLinkInfo().GetHref());
 	else if (href.StartsWith("recent://"))
 	{
 		// Recent file
-		string rs = href.Mid(9);
+		wxString rs = href.Mid(9);
 		unsigned long index = 0;
 		rs.ToULong(&index);
 		SActionHandler::setWxIdOffset(index);

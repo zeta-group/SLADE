@@ -1,81 +1,88 @@
-
-#ifndef __GLTEXTURE_H__
-#define	__GLTEXTURE_H__
-
-struct gl_tex_t
-{
-	unsigned	id;
-	uint32_t	width;
-	uint32_t	height;
-};
+#pragma once
 
 class SImage;
 class Palette;
 
 class GLTexture
 {
-private:
-	uint32_t			width;
-	uint32_t			height;
-	vector<gl_tex_t>	tex;
-	int					filter;
-	bool				loaded;
-	bool				allow_split;
-	bool				tiling;
-	double				scale_x;
-	double				scale_y;
-
-	// Some generic/global textures
-	static GLTexture	tex_background;	// Checkerboard background texture
-	static GLTexture	tex_missing;	// Checkerboard 'missing' texture
-
-	// Stuff used internally
-	bool	loadData(const uint8_t* data, uint32_t width, uint32_t height, bool add = false);
-	bool	loadImagePortion(SImage* image, rect_t rect, Palette* pal = nullptr, bool add = false);
-
 public:
-	enum
+	enum class Filter
 	{
-	    // Filter types
-	    NEAREST,
-	    LINEAR,
-	    MIPMAP,
-	    LINEAR_MIPMAP,	// (same as MIPMAP)
-	    NEAREST_LINEAR_MIN,
-	    NEAREST_MIPMAP,
+		// Filter types
+		Nearest,
+		Linear,
+		Mipmap,
+		LinearMipmap, // (same as Mipmap)
+		NearestLinearMin,
+		NearestMipmap,
 	};
 
-	GLTexture(bool allow_split = true);
+	GLTexture(bool allow_split = true) : allow_split_{ allow_split } {}
 	~GLTexture();
 
-	bool		isLoaded() { return loaded; }
-	uint32_t	getWidth() { return width; }
-	uint32_t	getHeight() { return height; }
-	int			getFilter() { return filter; }
-	double		getScaleX() { return scale_x; }
-	double		getScaleY() { return scale_y; }
-	bool		isTiling() { return tiling; }
-	unsigned	glId() { if (!tex.empty()) return tex[0].id; else return 0; }
+	bool     isLoaded() const { return loaded_; }
+	uint32_t getWidth() const { return width_; }
+	uint32_t getHeight() const { return height_; }
+	Filter   getFilter() const { return filter_; }
+	double   getScaleX() const { return scale_.x; }
+	double   getScaleY() const { return scale_.y; }
+	bool     isTiling() const { return tiling_; }
+	unsigned glId()
+	{
+		if (!parts_.empty())
+			return parts_[0].id;
+		else
+			return 0;
+	}
 
-	void		setFilter(int filter) { this->filter = filter; }
-	void		setTiling(bool tiling) { this->tiling = tiling; }
-	void		setScale(double sx, double sy) { this->scale_x = sx; this->scale_y = sy; }
+	void setFilter(Filter filter) { this->filter_ = filter; }
+	void setTiling(bool tiling) { this->tiling_ = tiling; }
+	void setScale(double sx, double sy)
+	{
+		this->scale_.x = sx;
+		this->scale_.y = sy;
+	}
 
-	bool	loadImage(SImage* image, Palette* pal = nullptr);
-	bool	loadRawData(const uint8_t* data, uint32_t width, uint32_t height);
+	bool loadImage(SImage* image, Palette* pal = nullptr);
+	bool loadRawData(const uint8_t* data, uint32_t width, uint32_t height);
 
-	bool	clear();
-	bool	genChequeredTexture(uint8_t block_size, rgba_t col1, rgba_t col2);
+	bool clear();
+	bool genChequeredTexture(uint8_t block_size, const ColRGBA& col1, const ColRGBA& col2);
 
-	bool	bind();
-	bool	draw2d(double x = 0, double y = 0, bool flipx = false, bool flipy = false);
-	bool	draw2dTiled(uint32_t width, uint32_t height);
+	bool bind();
+	bool draw2d(double x = 0, double y = 0, bool flipx = false, bool flipy = false);
+	bool draw2dTiled(uint32_t width, uint32_t height);
 
-	rgba_t	averageColour(rect_t area);
+	ColRGBA averageColour(rect_t area);
 
-	static GLTexture&	bgTex();
-	static GLTexture&	missingTex();
-	static void			resetBgTex();
+	static GLTexture& bgTex();
+	static GLTexture& missingTex();
+	static void       resetBgTex();
+
+	typedef std::unique_ptr<GLTexture> UPtr;
+
+private:
+	struct SubTex
+	{
+		unsigned id     = 0;
+		uint32_t width  = 0;
+		uint32_t height = 0;
+	};
+
+	uint32_t       width_  = 0;
+	uint32_t       height_ = 0;
+	vector<SubTex> parts_;
+	Filter         filter_      = Filter::Nearest;
+	bool           loaded_      = false;
+	bool           allow_split_ = false;
+	bool           tiling_      = false;
+	Vec2<double>   scale_       = { 1., 1. };
+
+	// Some generic/global textures
+	static GLTexture tex_background_; // Checkerboard background texture
+	static GLTexture tex_missing_;    // Checkerboard 'missing' texture
+
+	// Stuff used internally
+	bool loadData(const uint8_t* data, uint32_t width, uint32_t height, bool add = false);
+	bool loadImagePortion(SImage* image, const rect_t& rect, Palette* pal = nullptr, bool add = false);
 };
-
-#endif//__GLTEXTURE_H__

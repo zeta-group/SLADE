@@ -8,18 +8,17 @@ class ColourPrefsPanel : public PrefsPanelBase
 {
 public:
 	ColourPrefsPanel(wxWindow* parent);
-	~ColourPrefsPanel();
+	~ColourPrefsPanel() = default;
 
-	void	init() override;
-	void	refreshPropGrid();
-	void	applyPreferences() override;
-	string	pageTitle() override { return "Colours && Theme"; }
+	void   init() override;
+	void   refreshPropGrid() const;
+	void   applyPreferences() override;
+	string pageTitle() override { return "Colours && Theme"; }
 
 private:
-	wxChoice*		choice_configs_;
-	wxButton*		btn_saveconfig_;
-	wxPropertyGrid*	pg_colours_;
+	wxChoice*       choice_configs_;
+	wxPropertyGrid* pg_colours_;
 
 	// Events
-	void	onChoicePresetSelected(wxCommandEvent& e);
+	void onChoicePresetSelected(wxCommandEvent& e);
 };

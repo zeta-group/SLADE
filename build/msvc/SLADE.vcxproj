@@ -295,7 +295,9 @@
     <ClCompile Include="..\..\src\Audio\AudioTags.cpp" />
     <ClCompile Include="..\..\src\Audio\MIDIPlayer.cpp" />
     <ClCompile Include="..\..\src\Audio\ModMusic.cpp" />
+    <ClCompile Include="..\..\src\Dialogs\GfxColouriseDialog.cpp" />
     <ClCompile Include="..\..\src\Dialogs\GfxCropDialog.cpp" />
+    <ClCompile Include="..\..\src\Dialogs\GfxTintDialog.cpp" />
     <ClCompile Include="..\..\src\External\bzip2\blocksort.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release - FTGL|Win32'">NotUsing</PrecompiledHeader>
@@ -1551,13 +1553,11 @@
     <ClCompile Include="..\..\src\Graphics\SImage\SImage.cpp" />
     <ClCompile Include="..\..\src\Graphics\SImage\SImageFormats.cpp" />
     <ClCompile Include="..\..\src\Graphics\Translation.cpp" />
-    <ClCompile Include="..\..\src\MainEditor\AnimatedList.cpp" />
     <ClCompile Include="..\..\src\MainEditor\ArchiveOperations.cpp" />
     <ClCompile Include="..\..\src\MainEditor\Conversions.cpp" />
     <ClCompile Include="..\..\src\MainEditor\EntryOperations.cpp" />
     <ClCompile Include="..\..\src\MainEditor\ExternalEditManager.cpp" />
     <ClCompile Include="..\..\src\MainEditor\MainEditor.cpp" />
-    <ClCompile Include="..\..\src\MainEditor\SwitchesList.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\ArchiveManagerPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\ArchivePanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\DocsPage.cpp">
@@ -1567,7 +1567,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release - No WebView|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release - WinXP|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\AnimatedEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\ANSIEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\AudioEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\DataEntryPanel.cpp" />
@@ -1577,7 +1576,6 @@
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\HexEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\MapEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\PaletteEntryPanel.cpp" />
-    <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\SwitchesEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\EntryPanel\TextEntryPanel.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\MainWindow.cpp" />
     <ClCompile Include="..\..\src\MainEditor\UI\StartPage.cpp" />
@@ -1727,6 +1725,7 @@
     <ClCompile Include="..\..\src\Utility\PropertyList\PropertyList.cpp" />
     <ClCompile Include="..\..\src\Utility\SFileDialog.cpp" />
     <ClCompile Include="..\..\src\Utility\StringUtils.cpp" />
+    <ClCompile Include="..\..\src\Utility\Structs.cpp" />
     <ClCompile Include="..\..\src\Utility\Tokenizer.cpp" />
     <ClCompile Include="..\..\src\Utility\Tree.cpp" />
     <ClCompile Include="..\..\src\External\zlib\adler32.c">
@@ -1916,7 +1915,9 @@
     <ClInclude Include="..\..\src\Audio\ModMusic.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\common2.h" />
+    <ClInclude Include="..\..\src\Dialogs\GfxColouriseDialog.h" />
     <ClInclude Include="..\..\src\Dialogs\GfxCropDialog.h" />
+    <ClInclude Include="..\..\src\Dialogs\GfxTintDialog.h" />
     <ClInclude Include="..\..\src\External\bzip2\bzlib.h" />
     <ClInclude Include="..\..\src\External\bzip2\bzlib_private.h" />
     <ClInclude Include="..\..\src\Dialogs\DirArchiveUpdateDialog.h" />
@@ -1955,6 +1956,8 @@
     <ClInclude Include="..\..\src\Dialogs\SetupWizard\TempFolderWizardPage.h" />
     <ClInclude Include="..\..\src\Dialogs\SetupWizard\WizardPageBase.h" />
     <ClInclude Include="..\..\src\Dialogs\TranslationEditorDialog.h" />
+    <ClInclude Include="..\..\src\External\cpp17\string_view.hpp" />
+    <ClInclude Include="..\..\src\External\cpp17\variant.hpp" />
     <ClInclude Include="..\..\src\External\dumb\dumb.h" />
     <ClInclude Include="..\..\src\External\dumb\internal\aldumb.h" />
     <ClInclude Include="..\..\src\External\dumb\internal\barray.h" />
@@ -2074,18 +2077,15 @@
     <ClInclude Include="..\..\src\Graphics\SImage\SIFormat.h" />
     <ClInclude Include="..\..\src\Graphics\SImage\SImage.h" />
     <ClInclude Include="..\..\src\Graphics\Translation.h" />
-    <ClInclude Include="..\..\src\MainEditor\AnimatedList.h" />
     <ClInclude Include="..\..\src\MainEditor\ArchiveOperations.h" />
     <ClInclude Include="..\..\src\MainEditor\BinaryControlLump.h" />
     <ClInclude Include="..\..\src\MainEditor\Conversions.h" />
     <ClInclude Include="..\..\src\MainEditor\EntryOperations.h" />
     <ClInclude Include="..\..\src\MainEditor\ExternalEditManager.h" />
     <ClInclude Include="..\..\src\MainEditor\MainEditor.h" />
-    <ClInclude Include="..\..\src\MainEditor\SwitchesList.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\ArchiveManagerPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\ArchivePanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\DocsPage.h" />
-    <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\AnimatedEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\ANSIEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\AudioEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\DataEntryPanel.h" />
@@ -2095,7 +2095,6 @@
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\HexEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\MapEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\PaletteEntryPanel.h" />
-    <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\SwitchesEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\EntryPanel\TextEntryPanel.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\MainWindow.h" />
     <ClInclude Include="..\..\src\MainEditor\UI\StartPage.h" />

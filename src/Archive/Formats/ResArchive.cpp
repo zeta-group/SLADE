@@ -1,63 +1,57 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    ResArchive.cpp
- * Description: ResArchive, archive class to handle A&A format
- *              res archives
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    ResArchive.cpp
+// Description: ResArchive, archive class to handle A&A format res archives
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "ResArchive.h"
 #include "General/UI.h"
 
-/*******************************************************************
- * EXTERNAL VARIABLES
- *******************************************************************/
+
+// -----------------------------------------------------------------------------
+//
+// External Variables
+//
+// -----------------------------------------------------------------------------
 EXTERN_CVAR(Bool, archive_load_data)
 
-/*******************************************************************
- * RESARCHIVE CLASS FUNCTIONS
- *******************************************************************/
 
-/* ResArchive::ResArchive
- * ResArchive class constructor
- *******************************************************************/
-ResArchive::ResArchive() : Archive("res")
-{
-}
+// -----------------------------------------------------------------------------
+//
+// ResArchive Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* ResArchive::~ResArchive
- * ResArchive class destructor
- *******************************************************************/
-ResArchive::~ResArchive()
-{
-}
 
-/* ResArchive::getEntryOffset
- * Returns the file byte offset for [entry]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns the file byte offset for [entry]
+// -----------------------------------------------------------------------------
 uint32_t ResArchive::getEntryOffset(ArchiveEntry* entry)
 {
 	// Check entry
@@ -67,9 +61,9 @@ uint32_t ResArchive::getEntryOffset(ArchiveEntry* entry)
 	return (uint32_t)(int)entry->exProp("Offset");
 }
 
-/* ResArchive::setEntryOffset
- * Sets the file byte offset for [entry]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Sets the file byte offset for [entry]
+// -----------------------------------------------------------------------------
 void ResArchive::setEntryOffset(ArchiveEntry* entry, uint32_t offset)
 {
 	// Check entry
@@ -79,10 +73,10 @@ void ResArchive::setEntryOffset(ArchiveEntry* entry, uint32_t offset)
 	entry->exProp("Offset") = (int)offset;
 }
 
-/* ResArchive::readDirectory
- * Reads a res directory from a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Reads a res directory from a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps, ArchiveTreeNode* parent)
 {
 	if (!parent)
@@ -98,18 +92,18 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 		UI::setSplashProgress(((float)d / (float)num_lumps));
 
 		// Read lump info
-		char magic[4] = "";
-		char name[15] = "";
+		char     magic[4] = "";
+		char     name[15] = "";
 		uint32_t dumzero1, dumzero2;
 		uint16_t dumff, dumze;
-		uint8_t flags = 0;
+		uint8_t  flags  = 0;
 		uint32_t offset = 0;
-		uint32_t size = 0;
+		uint32_t size   = 0;
 
-		mc.read(magic, 4);		// ReS\0
-		mc.read(name, 14);		// Name
-		mc.read(&offset, 4);	// Offset
-		mc.read(&size, 4);		// Size
+		mc.read(magic, 4);   // ReS\0
+		mc.read(name, 14);   // Name
+		mc.read(&offset, 4); // Offset
+		mc.read(&size, 4);   // Size
 
 		// Check the identifier
 		if (magic[0] != 'R' || magic[1] != 'e' || magic[2] != 'S' || magic[3] != 0)
@@ -120,19 +114,29 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 		}
 
 		// Byteswap values for big endian if needed
-		offset = wxINT32_SWAP_ON_BE(offset);
-		size = wxINT32_SWAP_ON_BE(size);
+		offset   = wxINT32_SWAP_ON_BE(offset);
+		size     = wxINT32_SWAP_ON_BE(size);
 		name[14] = '\0';
 
-		mc.read(&dumze, 2); if (dumze) LOG_MESSAGE(1, "Flag guard not null for entry %s", name);
-		mc.read(&flags, 1); if (flags != 1 && flags != 17) LOG_MESSAGE(1, "Unknown flag value for entry %s", name);
-		mc.read(&dumzero1, 4); if (dumzero1) LOG_MESSAGE(1, "Near-end values not set to zero for entry %s", name);
-		mc.read(&dumff, 2); if (dumff != 0xFFFF) LOG_MESSAGE(1, "Dummy set to a non-FF value for entry %s", name);
-		mc.read(&dumzero2, 4); if (dumzero2) LOG_MESSAGE(1, "Trailing values not set to zero for entry %s", name);
+		mc.read(&dumze, 2);
+		if (dumze)
+			LOG_MESSAGE(1, "Flag guard not null for entry %s", name);
+		mc.read(&flags, 1);
+		if (flags != 1 && flags != 17)
+			LOG_MESSAGE(1, "Unknown flag value for entry %s", name);
+		mc.read(&dumzero1, 4);
+		if (dumzero1)
+			LOG_MESSAGE(1, "Near-end values not set to zero for entry %s", name);
+		mc.read(&dumff, 2);
+		if (dumff != 0xFFFF)
+			LOG_MESSAGE(1, "Dummy set to a non-FF value for entry %s", name);
+		mc.read(&dumzero2, 4);
+		if (dumzero2)
+			LOG_MESSAGE(1, "Trailing values not set to zero for entry %s", name);
 
 		// If the lump data goes past the end of the file,
 		// the resfile is invalid
-		if (offset + size > mc.getSize())
+		if (offset + size > mc.size())
 		{
 			LOG_MESSAGE(1, "ResArchive::readDirectory: Res archive is invalid or corrupt, offset overflow");
 			Global::error = "Archive is invalid and/or corrupt";
@@ -141,13 +145,13 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 		}
 
 		// Create & setup lump
-		ArchiveEntry* nlump = new ArchiveEntry(wxString::FromAscii(name), size);
+		ArchiveEntry* nlump = new ArchiveEntry(name, size);
 		nlump->setLoaded(false);
 		nlump->exProp("Offset") = (int)offset;
 		nlump->setState(0);
 
 		// Read entry data if it isn't zero-sized
-		if (nlump->getSize() > 0)
+		if (nlump->size() > 0)
 		{
 			// Read the entry data
 			MemChunk edata;
@@ -157,7 +161,7 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 
 		// What if the entry is a directory?
 		size_t d_o, n_l;
-		if (isResArchive(nlump->getMCData(), d_o, n_l))
+		if (isResArchive(nlump->data(), d_o, n_l))
 		{
 			ArchiveTreeNode* ndir = createDir(name, parent);
 			if (ndir)
@@ -193,10 +197,10 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 	return true;
 }
 
-/* ResArchive::open
- * Reads res format data from a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Reads res format data from a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool ResArchive::open(MemChunk& mc)
 {
 	// Check data was given
@@ -204,16 +208,16 @@ bool ResArchive::open(MemChunk& mc)
 		return false;
 
 	// Read res header
-	uint32_t	dir_size = 0;
-	uint32_t	dir_offset = 0;
-	char		magic[4] = "";
+	uint32_t dir_size   = 0;
+	uint32_t dir_offset = 0;
+	char     magic[4]   = "";
 	mc.seek(0, SEEK_SET);
-	mc.read(&magic, 4);			// "Res!"
-	mc.read(&dir_offset, 4);	// Offset to directory
-	mc.read(&dir_size, 4);		// No. of lumps in res
+	mc.read(&magic, 4);      // "Res!"
+	mc.read(&dir_offset, 4); // Offset to directory
+	mc.read(&dir_size, 4);   // No. of lumps in res
 
 	// Byteswap values for big endian if needed
-	dir_size = wxINT32_SWAP_ON_BE(dir_size);
+	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// Check the header
@@ -224,13 +228,13 @@ bool ResArchive::open(MemChunk& mc)
 		return false;
 	}
 
-	if (dir_size % RESDIRENTRYSIZE)
+	if (dir_size % DIRENTRYSIZE)
 	{
 		LOG_MESSAGE(1, "ResArchive::openFile: File %s has invalid directory size", filename_);
 		Global::error = "Invalid res directory size";
 		return false;
 	}
-	uint32_t num_lumps = dir_size / RESDIRENTRYSIZE;
+	uint32_t num_lumps = dir_size / DIRENTRYSIZE;
 
 	// Stop announcements (don't want to be announcing modification due to entries being added etc)
 	setMuted(true);
@@ -255,10 +259,10 @@ bool ResArchive::open(MemChunk& mc)
 	return true;
 }
 
-/* ResArchive::write
- * Writes the res archive to a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Writes the res archive to a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool ResArchive::write(MemChunk& mc, bool update)
 {
 	/*	// Determine directory offset & individual lump offsets
@@ -310,10 +314,10 @@ bool ResArchive::write(MemChunk& mc, bool update)
 	return true;
 }
 
-/* ResArchive::loadEntryData
- * Loads an entry's data from the resfile
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Loads an entry's data from the resfile
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool ResArchive::loadEntryData(ArchiveEntry* entry)
 {
 	// Check the entry is valid and part of this archive
@@ -322,7 +326,7 @@ bool ResArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Do nothing if the lump's size is zero,
 	// or if it has already been loaded
-	if (entry->getSize() == 0 || entry->isLoaded())
+	if (entry->size() == 0 || entry->isLoaded())
 	{
 		entry->setLoaded();
 		return true;
@@ -340,7 +344,7 @@ bool ResArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Seek to lump offset in file and read it in
 	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->getSize());
+	entry->importFileStream(file, entry->size());
 
 	// Set the lump to loaded
 	entry->setLoaded();
@@ -348,11 +352,11 @@ bool ResArchive::loadEntryData(ArchiveEntry* entry)
 	return true;
 }
 
-/* ResArchive::addEntry
- * Override of Archive::addEntry to force entry addition to the root
- * directory, update namespaces if needed and rename the entry if
- * necessary to be res-friendly (14 characters max)
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Override of Archive::addEntry to force entry addition to the root directory,
+// update namespaces if needed and rename the entry if necessary to be
+// res-friendly (14 characters max)
+// -----------------------------------------------------------------------------
 ArchiveEntry* ResArchive::addEntry(ArchiveEntry* entry, unsigned position, ArchiveTreeNode* dir, bool copy)
 {
 	// Check entry
@@ -367,52 +371,34 @@ ArchiveEntry* ResArchive::addEntry(ArchiveEntry* entry, unsigned position, Archi
 	if (copy)
 		entry = new ArchiveEntry(*entry);
 
-	// Process name (must be 14 characters max)
-	wxFileName fn(entry->getName());
-	string name = fn.GetName().Truncate(14);
-
-	// Set new res-friendly name
-	entry->setName(name);
-
 	// Do default entry addition (to root directory)
 	Archive::addEntry(entry, position);
 
 	return entry;
 }
 
-/* ResArchive::addEntry
- * Adds [entry] to the end of the namespace matching [add_namespace].
- * If [copy] is true a copy of the entry is added. Returns the added
- * entry or NULL if the entry is invalid
- *******************************************************************/
-ArchiveEntry* ResArchive::addEntry(ArchiveEntry* entry, string add_namespace, bool copy)
+// -----------------------------------------------------------------------------
+// Adds [entry] to the end of the namespace matching [add_namespace].
+// If [copy] is true a copy of the entry is added. Returns the added entry or
+// NULL if the entry is invalid
+// -----------------------------------------------------------------------------
+ArchiveEntry* ResArchive::addEntry(ArchiveEntry* entry, string_view add_namespace, bool copy)
 {
 	// Namespace not found, add to global namespace (ie end of archive)
 	return addEntry(entry, 0xFFFFFFFF, nullptr, copy);
 }
 
-/* ResArchive::renameEntry
- * Override of Archive::renameEntry to update namespaces if needed
- * and rename the entry if necessary to be res-friendly (14 chars max)
- *******************************************************************/
-bool ResArchive::renameEntry(ArchiveEntry* entry, string name)
-{
-	// Check entry
-	if (!checkEntry(entry))
-		return false;
 
-	// Process name (must be 14 characters max)
-	wxFileName fn(name);
-	name = fn.GetName().Truncate(14);
+// -----------------------------------------------------------------------------
+//
+// ResArchive Class Static Functions
+//
+// -----------------------------------------------------------------------------
 
-	// Do default rename
-	return Archive::renameEntry(entry, name);
 
-}
-
-/* ResArchive::isResArchive
- * Checks if the given data is a valid A&A res archive
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Checks if the given data is a valid A&A res archive
+// -----------------------------------------------------------------------------
 bool ResArchive::isResArchive(MemChunk& mc)
 {
 	size_t dummy1, dummy2;
@@ -421,7 +407,7 @@ bool ResArchive::isResArchive(MemChunk& mc)
 bool ResArchive::isResArchive(MemChunk& mc, size_t& dir_offset, size_t& num_lumps)
 {
 	// Check size
-	if (mc.getSize() < 12)
+	if (mc.size() < 12)
 		return false;
 
 	// Check for "Res!" header
@@ -429,28 +415,26 @@ bool ResArchive::isResArchive(MemChunk& mc, size_t& dir_offset, size_t& num_lump
 		return false;
 
 	// Get number of lumps and directory offset
-	uint32_t offset_offset = 0;
-	uint32_t rel_offset = 0;
 	uint32_t dir_size = 0;
 	mc.seek(4, SEEK_SET);
 	mc.read(&dir_offset, 4);
 	mc.read(&dir_size, 4);
 
 	// Byteswap values for big endian if needed
-	dir_size = wxINT32_SWAP_ON_BE(dir_size);
+	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// A&A contains nested resource files. The offsets are then always relative to
 	// the top-level file. This causes problem with the embedded archive system
 	// used by SLADE3. The solution is to compute the offset offset. :)
-	offset_offset = dir_offset - (mc.getSize() - dir_size);
-	rel_offset = dir_offset - offset_offset;
+	uint32_t offset_offset = dir_offset - (mc.size() - dir_size);
+	uint32_t rel_offset    = dir_offset - offset_offset;
 
 	// Check directory offset and size are both decent
-	if (dir_size % RESDIRENTRYSIZE || (rel_offset + dir_size) > mc.getSize())
+	if (dir_size % DIRENTRYSIZE || (rel_offset + dir_size) > mc.size())
 		return false;
 
-	num_lumps = dir_size / RESDIRENTRYSIZE;
+	num_lumps = dir_size / DIRENTRYSIZE;
 
 	// Reset MemChunk (just in case)
 	mc.seek(0, SEEK_SET);
@@ -459,13 +443,13 @@ bool ResArchive::isResArchive(MemChunk& mc, size_t& dir_offset, size_t& num_lump
 	return true;
 }
 
-/* ResArchive::isResArchive
- * Checks if the file at [filename] is a valid A&A res archive
- *******************************************************************/
-bool ResArchive::isResArchive(string filename)
+// -----------------------------------------------------------------------------
+// Checks if the file at [filename] is a valid A&A res archive
+// -----------------------------------------------------------------------------
+bool ResArchive::isResArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename);
+	wxFile file(filename.to_string());
 
 	// Check it opened ok
 	if (!file.IsOpened())
@@ -484,16 +468,16 @@ bool ResArchive::isResArchive(string filename)
 
 	// Get number of lumps and directory offset
 	uint32_t dir_offset = 0;
-	uint32_t dir_size = 0;
+	uint32_t dir_size   = 0;
 	file.Read(&dir_offset, 4);
 	file.Read(&dir_size, 4);
 
 	// Byteswap values for big endian if needed
-	dir_size = wxINT32_SWAP_ON_BE(dir_size);
+	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// Check directory offset and size are both decent
-	if (dir_size % RESDIRENTRYSIZE || (dir_offset + dir_size) > file.Length())
+	if (dir_size % DIRENTRYSIZE || (dir_offset + dir_size) > file.Length())
 		return false;
 
 	// If it's passed to here it's probably a res file

@@ -1,42 +1,46 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    GZipArchive.cpp
- * Description: GZipArchive, archive class to handle GZip files
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    GZipArchive.cpp
+// Description: GZipArchive, archive class to handle GZip files
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "GZipArchive.h"
-#include "UI/SplashWindow.h"
 #include "Utility/Compression.h"
 #include "General/Misc.h"
+#include "Utility/StringUtils.h"
 
 
-/*******************************************************************
- * CONSTANTS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Constants
+//
+// -----------------------------------------------------------------------------
 #define GZIP_ID1 0x1F
 #define GZIP_ID2 0x8B
 #define GZIP_DEFLATE 0x08
@@ -48,33 +52,22 @@
 #define GZIP_FLG_FUNKN 0xE0
 
 
-/*******************************************************************
- * GZIPARCHIVE CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// GZipArchive Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* GZipArchive::GZipArchive
- * GZipArchive class constructor
- *******************************************************************/
-GZipArchive::GZipArchive() : TreelessArchive("gzip")
-{
-}
 
-/* GZipArchive::~GZipArchive
- * GZipArchive class destructor
- *******************************************************************/
-GZipArchive::~GZipArchive()
-{
-}
-
-/* GZipArchive::open
- * Reads gzip format data from a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Reads gzip format data from a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool GZipArchive::open(MemChunk& mc)
 {
 	// Minimal metadata size is 18: 10 for header, 8 for footer
-	size_t mds = 18;
-	size_t size = mc.getSize();
+	size_t mds  = 18;
+	size_t size = mc.size();
 	if (mds > size)
 		return false;
 
@@ -85,16 +78,15 @@ bool GZipArchive::open(MemChunk& mc)
 	// Check for GZip header; we'll only accept deflated gzip files
 	// and reject any field using unknown flags
 	if ((!(header[0] == GZIP_ID1 && header[1] == GZIP_ID2 && header[2] == GZIP_DEFLATE))
-	        || (header[3] & GZIP_FLG_FUNKN))
+		|| (header[3] & GZIP_FLG_FUNKN))
 		return false;
 
-	bool ftext, fhcrc, fxtra, fname, fcmnt;
-	ftext = (header[3] & GZIP_FLG_FTEXT) ? true : false;
-	fhcrc = (header[3] & GZIP_FLG_FHCRC) ? true : false;
-	fxtra = (header[3] & GZIP_FLG_FXTRA) ? true : false;
-	fname = (header[3] & GZIP_FLG_FNAME) ? true : false;
-	fcmnt = (header[3] & GZIP_FLG_FCMNT) ? true : false;
-	flags_ = header[3];
+	// bool ftext = (header[3] & GZIP_FLG_FTEXT) != 0;
+	bool fhcrc = (header[3] & GZIP_FLG_FHCRC) != 0;
+	bool fxtra = (header[3] & GZIP_FLG_FXTRA) != 0;
+	bool fname = (header[3] & GZIP_FLG_FNAME) != 0;
+	bool fcmnt = (header[3] & GZIP_FLG_FCMNT) != 0;
+	flags_     = header[3];
 
 	mc.read(&mtime_, 4);
 	mtime_ = wxUINT32_SWAP_ON_BE(mtime_);
@@ -123,10 +115,10 @@ bool GZipArchive::open(MemChunk& mc)
 		do
 		{
 			mc.read(&c, 1);
-			if (c) name += c;
+			if (c)
+				name += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 	}
 	else
 	{
@@ -147,10 +139,10 @@ bool GZipArchive::open(MemChunk& mc)
 		do
 		{
 			mc.read(&c, 1);
-			if (c) comment_ += c;
+			if (c)
+				comment_ += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 		LOG_MESSAGE(1, "Archive %s says:\n %s", filename(true), comment_);
 	}
 
@@ -158,14 +150,14 @@ bool GZipArchive::open(MemChunk& mc)
 	if (fhcrc)
 	{
 		uint8_t* crcbuffer = new uint8_t[mc.currentPos()];
-		memcpy(crcbuffer, mc.getData(), mc.currentPos());
+		memcpy(crcbuffer, mc.data(), mc.currentPos());
 		uint32_t fullcrc = Misc::crc(crcbuffer, mc.currentPos());
 		delete[] crcbuffer;
 		uint16_t hcrc;
 		mc.read(&hcrc, 2);
 		hcrc = wxUINT16_SWAP_ON_BE(hcrc);
 		mds += 2;
-		if (hcrc  != (fullcrc & 0x0000FFFF))
+		if (hcrc != (fullcrc & 0x0000FFFF))
 		{
 			LOG_MESSAGE(1, "CRC-16 mismatch for GZip header");
 		}
@@ -178,7 +170,7 @@ bool GZipArchive::open(MemChunk& mc)
 	// Let's create the entry
 	setMuted(true);
 	ArchiveEntry* entry = new ArchiveEntry(name, size - mds);
-	MemChunk  xdata;
+	MemChunk      xdata;
 	if (Compression::GZipInflate(mc, xdata))
 	{
 		entry->importMemChunk(xdata);
@@ -201,10 +193,10 @@ bool GZipArchive::open(MemChunk& mc)
 	return true;
 }
 
-/* GZipArchive::write
- * Writes the gzip archive to a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Writes the gzip archive to a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool GZipArchive::write(MemChunk& mc, bool update)
 {
 	// Clear current data
@@ -213,27 +205,29 @@ bool GZipArchive::write(MemChunk& mc, bool update)
 	if (numEntries() == 1)
 	{
 		MemChunk stream;
-		if (Compression::GZipDeflate(getEntry(0)->getMCData(), stream, 9))
+		if (Compression::GZipDeflate(getEntry(0)->data(), stream, 9))
 		{
-			const uint8_t* data = stream.getData();
-			uint32_t working = 0;
-			size_t size = stream.getSize();
-			if (size < 18) return false;
+			const uint8_t* data = stream.data();
+			size_t         size = stream.size();
+			if (size < 18)
+				return false;
 
 			// zlib will have given us a minimal header, so we make our own
 			uint8_t header[4];
-			header[0] = GZIP_ID1; header[1] = GZIP_ID2;
-			header[2] = GZIP_DEFLATE; header[3] = flags_;
+			header[0] = GZIP_ID1;
+			header[1] = GZIP_ID2;
+			header[2] = GZIP_DEFLATE;
+			header[3] = flags_;
 			mc.write(header, 4);
 
 			// Update mtime if the file was modified
-			if (getEntry(0)->getState())
+			if (getEntry(0)->state())
 			{
 				mtime_ = ::wxGetLocalTime();
 			}
 
 			// Write mtime
-			working = wxUINT32_SWAP_ON_BE(mtime_);
+			uint32_t working = wxUINT32_SWAP_ON_BE(mtime_);
 			mc.write(&working, 4);
 
 			// Write other stuff
@@ -243,31 +237,33 @@ bool GZipArchive::write(MemChunk& mc, bool update)
 			// Any extra content that may have been there
 			if (flags_ & GZIP_FLG_FXTRA)
 			{
-				uint16_t xlen = wxUINT16_SWAP_ON_BE(xtra_.getSize());
+				uint16_t xlen = wxUINT16_SWAP_ON_BE(xtra_.size());
 				mc.write(&xlen, 2);
-				mc.write(xtra_.getData(), xtra_.getSize());
+				mc.write(xtra_.data(), xtra_.size());
 			}
 
 			// File name, if not extrapolated from archive name
 			if (flags_ & GZIP_FLG_FNAME)
 			{
-				mc.write(CHR(getEntry(0)->getName()), getEntry(0)->getName().length());
-				uint8_t zero = 0; mc.write(&zero, 1);	// Terminate string
+				mc.write(getEntry(0)->name().data(), getEntry(0)->name().size());
+				uint8_t zero = 0;
+				mc.write(&zero, 1); // Terminate string
 			}
 
 			// Comment, if there were actually one
 			if (flags_ & GZIP_FLG_FCMNT)
 			{
-				mc.write(CHR(comment_), comment_.length());
-				uint8_t zero = 0; mc.write(&zero, 1);	// Terminate string
+				mc.write(comment_.c_str(), comment_.size());
+				uint8_t zero = 0;
+				mc.write(&zero, 1); // Terminate string
 			}
 
 			// And finally, the half CRC, which we recalculate
 			if (flags_ & GZIP_FLG_FHCRC)
 			{
-				uint32_t fullcrc = Misc::crc(mc.getData(), mc.getSize());
-				uint16_t hcrc = (fullcrc & 0x0000FFFF);
-				hcrc = wxUINT16_SWAP_ON_BE(hcrc);
+				uint32_t fullcrc = Misc::crc(mc.data(), mc.size());
+				uint16_t hcrc    = (fullcrc & 0x0000FFFF);
+				hcrc             = wxUINT16_SWAP_ON_BE(hcrc);
 				mc.write(&hcrc, 2);
 			}
 
@@ -279,11 +275,10 @@ bool GZipArchive::write(MemChunk& mc, bool update)
 	return false;
 }
 
-
-/* GZipArchive::renameEntry
- * Renames the entry and set the fname flag
- *******************************************************************/
-bool GZipArchive::renameEntry(ArchiveEntry* entry, string name)
+// -----------------------------------------------------------------------------
+// Renames the entry and set the fname flag
+// -----------------------------------------------------------------------------
+bool GZipArchive::renameEntry(ArchiveEntry* entry, string_view name)
 {
 	// Check entry
 	if (!checkEntry(entry))
@@ -291,24 +286,26 @@ bool GZipArchive::renameEntry(ArchiveEntry* entry, string name)
 
 	// Do default rename
 	bool ok = Archive::renameEntry(entry, name);
-	if (ok) flags_ |= GZIP_FLG_FNAME;
+	if (ok)
+		flags_ |= GZIP_FLG_FNAME;
 	return ok;
 }
 
-/* GZipArchive::loadEntryData
- * Loads an entry's data from the gzip file
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Loads an entry's data from the gzip file.
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 {
 	return false;
+
 	// Check the entry is valid and part of this archive
 	if (!checkEntry(entry))
 		return false;
 
 	// Do nothing if the lump's size is zero,
 	// or if it has already been loaded
-	if (entry->getSize() == 0 || entry->isLoaded())
+	if (entry->size() == 0 || entry->isLoaded())
 	{
 		entry->setLoaded();
 		return true;
@@ -325,7 +322,7 @@ bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 	}
 
 	// Seek to lump offset in file and read it in
-	entry->importFileStream(file, entry->getSize());
+	entry->importFileStream(file, entry->size());
 
 	// Set the lump to loaded
 	entry->setLoaded();
@@ -334,14 +331,13 @@ bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 	return true;
 }
 
-/* GZipArchive::findFirst
- * Returns the entry if it matches the search criteria in [options],
- * or NULL otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns the entry if it matches the search criteria in [options], or NULL
+// otherwise
+// -----------------------------------------------------------------------------
 ArchiveEntry* GZipArchive::findFirst(SearchOptions& options)
 {
 	// Init search variables
-	options.match_name = options.match_name.Lower();
 	ArchiveEntry* entry = getEntry(0);
 	if (entry == nullptr)
 		return entry;
@@ -349,23 +345,23 @@ ArchiveEntry* GZipArchive::findFirst(SearchOptions& options)
 	// Check type
 	if (options.match_type)
 	{
-		if (entry->getType() == EntryType::unknownType())
+		if (entry->type() == EntryType::unknownType())
 		{
 			if (!options.match_type->isThisType(entry))
 			{
 				return nullptr;
 			}
 		}
-		else if (options.match_type != entry->getType())
+		else if (options.match_type != entry->type())
 		{
 			return nullptr;
 		}
 	}
 
 	// Check name
-	if (!options.match_name.IsEmpty())
+	if (!options.match_name.empty())
 	{
-		if (!options.match_name.Matches(entry->getName().Lower()))
+		if (StrUtil::matchesCI(entry->name(), options.match_name))
 		{
 			return nullptr;
 		}
@@ -375,22 +371,21 @@ ArchiveEntry* GZipArchive::findFirst(SearchOptions& options)
 	return entry;
 }
 
-/* GZipArchive::findLast
- * Returns the last entry matching the search criteria in [options],
- * or NULL if no matching entry was found
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns the last entry matching the search criteria in [options], or NULL if
+// no matching entry was found
+// -----------------------------------------------------------------------------
 ArchiveEntry* GZipArchive::findLast(SearchOptions& options)
 {
 	return findFirst(options);
 }
 
-/* GZipArchive::findAll
- * Returns all entries matching the search criteria in [options]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns all entries matching the search criteria in [options]
+// -----------------------------------------------------------------------------
 vector<ArchiveEntry*> GZipArchive::findAll(SearchOptions& options)
 {
 	// Init search variables
-	options.match_name = options.match_name.Lower();
 	vector<ArchiveEntry*> ret;
 	if (findFirst(options))
 		ret.push_back(getEntry(0));
@@ -398,15 +393,21 @@ vector<ArchiveEntry*> GZipArchive::findAll(SearchOptions& options)
 }
 
 
+// -----------------------------------------------------------------------------
+//
+// GZipArchive Class Static Functions
+//
+// -----------------------------------------------------------------------------
 
-/* GZipArchive::isGZipArchive
- * Checks if the given data is a valid GZip archive
- *******************************************************************/
+
+// -----------------------------------------------------------------------------
+// Checks if the given data is a valid GZip archive
+// -----------------------------------------------------------------------------
 bool GZipArchive::isGZipArchive(MemChunk& mc)
 {
 	// Minimal metadata size is 18: 10 for header, 8 for footer
-	size_t mds = 18;
-	size_t size = mc.getSize();
+	size_t mds  = 18;
+	size_t size = mc.size();
 	if (size < mds)
 		return false;
 
@@ -416,16 +417,14 @@ bool GZipArchive::isGZipArchive(MemChunk& mc)
 
 	// Check for GZip header; we'll only accept deflated gzip files
 	// and reject any field using unknown flags
-	if (!(header[0] == GZIP_ID1 && header[1] == GZIP_ID2 && header[2] == GZIP_DEFLATE)
-	        || (header[3] & GZIP_FLG_FUNKN))
+	if (!(header[0] == GZIP_ID1 && header[1] == GZIP_ID2 && header[2] == GZIP_DEFLATE) || (header[3] & GZIP_FLG_FUNKN))
 		return false;
 
-	bool ftext, fhcrc, fxtra, fname, fcmnt;
-	ftext = (header[3] & GZIP_FLG_FTEXT) ? true : false;
-	fhcrc = (header[3] & GZIP_FLG_FHCRC) ? true : false;
-	fxtra = (header[3] & GZIP_FLG_FXTRA) ? true : false;
-	fname = (header[3] & GZIP_FLG_FNAME) ? true : false;
-	fcmnt = (header[3] & GZIP_FLG_FCMNT) ? true : false;
+	// bool ftext = (header[3] & GZIP_FLG_FTEXT) != 0;
+	bool fhcrc = (header[3] & GZIP_FLG_FHCRC) != 0;
+	bool fxtra = (header[3] & GZIP_FLG_FXTRA) != 0;
+	bool fname = (header[3] & GZIP_FLG_FNAME) != 0;
+	bool fcmnt = (header[3] & GZIP_FLG_FCMNT) != 0;
 
 	uint32_t mtime;
 	mc.read(&mtime, 4);
@@ -451,28 +450,28 @@ bool GZipArchive::isGZipArchive(MemChunk& mc)
 	if (fname)
 	{
 		string name;
-		char c;
+		char   c;
 		do
 		{
 			mc.read(&c, 1);
-			if (c) name += c;
+			if (c)
+				name += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 	}
 
 	// Skip past comment
 	if (fcmnt)
 	{
 		string comment;
-		char c;
+		char   c;
 		do
 		{
 			mc.read(&c, 1);
-			if (c) comment += c;
+			if (c)
+				comment += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 	}
 
 	// Skip past CRC 16 check
@@ -491,13 +490,13 @@ bool GZipArchive::isGZipArchive(MemChunk& mc)
 	return true;
 }
 
-/* GZipArchive::isGZipArchive
- * Checks if the file at [filename] is a valid GZip archive
- *******************************************************************/
-bool GZipArchive::isGZipArchive(string filename)
+// -----------------------------------------------------------------------------
+// Checks if the file at [filename] is a valid GZip archive
+// -----------------------------------------------------------------------------
+bool GZipArchive::isGZipArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename);
+	wxFile file(filename.data());
 
 	// Minimal metadata size is 18: 10 for header, 8 for footer
 	size_t mds = 18;
@@ -512,17 +511,16 @@ bool GZipArchive::isGZipArchive(string filename)
 	// Read header
 	uint8_t header[4];
 	file.Read(header, 4);
-	bool ftext, fhcrc, fxtra, fname, fcmnt;
-	ftext = (header[3] & GZIP_FLG_FTEXT) ? true : false;
-	fhcrc = (header[3] & GZIP_FLG_FHCRC) ? true : false;
-	fxtra = (header[3] & GZIP_FLG_FXTRA) ? true : false;
-	fname = (header[3] & GZIP_FLG_FNAME) ? true : false;
-	fcmnt = (header[3] & GZIP_FLG_FCMNT) ? true : false;
+	// bool ftext = (header[3] & GZIP_FLG_FTEXT) != 0;
+	bool fhcrc = (header[3] & GZIP_FLG_FHCRC) != 0;
+	bool fxtra = (header[3] & GZIP_FLG_FXTRA) != 0;
+	bool fname = (header[3] & GZIP_FLG_FNAME) != 0;
+	bool fcmnt = (header[3] & GZIP_FLG_FCMNT) != 0;
 
 	// Check for GZip header; we'll only accept deflated gzip files
 	// and reject any field using unknown flags
 	if ((!(header[0] == GZIP_ID1 && header[1] == GZIP_ID2 && header[2] == GZIP_DEFLATE))
-	        || (header[3] & GZIP_FLG_FUNKN))
+		|| (header[3] & GZIP_FLG_FUNKN))
 	{
 		return false;
 	}
@@ -551,28 +549,28 @@ bool GZipArchive::isGZipArchive(string filename)
 	if (fname)
 	{
 		string name;
-		char c;
+		char   c;
 		do
 		{
 			file.Read(&c, 1);
-			if (c) name += c;
+			if (c)
+				name += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 	}
 
 	// Skip past comment
 	if (fcmnt)
 	{
 		string comment;
-		char c;
+		char   c;
 		do
 		{
 			file.Read(&c, 1);
-			if (c) comment += c;
+			if (c)
+				comment += c;
 			++mds;
-		}
-		while (c != 0 && size > mds);
+		} while (c != 0 && size > mds);
 	}
 
 	// Skip past CRC 16 check

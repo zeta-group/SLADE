@@ -1,24 +1,16 @@
-
-#ifndef __PALETTEDIALOG_H__
-#define	__PALETTEDIALOG_H__
-
-#include "common.h"
+#pragma once
 
 class PaletteCanvas;
 class Palette;
+
 class PaletteDialog : public wxDialog
 {
-private:
-	PaletteCanvas*	pal_canvas;
-
 public:
 	PaletteDialog(Palette* palette);
-	~PaletteDialog();
+	~PaletteDialog() = default;
 
-	rgba_t	getSelectedColour();
+	ColRGBA	selectedColour() const;
 
-	// Events
-	void	onLeftDoubleClick(wxMouseEvent& e);
+private:
+	PaletteCanvas * pal_canvas_;
 };
-
-#endif//__PALETTEDIALOG_H__

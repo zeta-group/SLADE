@@ -1,39 +1,45 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    CodePages.cpp
- * Description: Stuff to handle conversion of bytes into Unicode
- *				characters according to various code pages.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    CodePages.cpp
+// Description: Stuff to handle conversion of bytes into Unicode characters
+//              according to various code pages.
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
+#include "Main.h"
 #include "CodePages.h"
 
 
-/*******************************************************************
- * DATA TABLES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Data Tables
+//
+// -----------------------------------------------------------------------------
+// clang-format off
 string asciitable[128] =
 {
 	"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "TAB", "LF", "VT", "FF", "CR", "SO", "SI",
@@ -136,24 +142,28 @@ uint8_t ansicolors[16][3] =
 	{ 0xFF, 0xFF, 0x55 }, // Yellow
 	{ 0xFF, 0xFF, 0xFF }, // White
 };
+// clang-format on
 
 
-/*******************************************************************
- * FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Functions
+//
+// -----------------------------------------------------------------------------
+
 string CodePages::fromASCII(uint8_t val)
 {
-	if (val < 128)				return asciitable[val];
-	else						return "";
+	return (val < 128) ? asciitable[val] : "";
 }
 
 string CodePages::fromCP437(uint8_t val)
 {
-	return wxString::FromUTF8((const char*)cp437table[val], cp437len[val]);
+	return { (const char*)cp437table[val], cp437len[val] };
 }
 
-rgba_t CodePages::ansiColor(uint8_t val)
+ColRGBA CodePages::ansiColor(uint8_t val)
 {
-	if (val >= 16) val = ((val >> 4) & 7);
-	return rgba_t(ansicolors[val][0], ansicolors[val][1], ansicolors[val][2]);
+	if (val >= 16)
+		val = ((val >> 4) & 7);
+	return { ansicolors[val][0], ansicolors[val][1], ansicolors[val][2] };
 }

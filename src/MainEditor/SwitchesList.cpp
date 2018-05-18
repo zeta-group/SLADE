@@ -123,13 +123,13 @@ void SwitchesList::clear()
 bool SwitchesList::readSWITCHESData(ArchiveEntry* switches)
 {
 	// Check entries were actually given
-	if (!switches || switches->getSize() == 0)
+	if (!switches || switches->size() == 0)
 		return false;
 
-	uint8_t* data = new uint8_t[switches->getSize()];
-	memcpy(data, switches->getData(), switches->getSize());
+	uint8_t* data = new uint8_t[switches->size()];
+	memcpy(data, switches->dataRaw(), switches->size());
 	uint8_t* cursor = data;
-	uint8_t* eodata = cursor + switches->getSize();
+	uint8_t* eodata = cursor + switches->size();
 	switches_t* type;
 
 	while (cursor < eodata && *cursor != SWCH_STOP)
@@ -217,8 +217,8 @@ bool SwitchesList::swapEntries(size_t pos1, size_t pos2)
  *******************************************************************/
 bool SwitchesList::convertSwitches(ArchiveEntry* entry, MemChunk* animdata, bool animdefs)
 {
-	const uint8_t* cursor = entry->getData(true);
-	const uint8_t* eodata = cursor + entry->getSize();
+	const uint8_t* cursor = entry->dataRaw(true);
+	const uint8_t* eodata = cursor + entry->size();
 	const switches_t* switches;
 	string conversion;
 
@@ -267,13 +267,13 @@ bool SwitchesList::convertSwitches(ArchiveEntry* entry, MemChunk* animdata, bool
 bool SwitchesList::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata)
 {
 	Tokenizer tz(Tokenizer::Hash);
-	tz.openMem(entry->getMCData(), entry->getName());
+	tz.openMem(entry->data(), entry->name());
 
 	string token;
 	char buffer[20];
 	while ((token = tz.getToken()).length())
 	{
-		// We should only treat animated flats and textures, and ignore switches
+		// We should only treat switches, and ignore animated flats and textures
 		if (S_CMP(token, "[SWITCHES]"))
 		{
 			do

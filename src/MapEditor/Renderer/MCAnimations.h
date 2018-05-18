@@ -1,179 +1,221 @@
-
-#ifndef __MC_ANIMATIONS_H__
-#define __MC_ANIMATIONS_H__
+#pragma once
 
 #include "MapEditor/Edit/Edit3D.h"
 
+class MapLine;
+class MapVertex;
+class Polygon2D;
+class MapSector;
+class MapRenderer2D;
+class MapObject;
+class MapRenderer3D;
+
 class MCAnimation
 {
-protected:
-	long	starttime;
-	bool	mode_3d;
-
 public:
-	MCAnimation(long start, bool mode_3d = false) { starttime = start; this->mode_3d = mode_3d; }
-	virtual ~MCAnimation() {}
+	MCAnimation(long start, bool mode_3d = false)
+	{
+		starttime_     = start;
+		this->mode_3d_ = mode_3d;
+	}
+	virtual ~MCAnimation() = default;
 
-	bool	mode3d() { return mode_3d; }
+	bool mode3d() const { return mode_3d_; }
 
 	virtual bool update(long time) { return false; }
 	virtual void draw() {}
+
+protected:
+	long starttime_;
+	bool mode_3d_;
 };
 
+// Fading out animation for selection box ending
 class MCASelboxFader : public MCAnimation
 {
-private:
-	fpoint2_t	tl;
-	fpoint2_t	br;
-	float		fade;
-
 public:
-	MCASelboxFader(long start, fpoint2_t tl, fpoint2_t br);
-	~MCASelboxFader();
+	MCASelboxFader(long start, fpoint2_t tl, fpoint2_t br) : MCAnimation(start), tl_{ tl }, br_{ br }, fade_{ 1.f } {}
+	~MCASelboxFader() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	fpoint2_t tl_;
+	fpoint2_t br_;
+	float     fade_;
 };
 
+// Selection/deselection animation for things
 class MCAThingSelection : public MCAnimation
 {
-private:
-	double	x;
-	double	y;
-	double	radius;
-	bool	select;
-	float	fade;
-
 public:
 	MCAThingSelection(long start, double x, double y, double radius, double scale_inv, bool select = true);
-	~MCAThingSelection();
+	~MCAThingSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	Vec2<double> position_;
+	double       radius_;
+	bool         select_;
+	float        fade_;
 };
 
-class MapLine;
+// Selection/deselection animation for lines
 class MCALineSelection : public MCAnimation
 {
-private:
-	vector<frect_t>	lines;
-	vector<frect_t>	tabs;
-	bool	select;
-	float	fade;
-
 public:
 	MCALineSelection(long start, vector<MapLine*>& lines, bool select = true);
-	~MCALineSelection();
+	~MCALineSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	vector<frect_t> lines_;
+	vector<frect_t> tabs_;
+	bool            select_;
+	float           fade_;
 };
 
-class MapVertex;
+// Selection/deselection animation for vertices
 class MCAVertexSelection : public MCAnimation
 {
-private:
-	vector<fpoint2_t>	vertices;
-	double				size;
-	bool				select;
-	float				fade;
-
 public:
 	MCAVertexSelection(long start, vector<MapVertex*>& verts, double size, bool select = true);
-	~MCAVertexSelection();
+	~MCAVertexSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	vector<fpoint2_t> vertices_;
+	double            size_;
+	bool              select_;
+	float             fade_;
 };
 
-class Polygon2D;
+// Selection/deselection animation for sectors
 class MCASectorSelection : public MCAnimation
 {
-private:
-	vector<Polygon2D*>	polygons;
-	bool				select;
-	float				fade;
-
 public:
-	MCASectorSelection(long start, vector<Polygon2D*>& polys, bool select = true);
-	~MCASectorSelection();
+	MCASectorSelection(long start, vector<Polygon2D*>& polys, bool select) :
+		MCAnimation(start),
+		polygons_{ polys },
+		select_{ select },
+		fade_{ 1.f }
+	{
+	}
+	~MCASectorSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	vector<Polygon2D*> polygons_;
+	bool               select_;
+	float              fade_;
 };
 
+// Selection/deselection animation for 3d mode walls
 class MCA3dWallSelection : public MCAnimation
 {
-private:
-	fpoint3_t	points[4];
-	bool		select;
-	float		fade;
-
 public:
-	MCA3dWallSelection(long start, fpoint3_t points[4], bool select = true);
-	~MCA3dWallSelection();
+	MCA3dWallSelection(long start, fpoint3_t points[4], bool select) :
+		MCAnimation(start, true),
+		points_{ points[0], points[1], points[2], points[3] },
+		select_{ select },
+		fade_{ 1.f }
+	{
+	}
+	~MCA3dWallSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	fpoint3_t points_[4];
+	bool      select_;
+	float     fade_;
 };
 
-class MapSector;
+// Selection/deselection animation for 3d mode flats
 class MCA3dFlatSelection : public MCAnimation
 {
-private:
-	MapSector*	sector;
-	plane_t		plane;
-	bool		select;
-	float		fade;
-
 public:
-	MCA3dFlatSelection(long start, MapSector* sector, plane_t plane, bool select = true);
-	~MCA3dFlatSelection();
+	MCA3dFlatSelection(long start, MapSector* sector, Plane plane, bool select) :
+		MCAnimation(start, true),
+		sector_{ sector },
+		plane_{ plane },
+		select_{ select },
+		fade_{ 1.f }
+	{
+	}
+	~MCA3dFlatSelection() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	MapSector* sector_;
+	Plane    plane_;
+	bool       select_;
+	float      fade_;
 };
 
-class MapRenderer2D;
-class MapObject;
+// Fading out animation for object hilights
 class MCAHilightFade : public MCAnimation
 {
-private:
-	MapObject*		object;
-	float			fade;
-	float			init_fade;
-	MapRenderer2D*	renderer;
-
 public:
-	MCAHilightFade(long start, MapObject* object, MapRenderer2D* renderer, float fade_init);
-	~MCAHilightFade();
+	MCAHilightFade(long start, MapObject* object, MapRenderer2D* renderer, float fade_init) :
+		MCAnimation(start),
+		object_{ object },
+		fade_{ fade_init },
+		init_fade_{ fade_init },
+		renderer_{ renderer }
+	{
+	}
+	~MCAHilightFade() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	MapObject*     object_;
+	float          fade_;
+	float          init_fade_;
+	MapRenderer2D* renderer_;
 };
 
-class MapRenderer3D;
+// Fading out animation for 3d mode wall/flat/thing hilights
 class MCAHilightFade3D : public MCAnimation
 {
-private:
-	int						item_index;
-	MapEditor::ItemType	item_type;
-	float					fade;
-	float					init_fade;
-	MapRenderer3D*			renderer;
-
 public:
 	MCAHilightFade3D(
-		long start,
-		int item_index,
+		long                start,
+		int                 item_index,
 		MapEditor::ItemType item_type,
-		MapRenderer3D* renderer,
-		float fade_init
-	);
-	~MCAHilightFade3D();
+		MapRenderer3D*      renderer,
+		float               fade_init) :
+		MCAnimation(start, true),
+		item_index_{ item_index },
+		item_type_{ item_type },
+		fade_{ fade_init },
+		init_fade_{ fade_init },
+		renderer_{ renderer }
+	{
+	}
+	~MCAHilightFade3D() = default;
 
-	bool update(long time);
-	void draw();
+	bool update(long time) override;
+	void draw() override;
+
+private:
+	int                 item_index_;
+	MapEditor::ItemType item_type_;
+	float               fade_;
+	float               init_fade_;
+	MapRenderer3D*      renderer_;
 };
-
-#endif//__MC_ANIMATIONS_H__

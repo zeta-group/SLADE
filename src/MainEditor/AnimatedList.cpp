@@ -126,13 +126,13 @@ void AnimatedList::clear()
 bool AnimatedList::readANIMATEDData(ArchiveEntry* animated)
 {
 	// Check entries were actually given
-	if (!animated || animated->getSize() == 0)
+	if (!animated || animated->size() == 0)
 		return false;
 
-	uint8_t* data = new uint8_t[animated->getSize()];
-	memcpy(data, animated->getData(), animated->getSize());
+	uint8_t* data = new uint8_t[animated->size()];
+	memcpy(data, animated->dataRaw(), animated->size());
 	uint8_t* cursor = data;
-	uint8_t* eodata = cursor + animated->getSize();
+	uint8_t* eodata = cursor + animated->size();
 	animated_t* type;
 
 	while (cursor < eodata && *cursor != ANIM_STOP)
@@ -220,8 +220,8 @@ bool AnimatedList::swapEntries(size_t pos1, size_t pos2)
  *******************************************************************/
 bool AnimatedList::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, bool animdefs)
 {
-	const uint8_t* cursor = entry->getData(true);
-	const uint8_t* eodata = cursor + entry->getSize();
+	const uint8_t* cursor = entry->dataRaw(true);
+	const uint8_t* eodata = cursor + entry->size();
 	const animated_t* animation;
 	string conversion;
 	int lasttype = -1;
@@ -276,7 +276,7 @@ bool AnimatedList::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, bool
 bool AnimatedList::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata)
 {
 	Tokenizer tz(Tokenizer::Hash);
-	tz.openMem(entry->getMCData(), entry->getName());
+	tz.openMem(entry->data(), entry->name());
 
 	string token;
 	char buffer[23];

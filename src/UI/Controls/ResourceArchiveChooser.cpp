@@ -1,5 +1,5 @@
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // SLADE - It's a Doom Editor
 // Copyright(C) 2008 - 2017 Simon Judd
 //
@@ -15,49 +15,47 @@
 // any later version.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
 // this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // Includes
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ResourceArchiveChooser.h"
 #include "Archive/ArchiveManager.h"
-#include "Utility/SFileDialog.h"
+#include "ResourceArchiveChooser.h"
 #include "UI/WxUtils.h"
+#include "Utility/SFileDialog.h"
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // ResourceArchiveChooser Class Functions
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::ResourceArchiveChooser
-//
+// -----------------------------------------------------------------------------
 // ResourceArchiveChooser class constructor
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 ResourceArchiveChooser::ResourceArchiveChooser(wxWindow* parent, Archive* archive) : wxPanel(parent, -1)
 {
 	// Setup sizer
-	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	auto sizer = new wxBoxSizer(wxVERTICAL);
 	SetSizer(sizer);
 
 	// Resource archive list
 	list_resources_ = new wxCheckListBox(this, -1);
-	sizer->Add(list_resources_, 1, wxEXPAND|wxBOTTOM, UI::pad());
+	sizer->Add(list_resources_, 1, wxEXPAND | wxBOTTOM, UI::pad());
 	list_resources_->SetInitialSize(WxUtils::scaledSize(350, 100));
 
 	// Populate resource archive list
@@ -76,10 +74,10 @@ ResourceArchiveChooser::ResourceArchiveChooser(wxWindow* parent, Archive* archiv
 	}
 
 	// 'Open Resource' button
-	wxBoxSizer* hbox = new wxBoxSizer(wxHORIZONTAL);
-	sizer->Add(hbox, 0, wxEXPAND|wxRIGHT, UI::pad());
+	auto hbox = new wxBoxSizer(wxHORIZONTAL);
+	sizer->Add(hbox, 0, wxEXPAND | wxRIGHT, UI::pad());
 	btn_open_resource_ = new wxButton(this, -1, "Open Archive");
-	hbox->Add(btn_open_resource_, 0, wxEXPAND|wxRIGHT, UI::pad());
+	hbox->Add(btn_open_resource_, 0, wxEXPAND | wxRIGHT, UI::pad());
 
 	// 'Open Recent' button
 	btn_recent_ = new wxButton(this, -1, "Open Recent");
@@ -90,54 +88,48 @@ ResourceArchiveChooser::ResourceArchiveChooser(wxWindow* parent, Archive* archiv
 	btn_recent_->Bind(wxEVT_BUTTON, &ResourceArchiveChooser::onBtnRecent, this);
 	list_resources_->Bind(wxEVT_CHECKLISTBOX, &ResourceArchiveChooser::onResourceChecked, this);
 
-	Layout();
+	wxPanel::Layout();
 }
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::getSelectedResourceArchives
-//
+// -----------------------------------------------------------------------------
 // Returns a list of archives that have been selected as resources
-// ----------------------------------------------------------------------------
-vector<Archive*> ResourceArchiveChooser::getSelectedResourceArchives()
+// -----------------------------------------------------------------------------
+vector<Archive*> ResourceArchiveChooser::selectedResourceArchives()
 {
-	wxArrayInt checked;
+	wxArrayInt       checked;
 	vector<Archive*> list;
 	list_resources_->GetCheckedItems(checked);
-	for (unsigned a = 0; a < checked.size(); a++)
-		list.push_back(archives_[checked[a]]);
+	for (int i : checked)
+		list.push_back(archives_[i]);
 	return list;
 }
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::getSelectedResourceList
-//
+// -----------------------------------------------------------------------------
 // Returns a string of all selected resource archive filenames
-// ----------------------------------------------------------------------------
-string ResourceArchiveChooser::getSelectedResourceList()
+// -----------------------------------------------------------------------------
+string ResourceArchiveChooser::selectedResourceList()
 {
-	vector<Archive*> selected = getSelectedResourceArchives();
+	auto   selected = selectedResourceArchives();
 	string ret;
-	for (unsigned a = 0; a < selected.size(); a++)
-		ret += S_FMT("\"%s\" ", selected[a]->filename());
+	for (auto& archive : selected)
+		ret += S_FMT("\"%s\" ", archive->filename());
 	return ret;
 }
 
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 //
 // ResourceArchiveChooser Class Events
 //
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::onBtnOpenResource
-//
+// -----------------------------------------------------------------------------
 // Called when the 'Open Archive' button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ResourceArchiveChooser::onBtnOpenResource(wxCommandEvent& e)
 {
-	SFileDialog::fd_info_t info;
+	SFileDialog::FileInfo info;
 	if (SFileDialog::openFile(info, "Open Resource Archive", App::archiveManager().getArchiveExtensionsString(), this))
 	{
 		UI::showSplash("Opening Resource Archive", true);
@@ -146,17 +138,15 @@ void ResourceArchiveChooser::onBtnOpenResource(wxCommandEvent& e)
 		if (na)
 		{
 			list_resources_->Append(na->filename(false));
-			list_resources_->Check(list_resources_->GetCount()-1);
+			list_resources_->Check(list_resources_->GetCount() - 1);
 			archives_.push_back(na);
 		}
 	}
 }
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::onBtnRecent
-//
+// -----------------------------------------------------------------------------
 // Called when the 'Open Recent' button is clicked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ResourceArchiveChooser::onBtnRecent(wxCommandEvent& e)
 {
 	// Build list of recent wad filename strings
@@ -172,17 +162,15 @@ void ResourceArchiveChooser::onBtnRecent(wxCommandEvent& e)
 		if (na)
 		{
 			list_resources_->Append(na->filename(false));
-			list_resources_->Check(list_resources_->GetCount()-1);
+			list_resources_->Check(list_resources_->GetCount() - 1);
 			archives_.push_back(na);
 		}
 	}
 }
 
-// ----------------------------------------------------------------------------
-// ResourceArchiveChooser::onResourceChecked
-//
+// -----------------------------------------------------------------------------
 // Called when an item in the resources list is (un)checked
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 void ResourceArchiveChooser::onResourceChecked(wxCommandEvent& e)
 {
 	App::archiveManager().setArchiveResource(archives_[e.GetInt()], list_resources_->IsChecked(e.GetInt()));

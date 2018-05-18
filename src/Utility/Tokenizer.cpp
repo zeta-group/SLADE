@@ -40,7 +40,7 @@
 //
 // ----------------------------------------------------------------------------
 const string Tokenizer::DEFAULT_SPECIAL_CHARACTERS = ";,:|={}/";
-Tokenizer::Token Tokenizer::invalid_token_{ "", 0, false, 0, 0, 0, false };
+Tokenizer::Token Tokenizer::invalid_token_;
 
 
 // ----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ namespace
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isInteger(bool allow_hex) const
 {
-	return StringUtils::isInteger(text, allow_hex);
+	return StrUtil::isInteger(text, allow_hex);
 }
 
 // ----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ bool Tokenizer::Token::isInteger(bool allow_hex) const
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isHex() const
 {
-	return StringUtils::isHex(text);
+	return StrUtil::isHex(text);
 }
 
 // ----------------------------------------------------------------------------
@@ -98,7 +98,7 @@ bool Tokenizer::Token::isHex() const
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isFloat() const
 {
-	return StringUtils::isFloat(text);
+	return StrUtil::isFloat(text);
 }
 
 // ----------------------------------------------------------------------------
@@ -109,9 +109,9 @@ bool Tokenizer::Token::isFloat() const
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::asBool() const
 {
-	return !(S_CMPNOCASE(text, "false") ||
-			S_CMPNOCASE(text, "no") ||
-			S_CMPNOCASE(text, "0"));
+	return !(StrUtil::equalCI(text, "false") ||
+			StrUtil::equalCI(text, "no") ||
+			StrUtil::equalCI(text, "0"));
 }
 
 // ----------------------------------------------------------------------------
@@ -122,9 +122,9 @@ bool Tokenizer::Token::asBool() const
 // ----------------------------------------------------------------------------
 void Tokenizer::Token::toBool(bool& val) const
 {
-	val = !(S_CMPNOCASE(text, "false") ||
-			S_CMPNOCASE(text, "no") ||
-			S_CMPNOCASE(text, "0"));
+	val = !(StrUtil::equalCI(text, "false") ||
+			StrUtil::equalCI(text, "no") ||
+			StrUtil::equalCI(text, "0"));
 }
 
 
@@ -237,7 +237,7 @@ bool Tokenizer::advIf(char check, int inc)
 // ----------------------------------------------------------------------------
 bool Tokenizer::advIfNC(const char* check, int inc)
 {
-	if (S_CMPNOCASE(token_current_.text, check))
+	if (StrUtil::equalCI(token_current_.text, check))
 	{
 		adv(inc);
 		return true;
@@ -247,7 +247,7 @@ bool Tokenizer::advIfNC(const char* check, int inc)
 }
 bool Tokenizer::advIfNC(const string& check, int inc)
 {
-	if (S_CMPNOCASE(token_current_.text, check))
+	if (StrUtil::equalCI(token_current_.text, check))
 	{
 		adv(inc);
 		return true;
@@ -311,7 +311,7 @@ bool Tokenizer::advIfNextNC(const char* check, int inc)
 	if (!token_next_.valid)
 		return false;
 
-	if (S_CMPNOCASE(token_next_.text, check))
+	if (StrUtil::equalCI(token_next_.text, check))
 	{
 		adv(inc);
 		return true;
@@ -511,13 +511,18 @@ bool Tokenizer::checkOrEnd(char check) const
 	return token_current_ == check;
 }
 
+bool Tokenizer::checkNC(const char* check) const
+{
+	return StrUtil::equalCI(token_current_.text, check);
+}
+
 bool Tokenizer::checkOrEndNC(const char* check) const
 {
 	// At end, return true
 	if (!token_next_.valid)
 		return true;
 
-	return S_CMPNOCASE(token_current_.text, check);
+	return StrUtil::equalCI(token_current_.text, check);
 }
 
 // ----------------------------------------------------------------------------
@@ -552,7 +557,7 @@ bool Tokenizer::checkNextNC(const char* check) const
 	if (!token_next_.valid)
 		return false;
 
-	return S_CMPNOCASE(token_next_.text, check);
+	return StrUtil::equalCI(token_next_.text, check);
 }
 
 // ----------------------------------------------------------------------------
@@ -597,18 +602,13 @@ bool Tokenizer::openFile(const string& filename, unsigned offset, unsigned lengt
 // Opens text from a string [text], reading [length] bytes from [offset].
 // If [length] is 0, read to the end of the string
 // ----------------------------------------------------------------------------
-bool Tokenizer::openString(const string& text, unsigned offset, unsigned length, const string& source)
+bool Tokenizer::openString(string_view text, unsigned offset, unsigned length, string_view source)
 {
-	source_ = source;
-
-	// If length isn't specified or exceeds the string's length,
-	// only copy to the end of the string
-	auto ascii = text.ToAscii();
-	if (offset + length > (unsigned)ascii.length() || length == 0)
-		length = (unsigned)ascii.length() - offset;
+	S_SET_VIEW(source_, source);
 
 	// Copy the string portion
-	data_.assign(ascii.data() + offset, ascii.data() + offset + length);
+	auto portion = text.substr(offset);
+	data_.assign(portion.data(), portion.data() + portion.size());
 
 	reset();
 
@@ -620,9 +620,9 @@ bool Tokenizer::openString(const string& text, unsigned offset, unsigned length,
 //
 // Opens text from memory [mem], reading [length] bytes
 // ----------------------------------------------------------------------------
-bool Tokenizer::openMem(const char* mem, unsigned length, const string& source)
+bool Tokenizer::openMem(const char* mem, unsigned length, string_view source)
 {
-	source_ = source;
+	S_SET_VIEW(source_, source);
 	data_.assign(mem, mem + length);
 
 	reset();
@@ -635,10 +635,10 @@ bool Tokenizer::openMem(const char* mem, unsigned length, const string& source)
 //
 // Opens text from a MemChunk [mc]
 // ----------------------------------------------------------------------------
-bool Tokenizer::openMem(const MemChunk& mc, const string& source)
+bool Tokenizer::openMem(const MemChunk& mc, string_view source)
 {
-	source_ = source;
-	data_.assign(mc.getData(), mc.getData() + mc.getSize());
+	S_SET_VIEW(source_, source);
+	data_.assign(mc.data(), mc.data() + mc.size());
 
 	reset();
 
@@ -905,20 +905,19 @@ bool Tokenizer::readNext(Token* target)
 	// Write to target token (if specified)
 	if (target)
 	{
-		// How is this slower than using += in a loop as below? Just wxString things >_>
-		//target->text.assign(
-		//	data_.data() + state_.current_token.pos_start,
-		//	state_.position - state_.current_token.pos_start
-		//);
+		target->text.assign(
+			data_.data() + state_.current_token.pos_start,
+			state_.position - state_.current_token.pos_start
+		);
 		
-		target->text.Empty();
+		/*target->text.Empty();
 		for (unsigned a = state_.current_token.pos_start; a < state_.position; ++a)
 		{
 			if (state_.current_token.quoted_string && data_[a] == '\\')
 				++a;
 
 			target->text += data_[a];
-		}
+		}*/
 
 		target->line_no = state_.current_token.line_no;
 		target->quoted_string = state_.current_token.quoted_string;
@@ -929,7 +928,7 @@ bool Tokenizer::readNext(Token* target)
 
 		// Convert to lowercase if configured to and it isn't a quoted string
 		if (read_lowercase_ && !target->quoted_string)
-			target->text.LowerCase();
+			StrUtil::lowerIP(target->text);
 	}
 
 	// Skip closing " if it was a quoted string
@@ -937,7 +936,7 @@ bool Tokenizer::readNext(Token* target)
 		++state_.position;
 
 	if (debug_)
-		Log::debug(S_FMT("%d: \"%s\"", token_current_.line_no, CHR(token_current_.text)));
+		Log::debug(S_FMT("%d: \"%s\"", token_current_.line_no, token_current_.text));
 		
 	return true;
 }
@@ -977,9 +976,9 @@ CONSOLE_COMMAND(test_tokenizer, 0, false)
 	if (!entry)
 		return;
 
-	long num = 1;
+	int num = 1;
 	if (!args.empty())
-		args[0].ToLong(&num);
+		num = stoi(args[0]);
 
 	bool lower = (VECTOR_EXISTS(args, "lower"));
 	bool dump = (VECTOR_EXISTS(args, "dump"));
@@ -996,7 +995,7 @@ CONSOLE_COMMAND(test_tokenizer, 0, false)
 	vector<TestToken> t_new;
 	tz.setReadLowerCase(lower);
 	long time = App::runTimer();
-	tz.openMem(entry->getMCData(), entry->getName());
+	tz.openMem(entry->data(), entry->name());
 	for (long a = 0; a < num; a++)
 	{
 		while (!tz.atEnd())
@@ -1040,6 +1039,6 @@ CONSOLE_COMMAND(test_tokenizer, 0, false)
 	if (dump)
 	{
 		for (auto& token : t_new)
-			Log::debug(S_FMT("%d: \"%s\"%s", token.line_no, CHR(token.text), token.quoted_string ? " (quoted)" : ""));
+			Log::debug(S_FMT("%d: \"%s\"%s", token.line_no, token.text, token.quoted_string ? " (quoted)" : ""));
 	}
 }

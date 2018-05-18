@@ -1,83 +1,84 @@
+#pragma once
 
-#ifndef __MAP_TEXTURE_MANAGER_H__
-#define __MAP_TEXTURE_MANAGER_H__
-
-#include "common.h"
-#include "OpenGL/GLTexture.h"
 #include "General/ListenerAnnouncer.h"
-
-struct map_tex_t
-{
-	GLTexture*	texture;
-	map_tex_t() { texture = nullptr; }
-	~map_tex_t() { if (texture && texture != &(GLTexture::missingTex())) delete texture; }
-};
+#include "Graphics/Palette/Palette.h"
+#include "OpenGL/GLTexture.h"
 
 class Archive;
-struct map_texinfo_t
-{
-	string			name;
-	uint8_t			category;
-	string			path;
-	unsigned		index;
-	Archive*		archive;
+class ArchiveTreeNode;
 
-	map_texinfo_t(string name, uint8_t category, Archive* archive, string path = "", unsigned index = 0)
-	{
-		this->name = name;
-		this->category = category;
-		this->archive = archive;
-		this->path = path;
-		this->index = index;
-	}
-};
-
-typedef std::map<string, map_tex_t> MapTexHashMap;
-
-class Palette;
 class MapTextureManager : public Listener
 {
-private:
-	Archive*				archive;
-	MapTexHashMap			textures;
-	MapTexHashMap			flats;
-	MapTexHashMap			sprites;
-	MapTexHashMap			editor_images;
-	bool					editor_images_loaded;
-	Palette*			palette;
-	vector<map_texinfo_t>	tex_info;
-	vector<map_texinfo_t>	flat_info;
-
 public:
-	enum
+	enum class Category
 	{
 		// Texture categories
-		TC_NONE = 0,
-		TC_TEXTUREX,
-		TC_TX,
-		TC_TEXTURES,
-		TC_HIRES
+		None = 0,
+		TEXTUREX,
+		TX,
+		TEXTURES,
+		HIRES
 	};
 
-	MapTextureManager(Archive* archive = nullptr);
-	~MapTextureManager();
+	struct TexInfo
+	{
+		string   name;
+		Category category;
+		string   path;
+		unsigned index;
+		Archive* archive;
 
-	void	init();
-	void	setArchive(Archive* archive);
-	void	refreshResources();
-	void	buildTexInfoList();
+		TexInfo(string_view name, Category category, Archive* archive, string_view path = "", unsigned index = 0) :
+			name{ name.data(), name.size() },
+			category{ category },
+			path{ path.data(), path.size() },
+			index{ index },
+			archive{ archive }
+		{
+		}
+	};
 
-	Palette*	getResourcePalette();
-	GLTexture*		getTexture(string name, bool mixed);
-	GLTexture*		getFlat(string name, bool mixed);
-	GLTexture*		getSprite(string name, string translation = "", string palette = "");
-	GLTexture*		getEditorImage(string name);
-	int				getVerticalOffset(string name);
-	
-	vector<map_texinfo_t>&	getAllTexturesInfo() { return tex_info; }
-	vector<map_texinfo_t>&	getAllFlatsInfo() { return flat_info; }
+	MapTextureManager(Archive* archive = nullptr) : archive_{ archive } {}
+	~MapTextureManager() = default;
 
-	void	onAnnouncement(Announcer* announcer, string event_name, MemChunk& event_data);
+	void init();
+	void setArchive(Archive* archive);
+	void refreshResources();
+	void buildTexInfoList();
+
+	GLTexture* texture(string_view name, bool mixed);
+	GLTexture* flat(string_view name, bool mixed);
+	GLTexture* sprite(string_view name, string_view translation = "", string_view palette = "");
+	GLTexture* editorImage(string_view name);
+	int        verticalOffset(string_view name) const;
+
+	vector<TexInfo>& allTexturesInfo() { return tex_info_; }
+	vector<TexInfo>& allFlatsInfo() { return flat_info_; }
+
+	void onAnnouncement(Announcer* announcer, string_view event_name, MemChunk& event_data) override;
+
+private:
+	struct MapTex
+	{
+		GLTexture* texture = nullptr;
+		~MapTex()
+		{
+			if (texture && texture != &(GLTexture::missingTex()))
+				delete texture;
+		}
+	};
+	typedef std::map<string, MapTex> MapTexHashMap;
+
+	void importEditorImages(MapTexHashMap& map, ArchiveTreeNode* dir, string_view path) const;
+	void loadResourcePalette();
+
+	Archive*        archive_ = nullptr;
+	MapTexHashMap   textures_;
+	MapTexHashMap   flats_;
+	MapTexHashMap   sprites_;
+	MapTexHashMap   editor_images_;
+	bool            editor_images_loaded_ = false;
+	Palette         palette_;
+	vector<TexInfo> tex_info_;
+	vector<TexInfo> flat_info_;
 };
-
-#endif//__MAP_TEXTURE_MANAGER_H__

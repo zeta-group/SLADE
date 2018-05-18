@@ -1,180 +1,139 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    PropertyList.cpp
- * Description: The PropertyList class. Contains a hash map with
- *              strings for keys and the 'Property' dynamic value
- *              class for values. Each property value can be a
- *              bool, int, double or string.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    PropertyList.cpp
+// Description: The PropertyList class. Contains a hash map with strings for
+//              keys and the 'Property' dynamic value class for values.
+//              Each property value can be a bool, int, double or string.
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "PropertyList.h"
 
 
-/*******************************************************************
- * PROPERTYLIST CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// PropertyList Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* PropertyList::PropertyList
- * PropertyList class constructor
- *******************************************************************/
-PropertyList::PropertyList()
-{
-}
 
-/* PropertyList::~PropertyList
- * PropertyList class destructor
- *******************************************************************/
-PropertyList::~PropertyList()
-{
-}
-
-/* PropertyList::propertyExists
- * Returns true if a property with the given name exists, false
- * otherwise
- *******************************************************************/
-bool PropertyList::propertyExists(string key)
+// -----------------------------------------------------------------------------
+// Returns true if a property with the given name exists, false otherwise
+// -----------------------------------------------------------------------------
+bool PropertyList::propertyExists(const string& key)
 {
 	// Try to find specified key
-	if (properties.empty() || properties.find(key) == properties.end())
-		return false;
-	else
-		return true;
+	return !properties_.empty() || properties_.find(key) == properties_.end();
 }
 
-/* PropertyList::removeProperty
- * Removes a property value, returns true if [key] was removed
- * or false if key didn't exist
- *******************************************************************/
-bool PropertyList::removeProperty(string key)
+// -----------------------------------------------------------------------------
+// Removes a property value, returns true if [key] was removed or false if key
+// didn't exist
+// -----------------------------------------------------------------------------
+bool PropertyList::removeProperty(const string& key)
 {
-	return properties.erase(key) > 0;
+	return properties_.erase(key) > 0;
 }
 
-/* PropertyList::copyTo
- * Copies all properties to [list]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Copies all properties to [list]
+// -----------------------------------------------------------------------------
 void PropertyList::copyTo(PropertyList& list)
 {
 	// Clear given list
 	list.clear();
 
-	// Get iterator to first property
-	std::map<string, Property>::iterator i = properties.begin();
-
 	// Add all properties to given list
-	while (i != properties.end())
-	{
-		if (i->second.hasValue())
-			list[i->first] = i->second;
-		i++;
-	}
+	for (const auto& prop : properties_)
+		if (prop.second.hasValue())
+			list[prop.first] = prop.second;
 }
 
-/* PropertyList::addFlag
- * Adds a 'flag' property [key]
- *******************************************************************/
-void PropertyList::addFlag(string key)
+// -----------------------------------------------------------------------------
+// Adds a 'flag' property [key]
+// -----------------------------------------------------------------------------
+void PropertyList::addFlag(const string& key)
 {
-	Property flag;
-	properties[key] = flag;
+	properties_[key] = Property{ Property::Type::Flag };
 }
 
-/* PropertyList::toString
- * Returns a string representation of the property list
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Returns a string representation of the property list
+// -----------------------------------------------------------------------------
 string PropertyList::toString(bool condensed)
 {
 	// Init return string
-	string ret = wxEmptyString;
-
-	// Get iterator to first property
-	std::map<string, Property>::iterator i = properties.begin();
+	string ret;
 
 	// Go through all properties
-	while (i != properties.end())
+	auto line_end = ";\n";
+	auto equals   = condensed ? "=" : " = ";
+	for (const auto& prop : properties_)
 	{
 		// Skip if no value
-		if (!i->second.hasValue())
-		{
-			i++;
+		if (!prop.second.hasValue())
 			continue;
-		}
 
 		// Add "key = value;\n" to the return string
-		string key = i->first;
-		string val = i->second.getStringValue();
+		auto val = prop.second.stringValue();
+		if (prop.second.type() == Property::Type::String)
+		{
+			// Surround string values with quotes
+			val.insert(0, 1, '\"');
+			val.push_back('\"');
+		}
+		ret.append(prop.first); // key
+		ret.append(equals);     // =
+		ret.append(val);        // value
+		ret.append(line_end);   // ;\n
 
-		if (i->second.getType() == PROP_STRING)
-			val = "\"" + val + "\"";
-
-		//if (!val.empty()) {
-		if (condensed)
-			ret += key + "=" + val + ";\n";
-		else
-			ret += key + " = " + val + ";\n";
-		//}
-
-		//LOG_MESSAGE(1, "key %s type %s value %s", key, i->second.typeString(), val);
-
-		// Next property
-		i++;
+		// LOG_MESSAGE(1, "key %s type %s value %s", key, i->second.typeString(), val);
 	}
 
 	return ret;
 }
 
-/* PropertyList::allProperties
- * Adds all existing properties to [list]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Adds all existing properties to [list]
+// -----------------------------------------------------------------------------
 void PropertyList::allProperties(vector<Property>& list)
 {
-	// Get iterator to first property
-	std::map<string, Property>::iterator i = properties.begin();
-
 	// Add all properties to the list
-	while (i != properties.end())
-	{
-		list.push_back(i->second);
-		i++;
-	}
+	for (const auto& prop : properties_)
+		list.push_back(prop.second);
 }
 
-/* PropertyList::allPropertyNames
- * Adds all existing property names to [list]
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Adds all existing property names to [list]
+// -----------------------------------------------------------------------------
 void PropertyList::allPropertyNames(vector<string>& list)
 {
-	// Get iterator to first property
-	std::map<string, Property>::iterator i = properties.begin();
-
 	// Add all properties to the list
-	while (i != properties.end())
-	{
-		list.push_back(i->first);
-		i++;
-	}
+	for (const auto& prop : properties_)
+		list.push_back(prop.first);
 }

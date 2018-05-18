@@ -189,7 +189,7 @@ bool SwitchesEntryPanel::saveEntry()
 {
 	MemChunk mc;
 	mc.seek(0, SEEK_SET);
-	switches_t swch;
+	SwitchesEntry swch;
 	for (uint32_t a = 0; a < switches.nEntries(); a++)
 	{
 		SwitchesEntry* ent = switches.getEntry(a);
@@ -358,7 +358,7 @@ void SwitchesEntryPanel::add()
 		index = selection[selection.size() - 1] + 1;
 
 	// Create new switch
-	switches_t swch = { "????????", "????????", SWCH_DEMO };
+	SwitchesEntry swch = { "????????", "????????", SWCH_DEMO };
 	SwitchesEntry* se = new SwitchesEntry(swch);
 	se->setStatus(LV_STATUS_NEW);
 

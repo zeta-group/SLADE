@@ -89,7 +89,7 @@ public:
 
 void dump_cvars();
 void save_cvars(wxFile& file);
-void read_cvar(string name, string value);
+void read_cvar(string name, const string& value);
 CVar* get_cvar(string name);
 void get_cvar_list(vector<string>& list);
 
@@ -101,9 +101,12 @@ public:
 	CStringCVar(string NAME, string defval, uint16_t FLAGS);
 	~CStringCVar() {}
 
-	inline operator string () const { return value; }
-	inline string operator *() const { return value; }
-	inline string operator= (string val) { value = val; return val; }
+	operator string () const { return value; }
+	string operator *() const { return value; }
+	operator string_view() const { return { value.data(), value.size() }; }
+	string operator= (string val) { value = val; return val; }
+	bool operator== (const string& rhs) { return value == rhs; }
+	bool operator== (const char* rhs) { return value == rhs; }
 };
 
 #define CVAR(type, name, val, flags) \

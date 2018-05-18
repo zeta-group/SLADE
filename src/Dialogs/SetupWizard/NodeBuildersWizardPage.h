@@ -1,23 +1,18 @@
-
-#ifndef __NODE_BUILDERS_WIZARD_PAGE_H__
-#define __NODE_BUILDERS_WIZARD_PAGE_H__
+#pragma once
 
 #include "WizardPageBase.h"
 
 class NodesPrefsPanel;
 class NodeBuildersWizardPage : public WizardPageBase
 {
-private:
-	NodesPrefsPanel*	panel_nodes;
-
 public:
 	NodeBuildersWizardPage(wxWindow* parent);
-	~NodeBuildersWizardPage();
+	~NodeBuildersWizardPage() = default;
 
-	bool	canGoNext();
-	void	applyChanges();
-	string	getTitle() { return "Node Builders"; }
-	string	getDescription();
+	bool   canGoNext() override { return true; }
+	string getTitle() override { return "Node Builders"; }
+	string getDescription() override;
+
+private:
+	NodesPrefsPanel* panel_nodes_;
 };
-
-#endif//__NODE_BUILDERS_WIZARD_PAGE_H__

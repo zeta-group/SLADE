@@ -1,45 +1,41 @@
-
-#ifndef __LISTENERANNOUNCER_H__
-#define __LISTENERANNOUNCER_H__
+#pragma once
 
 class Announcer;
 
 class Listener
 {
-private:
-	vector<Announcer*>	announcers;
-	bool				deaf;
-
 public:
-	Listener();
+	Listener() = default;
 	virtual ~Listener();
 
-	void listenTo(Announcer* a);
-	void stopListening(Announcer* a);
-	void clearAnnouncers() { announcers.clear(); }
-	virtual void onAnnouncement(Announcer* announcer, string event_name, MemChunk& event_data);
+	void         listenTo(Announcer* a);
+	void         stopListening(Announcer* a);
+	void         clearAnnouncers() { announcers_.clear(); }
+	virtual void onAnnouncement(Announcer* announcer, string_view event_name, MemChunk& event_data);
 
-	bool	isDeaf() { return deaf; }
-	void	setDeaf(bool d) { deaf = d; }
+	bool isDeaf() const { return deaf_; }
+	void setDeaf(bool d) { deaf_ = d; }
+
+private:
+	vector<Announcer*> announcers_;
+	bool               deaf_ = false;
 };
 
 class Announcer
 {
-private:
-	vector<Listener*>	listeners;
-	bool				muted;
-
 public:
-	Announcer();
+	Announcer() = default;
 	virtual ~Announcer();
 
 	void addListener(Listener* l);
 	void removeListener(Listener* l);
-	void announce(string event_name, MemChunk& event_data);
-	void announce(string event_name);
+	void announce(string_view event_name, MemChunk& event_data);
+	void announce(string_view event_name);
 
-	bool	isMuted() { return muted; }
-	void	setMuted(bool m) { muted = m; }
+	bool isMuted() const { return muted_; }
+	void setMuted(bool m) { muted_ = m; }
+
+private:
+	vector<Listener*> listeners_;
+	bool              muted_ = false;
 };
-
-#endif //__LISTENERANNOUNCER_H__

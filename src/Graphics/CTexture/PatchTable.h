@@ -1,61 +1,56 @@
-
-#ifndef __PATCH_TABLE_H__
-#define __PATCH_TABLE_H__
+#pragma once
 
 #include "Archive/ArchiveEntry.h"
 #include "General/ListenerAnnouncer.h"
-
-struct patch_t
-{
-	string			name;
-	vector<string>	used_in;
-
-	void removeTextureUsage(string texture)
-	{
-		for (unsigned a = 0; a < used_in.size(); a++)
-		{
-			if (S_CMP(texture, used_in[a]))
-			{
-				used_in.erase(used_in.begin() + a);
-				a--;
-			}
-		}
-	}
-};
 
 class CTexture;
 
 class PatchTable : public Announcer
 {
-private:
-	Archive*		parent;
-	vector<patch_t>	patches;
-	patch_t			patch_invalid;
-
 public:
-	PatchTable(Archive* parent = nullptr);
-	~PatchTable();
+	struct Patch
+	{
+		string         name;
+		vector<string> used_in;
 
-	size_t		nPatches() { return patches.size(); }
-	Archive*	getParent() { return parent; }
-	void		setParent(Archive* parent) { this->parent = parent; }
+		void removeTextureUsage(string_view texture)
+		{
+			for (unsigned a = 0; a < used_in.size(); a++)
+			{
+				if (texture == used_in[a])
+				{
+					used_in.erase(used_in.begin() + a);
+					a--;
+				}
+			}
+		}
+	};
 
-	patch_t&		patch(size_t index);
-	patch_t&		patch(string name);
-	string			patchName(size_t index);
-	ArchiveEntry*	patchEntry(size_t index);
-	ArchiveEntry*	patchEntry(string name);
-	int32_t			patchIndex(string name);
-	int32_t			patchIndex(ArchiveEntry* entry);
-	bool			removePatch(unsigned index);
-	bool			replacePatch(unsigned index, string newname);
-	bool			addPatch(string name, bool allow_dup = false);
+	PatchTable(Archive* parent = nullptr) : parent_{ parent } {}
+	~PatchTable() = default;
 
-	bool	loadPNAMES(ArchiveEntry* pnames, Archive* parent = nullptr);
-	bool	writePNAMES(ArchiveEntry* pnames);
+	size_t   nPatches() const { return patches_.size(); }
+	Archive* getParent() const { return parent_; }
+	void     setParent(Archive* parent) { this->parent_ = parent; }
 
-	void	clearPatchUsage();
-	void	updatePatchUsage(CTexture* tex);
+	Patch&        patch(size_t index);
+	Patch&        patch(string_view name);
+	const string& patchName(size_t index);
+	ArchiveEntry* patchEntry(size_t index);
+	ArchiveEntry* patchEntry(string_view name);
+	int32_t       patchIndex(string_view name);
+	int32_t       patchIndex(ArchiveEntry* entry);
+	bool          removePatch(unsigned index);
+	bool          replacePatch(unsigned index, string_view newname);
+	bool          addPatch(string_view name, bool allow_dup = false);
+
+	bool loadPNAMES(ArchiveEntry* pnames, Archive* parent = nullptr);
+	bool writePNAMES(ArchiveEntry* pnames);
+
+	void clearPatchUsage();
+	void updatePatchUsage(CTexture* tex);
+
+private:
+	Archive*      parent_;
+	vector<Patch> patches_;
 };
-
-#endif//__PATCH_TABLE_T__

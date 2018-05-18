@@ -1,13 +1,11 @@
-
-#ifndef __CHASM_BIN_ARCHIVE_H__
-#define __CHASM_BIN_ARCHIVE_H__
+#pragma once
 
 #include "Archive/Archive.h"
 
 class ChasmBinArchive : public Archive
 {
 public:
-	ChasmBinArchive();
+	ChasmBinArchive() : Archive("chasm_bin") {}
 
 	// Opening/writing
 	bool open(MemChunk& mc) override;
@@ -18,7 +16,5 @@ public:
 
 	// Static functions
 	static bool isChasmBinArchive(MemChunk& mc);
-	static bool isChasmBinArchive(string filename);
+	static bool isChasmBinArchive(string_view filename);
 };
-
-#endif // __CHASM_BIN_ARCHIVE_H__

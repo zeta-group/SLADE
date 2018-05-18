@@ -1,80 +1,81 @@
 
-/*******************************************************************
- * SLADE - It's a Doom Editor
- * Copyright (C) 2008-2014 Simon Judd
- *
- * Email:       sirjuddington@gmail.com
- * Web:         http://slade.mancubus.net
- * Filename:    PodArchive.cpp
- * Description: PodArchive, archive class to handle the Terminal
- *              Velocity / Fury3 POD archive format
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// SLADE - It's a Doom Editor
+// Copyright(C) 2008 - 2017 Simon Judd
+//
+// Email:       sirjuddington@gmail.com
+// Web:         http://slade.mancubus.net
+// Filename:    PodArchive.cpp
+// Description: PodArchive, archive class to handle the Terminal Velocity /
+//              Fury3 POD archive format
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA  02110 - 1301, USA.
+// -----------------------------------------------------------------------------
 
 
-/*******************************************************************
- * INCLUDES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Includes
+//
+// -----------------------------------------------------------------------------
 #include "Main.h"
 #include "PodArchive.h"
 #include "General/UI.h"
 #include "MainEditor/MainEditor.h"
 #include "General/Console/Console.h"
+#include "Utility/StringUtils.h"
 
 
-/*******************************************************************
- * EXTERNAL VARIABLES
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// External Variables
+//
+// -----------------------------------------------------------------------------
 EXTERN_CVAR(Bool, archive_load_data)
 EXTERN_CVAR(Bool, wad_force_uppercase)
 
 
-/*******************************************************************
- * PODARCHIVE CLASS FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// PodArchive Class Functions
+//
+// -----------------------------------------------------------------------------
 
-/* PodArchive::PodArchive
- * PodArchive class constructor
- *******************************************************************/
+
+// -----------------------------------------------------------------------------
+// PodArchive class constructor
+// -----------------------------------------------------------------------------
 PodArchive::PodArchive() : Archive("pod")
 {
 	// Blank id
 	memset(id_, 0, 80);
 }
 
-/* PodArchive::~PodArchive
- * PodArchive class destructor
- *******************************************************************/
-PodArchive::~PodArchive()
-{
-}
-
-/* PodArchive::setId
- * Sets the description/id of the pod archive
- *******************************************************************/
-void PodArchive::setId(string id)
+// -----------------------------------------------------------------------------
+// Sets the description/id of the pod archive
+// -----------------------------------------------------------------------------
+void PodArchive::setId(string_view id)
 {
 	memset(id_, 0, 80);
-	memcpy(id_, CHR(id), id.Length());
+	memcpy(id_, id.data(), id.size() > 80 ? 80 : id.size());
 }
 
-/* PodArchive::open
- * Reads pod format data from a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Reads pod format data from a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool PodArchive::open(MemChunk& mc)
 {
 	// Check data was given
@@ -104,12 +105,12 @@ bool PodArchive::open(MemChunk& mc)
 		wxFileName fn(files[a].name);
 
 		// Create entry
-		ArchiveEntry* new_entry = new ArchiveEntry(fn.GetFullName(), files[a].size);
+		ArchiveEntry* new_entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), files[a].size);
 		new_entry->exProp("Offset") = files[a].offset;
 		new_entry->setLoaded(false);
 
 		// Add entry and directory to directory tree
-		string path = fn.GetPath(false);
+		string           path = fn.GetPath(false).ToStdString();
 		ArchiveTreeNode* ndir = createDir(path);
 		ndir->addEntry(new_entry);
 
@@ -125,7 +126,7 @@ bool PodArchive::open(MemChunk& mc)
 	for (unsigned a = 0; a < all_entries.size(); a++)
 	{
 		// Skip dir/marker
-		if (all_entries[a]->getSize() == 0 || all_entries[a]->getType() == EntryType::folderType())
+		if (all_entries[a]->size() == 0 || all_entries[a]->type() == EntryType::folderType())
 		{
 			all_entries[a]->setState(0);
 			continue;
@@ -136,7 +137,7 @@ bool PodArchive::open(MemChunk& mc)
 
 		// Read data
 		MemChunk edata;
-		mc.exportMemChunk(edata, all_entries[a]->exProp("Offset").getIntValue(), all_entries[a]->getSize());
+		mc.exportMemChunk(edata, all_entries[a]->exProp("Offset").intValue(), all_entries[a]->size());
 		all_entries[a]->importMemChunk(edata);
 
 		// Detect entry type
@@ -148,7 +149,7 @@ bool PodArchive::open(MemChunk& mc)
 
 		// Set entry to unchanged
 		all_entries[a]->setState(0);
-		LOG_MESSAGE(5, "entry %s size %d", CHR(all_entries[a]->getName()), all_entries[a]->getSize());
+		LOG_MESSAGE(5, "entry %s size %d", all_entries[a]->name(), all_entries[a]->size());
 	}
 
 	// Clean up
@@ -164,10 +165,10 @@ bool PodArchive::open(MemChunk& mc)
 	return true;
 }
 
-/* PodArchive::write
- * Writes the pod archive to a MemChunk
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Writes the pod archive to a MemChunk
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool PodArchive::write(MemChunk& mc, bool update)
 {
 	// Get all entries
@@ -175,20 +176,20 @@ bool PodArchive::write(MemChunk& mc, bool update)
 	getEntryTreeAsList(entries);
 
 	// Process entries
-	int ndirs = 0;
+	int      ndirs     = 0;
 	uint32_t data_size = 0;
-	for (unsigned a = 0; a < entries.size(); a++)
+	for (auto& entry : entries)
 	{
-		if (entries[a]->getType() == EntryType::folderType())
+		if (entry->type() == EntryType::folderType())
 			ndirs++;
 		else
-			data_size += entries[a]->getSize();
+			data_size += entry->size();
 	}
 
 	// Init MemChunk
 	mc.clear();
 	mc.reSize(4 + 80 + (entries.size() * 40) + data_size, false);
-	LOG_MESSAGE(5, "MC size %d", mc.getSize());
+	LOG_MESSAGE(5, "MC size %d", mc.size());
 
 	// Write no. entries
 	uint32_t n_entries = entries.size() - ndirs;
@@ -200,46 +201,51 @@ bool PodArchive::write(MemChunk& mc, bool update)
 	mc.write(id_, 80);
 
 	// Write directory
-	FileEntry fe;
+	FileEntry fe{};
 	fe.offset = 4 + 80 + (n_entries * 40);
-	for (unsigned a = 0; a < entries.size(); a++)
+	for (auto& entry : entries)
 	{
-		if (entries[a]->getType() == EntryType::folderType())
+		if (entry->type() == EntryType::folderType())
 			continue;
 
 		// Name
 		memset(fe.name, 0, 32);
-		string path = entries[a]->getPath(true);
-		path.Replace("/", "\\");
-		path = path.AfterFirst('\\');
-		//LOG_MESSAGE(2, path);
-		memcpy(fe.name, CHR(path), path.Len());
+		string path = entry->path(true);
+		std::replace(path.begin(), path.end(), '/', '\\');
+		path = StrUtil::afterFirst(path, '\\');
+		memcpy(fe.name, path.c_str(), path.size());
 
 		// Size
-		fe.size = entries[a]->getSize();
+		fe.size = entry->size();
 
 		// Write directory entry
 		mc.write(fe.name, 32);
 		mc.write(&fe.size, 4);
 		mc.write(&fe.offset, 4);
-		LOG_MESSAGE(5, "entry %s: old=%d new=%d size=%d", fe.name, entries[a]->exProp("Offset").getIntValue(), fe.offset, entries[a]->getSize());
+		LOG_MESSAGE(
+			5,
+			"entry %s: old=%d new=%d size=%d",
+			fe.name,
+			entry->exProp("Offset").intValue(),
+			fe.offset,
+			entry->size());
 
 		// Next offset
 		fe.offset += fe.size;
 	}
 
 	// Write entry data
-	for (unsigned a = 0; a < entries.size(); a++)
-		if (entries[a]->getType() != EntryType::folderType())
-			mc.write(entries[a]->getData(), entries[a]->getSize());
+	for (auto& entry : entries)
+		if (entry->type() != EntryType::folderType())
+			mc.write(entry->dataRaw(), entry->size());
 
 	return true;
 }
 
-/* PodArchive::loadEntryData
- * Loads an entry's data from the archive file
- * Returns true if successful, false otherwise
- *******************************************************************/
+// -----------------------------------------------------------------------------
+// Loads an entry's data from the archive file
+// Returns true if successful, false otherwise
+// -----------------------------------------------------------------------------
 bool PodArchive::loadEntryData(ArchiveEntry* entry)
 {
 	// Check the entry is valid and part of this archive
@@ -248,7 +254,7 @@ bool PodArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Do nothing if the lump's size is zero,
 	// or if it has already been loaded
-	if (entry->getSize() == 0 || entry->isLoaded())
+	if (entry->size() == 0 || entry->isLoaded())
 	{
 		entry->setLoaded();
 		return true;
@@ -266,7 +272,7 @@ bool PodArchive::loadEntryData(ArchiveEntry* entry)
 
 	// Seek to lump offset in file and read it in
 	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->getSize());
+	entry->importFileStream(file, entry->size());
 
 	// Set the lump to loaded
 	entry->setLoaded();
@@ -275,17 +281,20 @@ bool PodArchive::loadEntryData(ArchiveEntry* entry)
 }
 
 
-/*******************************************************************
- * PODARCHIVE CLASS STATIC FUNCTIONS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// PodArchive Class Static Functions
+//
+// -----------------------------------------------------------------------------
 
-/* PodArchive::isPodArchive
- * Checks if the given data is a valid pod archive
- *******************************************************************/
+
+// -----------------------------------------------------------------------------
+// Checks if the given data is a valid pod archive
+// -----------------------------------------------------------------------------
 bool PodArchive::isPodArchive(MemChunk& mc)
 {
 	// Check size for header
-	if (mc.getSize() < 84)
+	if (mc.size() < 84)
 		return false;
 
 	// Read no. of files
@@ -298,27 +307,27 @@ bool PodArchive::isPodArchive(MemChunk& mc)
 	mc.read(id, 80);
 
 	// Check size for directory
-	if (mc.getSize() < 84 + (num_files * 40))
+	if (mc.size() < 84 + (num_files * 40))
 		return false;
 
 	// Read directory and check offsets
-	FileEntry entry;
+	FileEntry entry{};
 	for (unsigned a = 0; a < num_files; a++)
 	{
 		mc.read(&entry, 40);
-		if (entry.offset + entry.size > mc.getSize())
+		if (entry.offset + entry.size > mc.size())
 			return false;
 	}
 	return true;
 }
 
-/* PodArchive::isPodArchive
- * Checks if the file at [filename] is a valid pod archive
- *******************************************************************/
-bool PodArchive::isPodArchive(string filename)
+// -----------------------------------------------------------------------------
+// Checks if the file at [filename] is a valid pod archive
+// -----------------------------------------------------------------------------
+bool PodArchive::isPodArchive(string_view filename)
 {
 	wxFile file;
-	if (!file.Open(filename))
+	if (!file.Open(filename.to_string()))
 		return false;
 
 	file.SeekEnd(0);
@@ -348,7 +357,7 @@ bool PodArchive::isPodArchive(string filename)
 	}
 
 	// Read directory and check offsets
-	FileEntry entry;
+	FileEntry entry{};
 	for (unsigned a = 0; a < num_files; a++)
 	{
 		file.Read(&entry, 40);
@@ -359,25 +368,26 @@ bool PodArchive::isPodArchive(string filename)
 }
 
 
-/*******************************************************************
- * CONSOLE COMMANDS
- *******************************************************************/
+// -----------------------------------------------------------------------------
+//
+// Console Commands
+//
+// -----------------------------------------------------------------------------
 
 CONSOLE_COMMAND(pod_get_id, 0, 1)
 {
 	Archive* archive = MainEditor::currentArchive();
 	if (archive && archive->formatId() == "pod")
-		Log::console(((PodArchive*)archive)->getId());
+		Log::console(((PodArchive*)archive)->id().to_string());
 	else
 		Log::console("Current tab is not a POD archive");
-
 }
 
 CONSOLE_COMMAND(pod_set_id, 1, true)
 {
 	Archive* archive = MainEditor::currentArchive();
 	if (archive && archive->formatId() == "pod")
-		((PodArchive*)archive)->setId(args[0].Truncate(80));
+		((PodArchive*)archive)->setId(args[0].substr(0, 80));
 	else
 		Log::console("Current tab is not a POD archive");
 }
