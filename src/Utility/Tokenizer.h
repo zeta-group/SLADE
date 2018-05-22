@@ -39,14 +39,14 @@ public:
 		bool isHex() const;
 		bool isFloat() const;
 
-		int    asInt() const { return stoi(text); }
+		int    asInt() const;
 		bool   asBool() const;
-		double asFloat() const { return stof(text); }
+		double asFloat() const;
 
-		void toInt(int& val) const { val = stoi(text); }
+		void toInt(int& val) const;
 		void toBool(bool& val) const;
-		void toFloat(double& val) const { val = stod(text); }
-		void toFloat(float& val) const { val = stof(text); }
+		void toFloat(double& val) const;
+		void toFloat(float& val) const;
 	};
 
 	struct TokenizeState

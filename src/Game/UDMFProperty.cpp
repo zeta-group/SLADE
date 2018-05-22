@@ -121,7 +121,7 @@ void UDMFProperty::parse(ParseTreeNode* node, string_view group)
 				// long val;
 				// prop->stringValue().ToLong(&val, 0);
 				// default_value_ = (int)val;
-				default_value_ = std::stoi(prop->stringValue());
+				default_value_ = StrUtil::toInt(prop->stringValue());
 			}
 
 			has_default_ = true;
@@ -173,7 +173,7 @@ void UDMFProperty::parse(ParseTreeNode* node, string_view group)
 // -----------------------------------------------------------------------------
 string UDMFProperty::getStringRep()
 {
-	string ret = S_FMT(R"(Property "%s": name = "%s", group = "%s")", property_, name_, group_);
+	string ret = fmt::format(R"(Property "{}": name = "{}", group = "{}")", property_, name_, group_);
 
 	switch (type_)
 	{
@@ -204,11 +204,11 @@ string UDMFProperty::getStringRep()
 		else if (
 			type_ == Type::Int || type_ == Type::ActionSpecial || type_ == Type::SectorSpecial
 			|| type_ == Type::ThingType || type_ == Type::Colour)
-			ret += S_FMT(", default = %d", default_value_.intValue());
+			ret += fmt::format(", default = {}", default_value_.intValue());
 		else if (type_ == Type::Float)
-			ret += S_FMT(", default = %1.2f", (double)default_value_);
+			ret += fmt::format(", default = {:1.2f}", (double)default_value_);
 		else
-			ret += S_FMT(", default = \"%s\"", default_value_.stringValue());
+			ret += fmt::format(", default = \"{}\"", default_value_.stringValue());
 	}
 	else
 		ret += ", no valid default";

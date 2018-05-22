@@ -260,14 +260,14 @@ bool GfxEntryPanel::saveEntry()
 		if (format == SIFormat::unknownFormat())
 			error = "Image is of unknown format";
 		else if (writable == SIFormat::NOTWRITABLE)
-			error = S_FMT("Writing unsupported for format \"%s\"", format->name());
+			error = fmt::sprintf("Writing unsupported for format \"%s\"", format->name());
 		else
 		{
 			// Convert image if necessary (using default options)
 			if (writable == SIFormat::CONVERTIBLE)
 			{
 				format->convertWritable(*image, SIFormat::ConvertOptions());
-				LOG_MESSAGE(1, "Image converted for writing");
+				Log::info(1, "Image converted for writing");
 			}
 
 			if (format->saveImage(*image, entry_->data(), gfx_canvas_->palette()))
@@ -419,7 +419,7 @@ bool GfxEntryPanel::extractAll() const
 	int pos = 0;
 	for (int i = 0; i < getImage()->nImages(); ++i)
 	{
-		string newname = S_FMT("%s_%i.png", entry_->nameNoExt(), i);
+		string newname = fmt::sprintf("%s_%i.png", entry_->nameNoExt(), i);
 		Misc::loadImageFromEntry(getImage(), entry_, i);
 
 		// Only process images that actually contain some pixels
@@ -498,7 +498,7 @@ void GfxEntryPanel::refresh()
 		menu_custom_->Enable(MENU_GFXEP_EXTRACT, true);
 	else
 		menu_custom_->Enable(MENU_GFXEP_EXTRACT, false);
-	text_curimg_->SetLabel(S_FMT("Image %d/%d", cur_index_ + 1, getImage()->nImages()));
+	text_curimg_->SetLabel(fmt::sprintf("Image %d/%d", cur_index_ + 1, getImage()->nImages()));
 
 	// Update status bar in case image dimensions changed
 	updateStatus();
@@ -527,7 +527,7 @@ string GfxEntryPanel::statusString()
 {
 	// Setup status string
 	SImage* image  = getImage();
-	string  status = S_FMT("%dx%d", image->width(), image->height());
+	string  status = fmt::sprintf("%dx%d", image->width(), image->height());
 
 	// Colour format
 	if (image->type() == SImage::Type::RGBA)
@@ -847,7 +847,7 @@ bool GfxEntryPanel::handleAction(string_view id)
 			setModified();
 		}
 		ColRGBA gcdcol = gcd.getColour();
-		last_colour   = S_FMT("RGB(%d, %d, %d)", gcdcol.r, gcdcol.g, gcdcol.b);
+		last_colour   = fmt::sprintf("RGB(%d, %d, %d)", gcdcol.r, gcdcol.g, gcdcol.b);
 	}
 
 	// Tint
@@ -873,7 +873,7 @@ bool GfxEntryPanel::handleAction(string_view id)
 			setModified();
 		}
 		ColRGBA gtdcol    = gtd.getColour();
-		last_tint_colour = S_FMT("RGB(%d, %d, %d)", gtdcol.r, gtdcol.g, gtdcol.b);
+		last_tint_colour = fmt::sprintf("RGB(%d, %d, %d)", gtdcol.r, gtdcol.g, gtdcol.b);
 		last_tint_amount = (int)(gtd.getAmount() * 100.0);
 	}
 
@@ -1261,33 +1261,33 @@ CONSOLE_COMMAND(rotate, 1, true)
 			val = 270.;
 		else
 		{
-			LOG_MESSAGE(1, "Invalid parameter: %s is not a number.", bluh.mb_str());
+			Log::info(fmt::sprintf("Invalid parameter: %s is not a number.", bluh.mb_str()));
 			return;
 		}
 	}
 	int angle = (int)val;
 	if (angle % 90)
 	{
-		LOG_MESSAGE(1, "Invalid parameter: %i is not a multiple of 90.", angle);
+		Log::info(fmt::sprintf("Invalid parameter: %i is not a multiple of 90.", angle));
 		return;
 	}
 
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 
@@ -1314,25 +1314,25 @@ CONSOLE_COMMAND(mirror, 1, true)
 		vertical = false;
 	else
 	{
-		LOG_MESSAGE(1, "Invalid parameter: %s is not a known value.", bluh.mb_str());
+		Log::info(fmt::sprintf("Invalid parameter: %s is not a known value.", bluh.mb_str()));
 		return;
 	}
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 	if (meep->getImage())
@@ -1352,10 +1352,10 @@ CONSOLE_COMMAND(crop, 4, true)
 	int x1, y1, x2, y2;
 	try
 	{
-		x1 = std::stoi(args[0]);
-		y1 = std::stoi(args[1]);
-		x2 = std::stoi(args[2]);
-		y2 = std::stoi(args[3]);
+		x1 = StrUtil::toInt(args[0]);
+		y1 = StrUtil::toInt(args[1]);
+		x2 = StrUtil::toInt(args[2]);
+		y2 = StrUtil::toInt(args[3]);
 	}
 	catch (std::exception& ex)
 	{
@@ -1367,19 +1367,19 @@ CONSOLE_COMMAND(crop, 4, true)
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	if (meep->getImage())
@@ -1398,19 +1398,19 @@ CONSOLE_COMMAND(adjust, 0, true)
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	if (meep->getImage())
@@ -1428,19 +1428,19 @@ CONSOLE_COMMAND(mirrorpad, 0, true)
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	if (meep->getImage())
@@ -1458,19 +1458,19 @@ CONSOLE_COMMAND(imgconv, 0, true)
 	ArchivePanel* foo = CH::getCurrentArchivePanel();
 	if (!foo)
 	{
-		LOG_MESSAGE(1, "No active panel.");
+		Log::info(1, "No active panel.");
 		return;
 	}
 	ArchiveEntry* bar = foo->currentEntry();
 	if (!bar)
 	{
-		LOG_MESSAGE(1, "No active entry.");
+		Log::info(1, "No active entry.");
 		return;
 	}
 	GfxEntryPanel* meep = CH::getCurrentGfxPanel();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No image selected.");
+		Log::info(1, "No image selected.");
 		return;
 	}
 	if (meep->getImage())

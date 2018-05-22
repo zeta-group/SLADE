@@ -142,7 +142,7 @@ void GfxTintDialog::setValues(string col, int val)
 	wxColour colour(col);
 	cb_colour_->setColour(ColRGBA(COLWX(colour)));
 	slider_amount_->SetValue(val);
-	label_amount_->SetLabel(S_FMT("%d%% ", slider_amount_->GetValue()));
+	label_amount_->SetLabel(fmt::format("{}% ", slider_amount_->GetValue()));
 	gfx_preview_->image()->tint(getColour(), getAmount(), palette_);
 	gfx_preview_->updateImageTexture();
 	gfx_preview_->Refresh();
@@ -176,7 +176,7 @@ void GfxTintDialog::onAmountChanged(wxCommandEvent& e)
 	gfx_preview_->image()->tint(getColour(), getAmount(), palette_);
 	gfx_preview_->updateImageTexture();
 	gfx_preview_->Refresh();
-	label_amount_->SetLabel(S_FMT("%d%% ", slider_amount_->GetValue()));
+	label_amount_->SetLabel(fmt::format("{}% ", slider_amount_->GetValue()));
 }
 
 // -----------------------------------------------------------------------------

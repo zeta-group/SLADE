@@ -105,7 +105,7 @@ string Executables::writePaths()
 	string ret;
 
 	for (auto& exe : game_exes)
-		ret += S_FMT("\t%s \"%s\"\n", exe.id, StrUtil::escapedString(exe.path, true));
+		ret += fmt::format("\t{} \"{}\"\n", exe.id, StrUtil::escapedString(exe.path, true));
 
 	return ret;
 }
@@ -121,17 +121,17 @@ string Executables::writeExecutables()
 	for (auto& exe : game_exes)
 	{
 		// ID
-		ret += S_FMT("\tgame_exe %s\n\t{\n", exe.id);
+		ret += fmt::format("\tgame_exe {}\n\t{{\n", exe.id);
 
 		// Name
-		ret += S_FMT("\t\tname = \"%s\";\n", exe.name);
+		ret += fmt::format("\t\tname = \"{}\";\n", exe.name);
 
 		// Exe name
-		ret += S_FMT("\t\texe_name = \"%s\";\n\n", exe.exe_name);
+		ret += fmt::format("\t\texe_name = \"{}\";\n\n", exe.exe_name);
 
 		// Configs
 		for (auto& config : exe.configs)
-			ret += S_FMT("\t\tconfig \"%s\" = \"%s\";\n", config.first, StrUtil::escapedString(config.second));
+			ret += fmt::format("\t\tconfig \"{}\" = \"{}\";\n", config.first, StrUtil::escapedString(config.second));
 
 		ret += "\t}\n\n";
 	}
@@ -140,15 +140,15 @@ string Executables::writeExecutables()
 	for (auto& exe : external_exes)
 	{
 		// Name
-		ret += S_FMT("\texternal_exe \"%s\"\n\t{\n", exe.name);
+		ret += fmt::format("\texternal_exe \"{}\"\n\t{{\n", exe.name);
 
 		// Entry Category
-		ret += S_FMT("\t\tcategory = \"%s\";\n", exe.category);
+		ret += fmt::format("\t\tcategory = \"{}\";\n", exe.category);
 
 		// Path
 		string path = exe.path;
 		std::replace(path.begin(), path.end(), '\\', '/');
-		ret += S_FMT("\t\tpath = \"%s\";\n", path);
+		ret += fmt::format("\t\tpath = \"{}\";\n", path);
 
 		ret += "\t}\n\n";
 	}

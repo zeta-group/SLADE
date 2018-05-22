@@ -62,7 +62,7 @@ void Console::addCommand(ConsoleCommand& c)
 // -----------------------------------------------------------------------------
 void Console::execute(const string& command)
 {
-	LOG_MESSAGE(1, "> %s", command);
+	Log::info(fmt::format("> {}", command));
 
 	// Don't bother doing anything else with an empty command
 	if (command.empty())
@@ -109,9 +109,9 @@ void Console::execute(const string& command)
 					*((CBoolCVar*)cvar) = true;
 			}
 			else if (cvar->type == CVAR_INTEGER)
-				*((CIntCVar*)cvar) = std::stoi(args[0]);
+				*((CIntCVar*)cvar) = StrUtil::toInt(args[0]);
 			else if (cvar->type == CVAR_FLOAT)
-				*((CFloatCVar*)cvar) = std::stof(args[0]);
+				*((CFloatCVar*)cvar) = StrUtil::toFloat(args[0]);
 			else if (cvar->type == CVAR_STRING)
 				*((CStringCVar*)cvar) = args[0];
 		}
@@ -126,13 +126,13 @@ void Console::execute(const string& command)
 				value = "false";
 		}
 		else if (cvar->type == CVAR_INTEGER)
-			value = S_FMT("%d", cvar->GetValue().Int);
+			value = fmt::format("{}", cvar->GetValue().Int);
 		else if (cvar->type == CVAR_FLOAT)
-			value = S_FMT("%1.4f", cvar->GetValue().Float);
+			value = fmt::format("{:1.4f}", cvar->GetValue().Float);
 		else
 			value = ((CStringCVar*)cvar)->value;
 
-		Log::console(S_FMT(R"("%s" = "%s")", cmd_name, value));
+		Log::console(fmt::format(R"("{}" = "{}")", cmd_name, value));
 
 		return;
 	}
@@ -150,7 +150,7 @@ void Console::execute(const string& command)
 	}
 
 	// Command not found
-	Log::console(S_FMT("Unknown command: \"%s\"", cmd_name));
+	Log::console(fmt::format("Unknown command: \"{}\"", cmd_name));
 }
 
 // -----------------------------------------------------------------------------
@@ -226,7 +226,7 @@ void ConsoleCommand::execute(const vector<string>& args) const
 	if (args.size() >= min_args_)
 		func_(args);
 	else
-		Log::console(S_FMT("Missing command arguments, type \"cmdhelp %s\" for more information", name_));
+		Log::console(fmt::format("Missing command arguments, type \"cmdhelp {}\" for more information", name_));
 }
 
 
@@ -251,13 +251,13 @@ CONSOLE_COMMAND(echo, 1, true)
 // -----------------------------------------------------------------------------
 CONSOLE_COMMAND(cmdlist, 0, true)
 {
-	Log::console(S_FMT("%d Valid Commands:", App::console()->numCommands()));
+	Log::console(fmt::format("{} Valid Commands:", App::console()->numCommands()));
 
 	for (int a = 0; a < App::console()->numCommands(); a++)
 	{
 		ConsoleCommand& cmd = App::console()->command(a);
 		if (cmd.showInList() || Global::debug)
-			Log::console(S_FMT("\"%s\" (%d args)", cmd.name(), cmd.minArgs()));
+			Log::console(fmt::format("\"{}\" ({} args)", cmd.name(), cmd.minArgs()));
 	}
 }
 
@@ -271,7 +271,7 @@ CONSOLE_COMMAND(cvarlist, 0, true)
 	get_cvar_list(list);
 	sort(list.begin(), list.end());
 
-	Log::console(S_FMT("%lu CVars:", list.size()));
+	Log::console(fmt::format("{} CVars:", list.size()));
 
 	// Write list to console
 	for (const auto& a : list)
@@ -289,9 +289,9 @@ CONSOLE_COMMAND(cmdhelp, 1, true)
 		if (StrUtil::equalCI(args[0], App::console()->command(a).name()))
 		{
 #ifdef USE_WEBVIEW_STARTPAGE
-			MainEditor::openDocs(S_FMT("%s-Console-Command", args[0]));
+			MainEditor::openDocs(fmt::format("{}-Console-Command", args[0]));
 #else
-			string url = S_FMT("https://github.com/sirjuddington/SLADE/wiki/%s-Console-Command", args[0]);
+			string url = fmt::format("https://github.com/sirjuddington/SLADE/wiki/{}-Console-Command", args[0]);
 			wxLaunchDefaultBrowser(url);
 #endif
 			return;
@@ -299,7 +299,7 @@ CONSOLE_COMMAND(cmdhelp, 1, true)
 	}
 
 	// No command found
-	Log::console(S_FMT("No command \"%s\" exists", args[0]));
+	Log::console(fmt::format("No command \"{}\" exists", args[0]));
 }
 
 

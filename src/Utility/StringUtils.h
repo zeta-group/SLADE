@@ -38,9 +38,13 @@ bool isFloat(string_view str);
 bool equalCI(string_view left, string_view right);
 bool equalCI(string_view left, const char* right);
 bool startsWith(string_view str, string_view check);
+bool startsWith(string_view str, char check);
 bool startsWithCI(string_view str, string_view check);
+bool startsWithCI(string_view str, char check);
 bool endsWith(string_view str, string_view check);
+bool endsWith(string_view str, char check);
 bool endsWithCI(string_view str, string_view check);
+bool endsWithCI(string_view str, char check);
 bool contains(string_view str, char check);
 bool containsCI(string_view str, char check);
 bool contains(string_view str, string_view check);
@@ -95,6 +99,12 @@ void                removeLastIP(string& str, unsigned n);
 // Misc
 void processIncludes(string filename, string& out);
 void processIncludes(ArchiveEntry* entry, string& out, bool use_res = true);
+
+// Conversion
+int    toInt(const string& str);
+float  toFloat(const string& str);
+double toDouble(const string& str);
+bool   toBoolean(const string& str);
 
 // Joins all given args into a single string
 template<typename... Args> string join(const Args&... args)

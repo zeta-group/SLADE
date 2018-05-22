@@ -81,7 +81,7 @@ void logParserMessage(ParsedStatement& statement, Log::MessageType type, const s
 	if (statement.entry)
 		location = statement.entry->path(true);
 
-	Log::message(type, S_FMT("%s:%d: %s", location, statement.line, message));
+	Log::message(type, fmt::format("{}:{}: {}", location, statement.line, message));
 }
 
 // -----------------------------------------------------------------------------
@@ -110,7 +110,7 @@ string parseType(const vector<string>& tokens, unsigned& index)
 	}
 
 	// Check for <>
-	if (tokens[index + 1] == "<")
+	if (index + 1 < tokens.size() && tokens[index + 1] == "<")
 	{
 		type += "<";
 		index += 2;
@@ -206,9 +206,9 @@ void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed)
 				// Check #include path could be resolved
 				if (!inc_entry)
 				{
-					Log::warning(S_FMT(
-						"Warning parsing ZScript entry %s: "
-						"Unable to find #included entry \"%s\" at line %d, skipping",
+					Log::warning(fmt::format(
+						"Warning parsing ZScript entry {}: "
+						"Unable to find #included entry \"{}\" at line {}, skipping",
 						entry->name(),
 						tz.current().text,
 						tz.current().line_no));
@@ -402,12 +402,12 @@ bool Function::parse(ParsedStatement& statement)
 	}
 	++index; // Skip (
 
-	while (statement.tokens[index] != ')' && index < statement.tokens.size())
+	while (index < statement.tokens.size()  && statement.tokens[index] != ')')
 	{
 		parameters_.emplace_back();
 		index = parameters_.back().parse(statement.tokens, index);
 
-		if (statement.tokens[index] == ',')
+		if (index < statement.tokens.size() && statement.tokens[index] == ',')
 			++index;
 	}
 
@@ -424,7 +424,7 @@ string Function::asString()
 {
 	string str;
 	if (!deprecated_.empty())
-		str += S_FMT("deprecated v%s ", deprecated_);
+		str += fmt::format("deprecated v{} ", deprecated_);
 	if (static_)
 		str += "static ";
 	if (native_)
@@ -434,11 +434,11 @@ string Function::asString()
 	if (action_)
 		str += "action ";
 
-	str += S_FMT("%s %s(", return_type_, name_);
+	str += fmt::format("{} {}(", return_type_, name_);
 
 	for (auto& p : parameters_)
 	{
-		str += S_FMT("%s %s", p.type, p.name);
+		str += fmt::format("{} {}", p.type, p.name);
 		if (!p.default_value.empty())
 			str += " = " + p.default_value;
 
@@ -557,7 +557,7 @@ bool StateTable::parse(ParsedStatement& states)
 			logParserMessage(
 				statement,
 				Log::MessageType::Warning,
-				S_FMT("Failed to parse states block beginning on line %d", states.line));
+				fmt::format("Failed to parse states block beginning on line {}", states.line));
 			continue;
 		}
 
@@ -574,11 +574,11 @@ bool StateTable::parse(ParsedStatement& states)
 			if (statement.tokens[index + 2] == "-" && index + 3 < statement.tokens.size())
 			{
 				// Negative number
-				duration = std::stoi(statement.tokens[index + 3]);
+				duration = StrUtil::toInt(statement.tokens[index + 3]);
 				duration = -duration;
 			}
 			else
-				duration = std::stoi(statement.tokens[index + 2]);
+				duration = StrUtil::toInt(statement.tokens[index + 2]);
 
 			for (auto& state : current_states)
 				states_[state].frames.push_back(
@@ -592,10 +592,10 @@ bool StateTable::parse(ParsedStatement& states)
 	{
 		for (auto& state : states_)
 		{
-			Log::debug(S_FMT("State %s:", state.first));
+			Log::debug(fmt::format("State {}:", state.first));
 			for (auto& frame : state.second.frames)
-				Log::debug(S_FMT(
-					"Sprite: %s, Frames: %s, Duration: %d", frame.sprite_base, frame.sprite_frame, frame.duration));
+				Log::debug(fmt::format(
+					"Sprite: {}, Frames: {}, Duration: {}", frame.sprite_base, frame.sprite_frame, frame.duration));
 		}
 	}
 
@@ -914,7 +914,7 @@ bool Definitions::parseZScript(ArchiveEntry* entry)
 	auto                    start = App::runTimer();
 	vector<ParsedStatement> parsed;
 	parseBlocks(entry, parsed);
-	Log::debug(2, S_FMT("parseBlocks: %dms", App::runTimer() - start));
+	Log::debug(2, fmt::format("parseBlocks: {}ms", App::runTimer() - start));
 	start = App::runTimer();
 
 	for (auto& block : parsed)
@@ -972,7 +972,7 @@ bool Definitions::parseZScript(ArchiveEntry* entry)
 		}
 	}
 
-	Log::debug(2, S_FMT("ZScript: %dms", App::runTimer() - start));
+	Log::debug(2, fmt::format("ZScript: {}ms", App::runTimer() - start));
 
 	return true;
 }
@@ -990,7 +990,7 @@ bool Definitions::parseZScript(Archive* archive)
 	if (zscript_enries.empty())
 		return false;
 
-	Log::info(2, S_FMT("Parsing ZScript entries found in archive %s", archive->filename()));
+	Log::info(2, fmt::format("Parsing ZScript entries found in archive {}", archive->filename()));
 
 	// Get ZScript entry type (all parsed ZScript entries will be set to this)
 	etype_zscript = EntryType::fromId("zscript");
@@ -1084,7 +1084,7 @@ bool ParsedStatement::parse(Tokenizer& tz)
 
 		if (tz.atEnd())
 		{
-			Log::debug(S_FMT("Failed parsing zscript statement/block beginning line %d", line));
+			Log::debug(fmt::format("Failed parsing zscript statement/block beginning line {}", line));
 			return false;
 		}
 
@@ -1114,7 +1114,7 @@ bool ParsedStatement::parse(Tokenizer& tz)
 
 		if (tz.atEnd())
 		{
-			Log::debug(S_FMT("Failed parsing zscript statement/block beginning line %d", line));
+			Log::debug(fmt::format("Failed parsing zscript statement/block beginning line {}", line));
 			return false;
 		}
 
@@ -1195,7 +1195,7 @@ CONSOLE_COMMAND(test_parse_zscript, 0, false)
 
 CONSOLE_COMMAND(test_parseblocks, 1, false)
 {
-	int num = std::stoi(args[0]);
+	int num = StrUtil::toInt(args[0]);
 
 	auto entry = MainEditor::currentEntry();
 	if (!entry)
@@ -1208,5 +1208,5 @@ CONSOLE_COMMAND(test_parseblocks, 1, false)
 		parseBlocks(entry, parsed);
 		parsed.clear();
 	}
-	Log::console(S_FMT("Took %dms", App::runTimer() - start));
+	Log::console(fmt::format("Took {}ms", App::runTimer() - start));
 }

@@ -60,15 +60,15 @@ SBrush::SBrush(string_view name) : name_{ name.data(), name.size() }, icon_{ Str
 	Archive* res = App::archiveManager().programResourceArchive();
 	if (res == nullptr)
 		return;
-	ArchiveEntry* file = res->entryAtPath(S_FMT("icons/general/%s.png", icon_));
+	ArchiveEntry* file = res->entryAtPath(fmt::sprintf("icons/general/%s.png", icon_));
 	if (file == nullptr || file->size() == 0)
 	{
-		LOG_MESSAGE(2, "error, no file at icons/general/%s.png", icon_);
+		Log::info(2, fmt::sprintf("error, no file at icons/general/%s.png", icon_));
 		return;
 	}
 	if (!image_.open(file->data(), 0, "png"))
 	{
-		LOG_MESSAGE(2, "couldn't load image data for icons/general/%s.png", icon_);
+		Log::info(2, fmt::sprintf("couldn't load image data for icons/general/%s.png", icon_));
 		return;
 	}
 	image_.convertAlphaMap(SImage::AlphaSource::Alpha);

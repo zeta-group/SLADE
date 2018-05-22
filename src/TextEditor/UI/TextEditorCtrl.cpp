@@ -106,11 +106,11 @@ wxThread::ExitCode JumpToCalculator::Entry()
 		for (const auto& block : block_names_)
 		{
 			// Get jump block keyword
-			long skip = 0;
+			int skip = 0;
 			if (StrUtil::contains(block, ':'))
 			{
 				auto sp = StrUtil::split(block, ':');
-				skip    = std::stol(sp.back());
+				skip    = StrUtil::toInt(sp.back());
 			}
 
 			if (StrUtil::equalCI(token, block))
@@ -125,13 +125,13 @@ wxThread::ExitCode JumpToCalculator::Entry()
 
 				// Numbered block, add block name
 				if (StrUtil::isInteger(name, false))
-					name = S_FMT("%s %s", block, name);
+					name = fmt::sprintf("%s %s", block, name);
 				// Unnamed block, use block name
 				if (name == "{" || name == ";")
 					name = block;
 
 				// Add jump point
-				jump_points += S_FMT("%d,%s,", tz.lineNo() - 1, name);
+				jump_points += fmt::sprintf("%d,%s,", tz.lineNo() - 1, name);
 			}
 		}
 
@@ -429,7 +429,7 @@ bool TextEditorCtrl::loadEntry(ArchiveEntry* entry)
 	last_modified_ = App::runTimer();
 
 	// Update line numbers margin width
-	string numlines = S_FMT("0%d", txed_fold_debug ? 1234567 : GetNumberOfLines());
+	string numlines = fmt::sprintf("0%d", txed_fold_debug ? 1234567 : GetNumberOfLines());
 	SetMarginWidth(0, TextWidth(wxSTC_STYLE_LINENUMBER, numlines));
 
 	return true;
@@ -1012,7 +1012,7 @@ void TextEditorCtrl::jumpToLine()
 	// Prompt for line number
 	long line = wxGetNumberFromUser(
 		"Enter a line number to jump to",
-		S_FMT("Line number (1-%d):", numlines),
+		fmt::sprintf("Line number (1-%d):", numlines),
 		"Jump To Line",
 		GetCurrentLine() + 1,
 		1,
@@ -1435,7 +1435,7 @@ void TextEditorCtrl::onKeyUp(wxKeyEvent& e)
 void TextEditorCtrl::onCharAdded(wxStyledTextEvent& e)
 {
 	// Update line numbers margin width
-	string numlines = S_FMT("0%d", txed_fold_debug ? 1234567 : GetNumberOfLines());
+	string numlines = fmt::sprintf("0%d", txed_fold_debug ? 1234567 : GetNumberOfLines());
 	SetMarginWidth(0, TextWidth(wxSTC_STYLE_LINENUMBER, numlines));
 
 	// Auto indent

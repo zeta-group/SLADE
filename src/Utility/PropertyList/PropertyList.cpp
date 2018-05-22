@@ -112,7 +112,7 @@ string PropertyList::toString(bool condensed)
 		ret.append(val);        // value
 		ret.append(line_end);   // ;\n
 
-		// LOG_MESSAGE(1, "key %s type %s value %s", key, i->second.typeString(), val);
+		// Log::info(1, "key %s type %s value %s", key, i->second.typeString(), val);
 	}
 
 	return ret;

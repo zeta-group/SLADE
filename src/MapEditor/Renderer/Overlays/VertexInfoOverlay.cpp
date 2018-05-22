@@ -56,12 +56,12 @@ void VertexInfoOverlay::update(MapVertex* vertex)
 
 	// Update info string
 	if (pos_frac_)
-		info_ = S_FMT("Vertex %d: (%1.4f, %1.4f)", vertex->index(), vertex->xPos(), vertex->yPos());
+		info_ = fmt::sprintf("Vertex %d: (%1.4f, %1.4f)", vertex->index(), vertex->xPos(), vertex->yPos());
 	else
-		info_ = S_FMT("Vertex %d: (%d, %d)", vertex->index(), (int)vertex->xPos(), (int)vertex->yPos());
+		info_ = fmt::sprintf("Vertex %d: (%d, %d)", vertex->index(), (int)vertex->xPos(), (int)vertex->yPos());
 
 	if (Global::debug)
-		info_ += S_FMT(" (%d)", vertex->objId());
+		info_ += fmt::sprintf(" (%d)", vertex->objId());
 }
 
 // -----------------------------------------------------------------------------

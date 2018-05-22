@@ -31,8 +31,8 @@ typedef unsigned __int64 uint64_t;
 typedef std::string string;
 #define S_SET_VIEW(str, view) str.assign(view.data(), view.size())    // std::string = std::string_view
 #define S_APPEND_VIEW(str, view) str.append(view.data(), view.size()) // std::string + std::string_view
-string formatString(const string fmt, ...);
-#define S_FMT formatString
+//string formatString(const string fmt, ...);
+//#define S_FMT formatString
 
 // Vectors
 using std::vector;
@@ -132,15 +132,15 @@ public:
 	Debuggable(string v) { repr = v; }
 	Debuggable(const char* v) { repr = v; }
 	Debuggable(bool v) { repr = v ? "true" : "false"; }
-	Debuggable(int v) { repr = S_FMT("%d", v); }
-	Debuggable(unsigned int v) { repr = S_FMT("%u", v); }
-	Debuggable(long v) { repr = S_FMT("%ld", v); }
-	Debuggable(unsigned long v) { repr = S_FMT("%lu", v); }
-	Debuggable(double v) { repr = S_FMT("%g", v); }
+	Debuggable(int v) { repr = fmt::sprintf("%d", v); }
+	Debuggable(unsigned int v) { repr = fmt::sprintf("%u", v); }
+	Debuggable(long v) { repr = fmt::sprintf("%ld", v); }
+	Debuggable(unsigned long v) { repr = fmt::sprintf("%lu", v); }
+	Debuggable(double v) { repr = fmt::sprintf("%g", v); }
 
-	Debuggable(fpoint2_t v) { repr = S_FMT("(%0.6f, %0.6f)", v.x, v.y); }
-	Debuggable(fpoint3_t v) { repr = S_FMT("(%0.6f, %0.6f, %0.6f)", v.x, v.y, v.z); }
-	Debuggable(frect_t v) { repr = S_FMT("(%0.6f, %0.6f to %0.6f, %0.6f)", v.x1(), v.y1(), v.x2(), v.y2()); }
+	Debuggable(fpoint2_t v) { repr = fmt::sprintf("(%0.6f, %0.6f)", v.x, v.y); }
+	Debuggable(fpoint3_t v) { repr = fmt::sprintf("(%0.6f, %0.6f, %0.6f)", v.x, v.y, v.z); }
+	Debuggable(frect_t v) { repr = fmt::sprintf("(%0.6f, %0.6f to %0.6f, %0.6f)", v.x1(), v.y1(), v.x2(), v.y2()); }
 
 	template<typename T> Debuggable(T* v) { repr = Debuggable(*v).repr; }
 
@@ -187,7 +187,7 @@ inline void LOG_DEBUG(
 	message += a11.get() + " ";
 	message += a12.get();
 	// message.Trim();
-	Log::debug(S_FMT("%s", message));
+	Log::debug(fmt::sprintf("%s", message));
 }
 
 #define LOG_DEBUG_VAR(name) LOG_DEBUG(#name ": ", name)

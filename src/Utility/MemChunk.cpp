@@ -98,7 +98,7 @@ bool MemChunk::reSize(uint32_t new_size, bool preserve_data)
 	// Check for invalid new size
 	if (new_size == 0)
 	{
-		LOG_MESSAGE(1, "MemChunk::reSize: new_size cannot be 0");
+		Log::info(1, "MemChunk::reSize: new_size cannot be 0");
 		return false;
 	}
 
@@ -142,8 +142,8 @@ bool MemChunk::importFile(string_view filename, uint32_t offset, uint32_t len)
 	// Return false if file open failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "MemChunk::importFile: Unable to open file %s", filename);
-		Global::error = S_FMT("Unable to open file %s", filename);
+		Log::info(fmt::sprintf("MemChunk::importFile: Unable to open file %s", filename));
+		Global::error = fmt::sprintf("Unable to open file %s", filename);
 		return false;
 	}
 
@@ -169,9 +169,9 @@ bool MemChunk::importFile(string_view filename, uint32_t offset, uint32_t len)
 			size_t count = file.Read(data_, size_);
 			if (count != size_)
 			{
-				LOG_MESSAGE(
-					1, "MemChunk::importFile: Unable to read full file %s, read %u out of %u", filename, count, size_);
-				Global::error = S_FMT("Unable to read file %s", filename);
+				Log::info(fmt::sprintf(
+					"MemChunk::importFile: Unable to read full file %s, read %u out of %u", filename, count, size_));
+				Global::error = fmt::sprintf("Unable to read file %s", filename);
 				clear();
 				file.Close();
 				return false;
@@ -273,7 +273,7 @@ bool MemChunk::exportFile(string_view filename, uint32_t start, uint32_t size) c
 	wxFile file(WxUtils::stringFromView(filename), wxFile::write);
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "Unable to write to file %s", filename);
+		Log::info(fmt::sprintf("Unable to write to file %s", filename));
 		Global::error = "Unable to open file for writing";
 		return false;
 	}
@@ -470,7 +470,7 @@ uint8_t* MemChunk::allocData(uint32_t size, bool set_data)
 	}
 	catch (std::bad_alloc& ba)
 	{
-		LOG_MESSAGE(1, "MemChunk: Allocation of %d bytes failed: %s", size, ba.what());
+		Log::error(fmt::sprintf("MemChunk: Allocation of %d bytes failed: %s", size, ba.what()));
 
 		if (set_data)
 		{

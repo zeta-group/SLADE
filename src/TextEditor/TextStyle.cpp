@@ -214,65 +214,65 @@ bool TextStyle::copyStyle(TextStyle* copy)
 // -----------------------------------------------------------------------------
 string TextStyle::getDefinition(unsigned tabs) const
 {
-	string ret;
+	fmt::StringWriter ret;
 
 	// Write font
 	if (!font_.empty())
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("font = \"%s\";\n", font_);
+			ret.write("\t");
+		ret.write("font = \"{}\";\n", font_);
 	}
 
 	// Write size
 	if (size_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("size = %d;\n", size_);
+			ret.write("\t");
+		ret.write("size = {};\n", size_);
 	}
 
 	// Write foreground
 	if (fg_defined_)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("foreground = %d, %d, %d;\n", foreground_.r, foreground_.g, foreground_.b);
+			ret.write("\t");
+		ret.write("foreground = {}, {}, {};\n", foreground_.r, foreground_.g, foreground_.b);
 	}
 
 	// Write background
 	if (bg_defined_)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("background = %d, %d, %d;\n", background_.r, background_.g, background_.b);
+			ret.write("\t");
+		ret.write("background = {}, {}, {};\n", background_.r, background_.g, background_.b);
 	}
 
 	// Write bold
 	if (bold_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("bold = %d;\n", bold_);
+			ret.write("\t");
+		ret.write("bold = {};\n", bold_);
 	}
 
 	// Write italic
 	if (italic_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("italic = %d;\n", italic_);
+			ret.write("\t");
+		ret.write("italic = {};\n", italic_);
 	}
 
 	// Write underlined
 	if (underlined_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret += "\t";
-		ret += S_FMT("underlined = %d;\n", underlined_);
+			ret.write("\t");
+		ret.write("underlined = {};\n", underlined_);
 	}
 
-	return ret;
+	return ret.str();
 }
 
 
@@ -529,7 +529,7 @@ bool StyleSet::writeFile(string_view filename)
 	file.Write("styleset {\n");
 
 	// Name
-	file.Write(S_FMT("\tname = \"%s\";\n\n", name_));
+	file.Write(wxString::Format("\tname = \"%s\";\n\n", name_));
 
 	// Default style
 	file.Write("\tdefault {\n");
@@ -544,7 +544,7 @@ bool StyleSet::writeFile(string_view filename)
 	// Other styles
 	for (auto& style : styles_)
 	{
-		file.Write(S_FMT("\t%s {\n", style->name_));
+		file.Write(wxString::Format("\t%s {\n", style->name_));
 		file.Write(style->getDefinition(2));
 		file.Write("\t}\n\n");
 	}
@@ -813,7 +813,7 @@ bool StyleSet::loadResourceStyles()
 	// Check it exists
 	if (!dir)
 	{
-		LOG_MESSAGE(1, "Warning: No 'config/text_styles' directory exists in slade.pk3");
+		Log::info(1, "Warning: No 'config/text_styles' directory exists in slade.pk3");
 		return false;
 	}
 

@@ -1,13 +1,14 @@
 
 #include "Main.h"
-#include "UI.h"
 #include "General/Console/Console.h"
+#include "UI.h"
 #include "UI/SplashWindow.h"
+#include "MapEditor/Edit/Input.h"
 
 namespace UI
 {
-std::unique_ptr<SplashWindow> splash_window;
-bool                          splash_enabled = true;
+SplashWindow* splash_window;
+bool          splash_enabled = true;
 
 // Pixel sizes/scale
 double scale = 1.;
@@ -42,7 +43,7 @@ void UI::showSplash(string_view message, bool progress, wxWindow* parent)
 	if (!splash_window)
 	{
 		SplashWindow::init();
-		splash_window = std::make_unique<SplashWindow>();
+		splash_window = new SplashWindow();
 	}
 
 	splash_window->show(message, progress, parent);
@@ -53,7 +54,8 @@ void UI::hideSplash()
 	if (splash_window)
 	{
 		splash_window->hide();
-		splash_window.reset();
+		delete splash_window;
+		splash_window = nullptr;
 	}
 }
 
@@ -148,8 +150,8 @@ CONSOLE_COMMAND(splash, 0, false)
 	else
 	{
 		UI::showSplash(args[0], true);
-		float prog = std::stof(args[1]);
+		float prog = StrUtil::toFloat(args[1]);
 		UI::setSplashProgress(prog);
-		UI::setSplashProgressMessage(S_FMT("Progress %s", args[1]));
+		UI::setSplashProgressMessage(fmt::format("Progress {}", args[1]));
 	}
 }

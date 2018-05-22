@@ -178,7 +178,7 @@ void MoveObjects::end(bool accept)
 	else if (accept)
 	{
 		// Any other edit mode we're technically moving vertices
-		context_.beginUndoRecord(S_FMT("Move %s", context_.modeString()));
+		context_.beginUndoRecord(fmt::sprintf("Move %s", context_.modeString()));
 
 		// Get list of vertices being moved
 		vector<uint8_t> move_verts(context_.map().nVertices());

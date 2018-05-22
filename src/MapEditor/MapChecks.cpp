@@ -154,7 +154,7 @@ public:
 			}
 		}
 
-		LOG_MESSAGE(3, "Missing Texture Check: %lu missing textures", parts_.size());
+		Log::info(3, fmt::sprintf("Missing Texture Check: %lu missing textures", parts_.size()));
 	}
 
 	unsigned nProblems() override { return lines_.size(); }
@@ -176,7 +176,7 @@ public:
 	string problemDesc(unsigned index) override
 	{
 		if (index < lines_.size())
-			return S_FMT("Line %d missing %s", lines_[index]->index(), texName(parts_[index]));
+			return fmt::sprintf("Line %d missing %s", lines_[index]->index(), texName(parts_[index]));
 		else
 			return "No missing textures found";
 	}
@@ -312,7 +312,7 @@ public:
 
 		MapObject* mo      = objects_[index];
 		int        special = mo->intProperty("special");
-		return S_FMT(
+		return fmt::sprintf(
 			"%s %d: Special %d (%s) requires a tag",
 			mo->objType() == MapObject::Type::Line ? "Line" : "Thing",
 			mo->index(),
@@ -449,7 +449,7 @@ public:
 			return "No missing tagged objects found";
 
 		int special = objects_[index]->intProperty("special");
-		return S_FMT(
+		return fmt::sprintf(
 			"%s %d: No object tagged %d for Special %d (%s)",
 			objects_[index]->objType() == MapObject::Type::Line ? "Line" : "Thing",
 			objects_[index]->index(),
@@ -542,7 +542,7 @@ public:
 		if (index >= intersections_.size())
 			return "No intersecting lines found";
 
-		return S_FMT(
+		return fmt::sprintf(
 			"Lines %d and %d are intersecting at (%1.2f, %1.2f)",
 			intersections_[index].line1->index(),
 			intersections_[index].line2->index(),
@@ -673,7 +673,7 @@ public:
 		if (index >= overlaps_.size())
 			return "No overlapping lines found";
 
-		return S_FMT(
+		return fmt::sprintf(
 			"Lines %d and %d are overlapping", overlaps_[index].line1->index(), overlaps_[index].line2->index());
 	}
 
@@ -795,7 +795,7 @@ public:
 				bool shareflag = false;
 				for (int s = min_skill; s < max_skill; ++s)
 				{
-					string skill = S_FMT("skill%d", s);
+					string skill = fmt::sprintf("skill%d", s);
 					if (Game::configuration().thingBasicFlagSet(skill, thing1, map_format)
 						&& Game::configuration().thingBasicFlagSet(skill, thing2, map_format))
 					{
@@ -864,7 +864,7 @@ public:
 					// Case #3: things flagged for single player with different class filters
 					for (int c = 1; c < max_class; ++c)
 					{
-						string pclass = S_FMT("class%d", c);
+						string pclass = fmt::sprintf("class%d", c);
 						if (Game::configuration().thingBasicFlagSet(pclass, thing1, map_format)
 							&& Game::configuration().thingBasicFlagSet(pclass, thing2, map_format))
 						{
@@ -907,7 +907,7 @@ public:
 		if (index >= overlaps_.size())
 			return "No overlapping things found";
 
-		return S_FMT(
+		return fmt::sprintf(
 			"Things %d and %d are overlapping", overlaps_[index].thing1->index(), overlaps_[index].thing2->index());
 	}
 
@@ -962,9 +962,9 @@ public:
 			return "";
 
 		if (fix_type == 0)
-			return S_FMT("Delete Thing #%d", overlaps_[index].thing1->index());
+			return fmt::sprintf("Delete Thing #%d", overlaps_[index].thing1->index());
 		if (fix_type == 1)
-			return S_FMT("Delete Thing #%d", overlaps_[index].thing2->index());
+			return fmt::sprintf("Delete Thing #%d", overlaps_[index].thing2->index());
 
 		return "";
 	}
@@ -1072,26 +1072,26 @@ public:
 		if (index >= lines_.size())
 			return "No unknown wall textures found";
 
-		string line = S_FMT("Line %d has unknown ", lines_[index]->index());
+		string line = fmt::sprintf("Line %d has unknown ", lines_[index]->index());
 		switch (parts_[index])
 		{
 		case MapLine::Part::FrontUpper:
-			line += S_FMT("front upper texture \"%s\"", lines_[index]->s1()->stringProperty("texturetop"));
+			line += fmt::sprintf("front upper texture \"%s\"", lines_[index]->s1()->stringProperty("texturetop"));
 			break;
 		case MapLine::Part::FrontMiddle:
-			line += S_FMT("front middle texture \"%s\"", lines_[index]->s1()->stringProperty("texturemiddle"));
+			line += fmt::sprintf("front middle texture \"%s\"", lines_[index]->s1()->stringProperty("texturemiddle"));
 			break;
 		case MapLine::Part::FrontLower:
-			line += S_FMT("front lower texture \"%s\"", lines_[index]->s1()->stringProperty("texturebottom"));
+			line += fmt::sprintf("front lower texture \"%s\"", lines_[index]->s1()->stringProperty("texturebottom"));
 			break;
 		case MapLine::Part::BackUpper:
-			line += S_FMT("back upper texture \"%s\"", lines_[index]->s2()->stringProperty("texturetop"));
+			line += fmt::sprintf("back upper texture \"%s\"", lines_[index]->s2()->stringProperty("texturetop"));
 			break;
 		case MapLine::Part::BackMiddle:
-			line += S_FMT("back middle texture \"%s\"", lines_[index]->s2()->stringProperty("texturemiddle"));
+			line += fmt::sprintf("back middle texture \"%s\"", lines_[index]->s2()->stringProperty("texturemiddle"));
 			break;
 		case MapLine::Part::BackLower:
-			line += S_FMT("back lower texture \"%s\"", lines_[index]->s2()->stringProperty("texturebottom"));
+			line += fmt::sprintf("back lower texture \"%s\"", lines_[index]->s2()->stringProperty("texturebottom"));
 			break;
 		default: break;
 		}
@@ -1207,9 +1207,9 @@ public:
 
 		MapSector* sector = sectors_[index];
 		if (floor_[index])
-			return S_FMT("Sector %d has unknown floor texture \"%s\"", sector->index(), sector->floor().texture);
+			return fmt::sprintf("Sector %d has unknown floor texture \"%s\"", sector->index(), sector->floor().texture);
 		else
-			return S_FMT("Sector %d has unknown ceiling texture \"%s\"", sector->index(), sector->ceiling().texture);
+			return fmt::sprintf("Sector %d has unknown ceiling texture \"%s\"", sector->index(), sector->ceiling().texture);
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1297,7 +1297,7 @@ public:
 		if (index >= things_.size())
 			return "No unknown thing types found";
 
-		return S_FMT("Thing %d has unknown type %d", things_[index]->index(), things_[index]->type());
+		return fmt::sprintf("Thing %d has unknown type %d", things_[index]->index(), things_[index]->type());
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1404,7 +1404,7 @@ public:
 		if (index >= things_.size())
 			return "No stuck things found";
 
-		return S_FMT("Thing %d is stuck inside line %d", things_[index]->index(), lines_[index]->index());
+		return fmt::sprintf("Thing %d is stuck inside line %d", things_[index]->index(), lines_[index]->index());
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1507,15 +1507,15 @@ public:
 		if (invalid_refs_[index].front)
 		{
 			side   = "front";
-			sector = s1 ? S_FMT("%d", s1->index()) : "(none)";
+			sector = s1 ? fmt::sprintf("%d", s1->index()) : "(none)";
 		}
 		else
 		{
 			side   = "back";
-			sector = s2 ? S_FMT("%d", s2->index()) : "(none)";
+			sector = s2 ? fmt::sprintf("%d", s2->index()) : "(none)";
 		}
 
-		return S_FMT("Line %d has potentially wrong %s sector %s", invalid_refs_[index].line->index(), side, sector);
+		return fmt::sprintf("Line %d has potentially wrong %s sector %s", invalid_refs_[index].line->index(), side, sector);
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1586,9 +1586,9 @@ public:
 
 			MapSector* sector = invalid_refs_[index].sector;
 			if (sector)
-				return S_FMT("Set to Sector #%d", sector->index());
+				return fmt::sprintf("Set to Sector #%d", sector->index());
 			else
-				return S_FMT("Clear Sector");
+				return fmt::sprintf("Clear Sector");
 		}
 
 		return "";
@@ -1640,9 +1640,9 @@ public:
 			return "No invalid lines found";
 
 		if (map_->line(lines_[index])->s2())
-			return S_FMT("Line %d has no front side", lines_[index]);
+			return fmt::sprintf("Line %d has no front side", lines_[index]);
 		else
-			return S_FMT("Line %d has no sides", lines_[index]);
+			return fmt::sprintf("Line %d has no sides", lines_[index]);
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1756,7 +1756,7 @@ public:
 		if (index >= sectors_.size())
 			return "No unknown sector types found";
 
-		return S_FMT("Sector %d has no sides", sectors_[index]);
+		return fmt::sprintf("Sector %d has no sides", sectors_[index]);
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override
@@ -1843,9 +1843,9 @@ public:
 	{
 		bool special = (map_->currentFormat() == MAP_HEXEN || map_->currentFormat() == MAP_UDMF);
 		if (index >= objects_.size())
-			return S_FMT("No unknown %s found", special ? "special" : "line type");
+			return fmt::sprintf("No unknown %s found", special ? "special" : "line type");
 
-		return S_FMT(
+		return fmt::sprintf(
 			"%s %d has an unknown %s",
 			objects_[index]->objType() == MapObject::Type::Line ? "Line" : "Thing",
 			objects_[index]->index(),
@@ -1918,9 +1918,9 @@ public:
 	string problemDesc(unsigned index) override
 	{
 		if (index >= things_.size())
-			return S_FMT("No obsolete things found");
+			return fmt::sprintf("No obsolete things found");
 
-		return S_FMT("Thing %d is obsolete", things_[index]->index());
+		return fmt::sprintf("Thing %d is obsolete", things_[index]->index());
 	}
 
 	bool fixProblem(unsigned index, unsigned fix_type, MapEditContext* editor) override

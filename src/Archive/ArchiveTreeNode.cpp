@@ -547,11 +547,11 @@ bool ArchiveTreeNode::exportTo(string_view path)
 // -----------------------------------------------------------------------------
 void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 {
-	unsigned   index     = 0;
-	unsigned   number    = 0;
-	const auto n_entries = entries_.size();
-	wxFileName fn({ entry->name().data(), entry->name().size() });
-	wxString   name = fn.GetFullName();
+	unsigned      index     = 0;
+	unsigned      number    = 0;
+	const auto    n_entries = entries_.size();
+	StrUtil::Path fn(entry->name());
+	auto          name = fn.fileName();
 	while (index < n_entries)
 	{
 		if (entries_[index].get() == entry)
@@ -562,8 +562,8 @@ void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 
 		if (StrUtil::equalCI(entries_[index]->name(), name))
 		{
-			fn.SetName(S_FMT("%s%d", entry->nameNoExt(), ++number));
-			name  = fn.GetFullName();
+			fn.setFileName(fmt::format("{}{}", entry->nameNoExt(), ++number));
+			name  = fn.fileName();
 			index = 0;
 			continue;
 		}
@@ -572,5 +572,5 @@ void ArchiveTreeNode::ensureUniqueName(ArchiveEntry* entry)
 	}
 
 	if (number > 0)
-		entry->rename({ name.data(), name.size() });
+		entry->rename(name);
 }

@@ -109,11 +109,12 @@ vector<Archive*> ResourceArchiveChooser::selectedResourceArchives()
 // -----------------------------------------------------------------------------
 string ResourceArchiveChooser::selectedResourceList()
 {
-	auto   selected = selectedResourceArchives();
-	string ret;
+	auto selected = selectedResourceArchives();
+
+	fmt::StringWriter ret;
 	for (auto& archive : selected)
-		ret += S_FMT("\"%s\" ", archive->filename());
-	return ret;
+		ret.write("\"{}\" ", archive->filename());
+	return ret.str();
 }
 
 

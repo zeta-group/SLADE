@@ -259,7 +259,7 @@ bool MapEditContext::update(long frametime)
 
 		// Update status bar
 		auto pos = renderer_.renderer3D().camPosition();
-		MapEditor::setStatusText(S_FMT("Position: (%d, %d, %d)", (int)pos.x, (int)pos.y, (int)pos.z), 3);
+		MapEditor::setStatusText(fmt::sprintf("Position: (%d, %d, %d)", (int)pos.x, (int)pos.y, (int)pos.z), 3);
 
 		// Update hilight
 		MapEditor::Item hl{ -1, MapEditor::ItemType::Any };
@@ -355,7 +355,7 @@ bool MapEditContext::hasMapOpen(Archive* archive) const
 // -----------------------------------------------------------------------------
 bool MapEditContext::openMap(Archive::MapDesc map)
 {
-	LOG_MESSAGE(1, "Opening map %s", map.name);
+	Log::info(fmt::sprintf("Opening map %s", map.name));
 	if (!this->map_.readMap(map))
 		return false;
 
@@ -768,7 +768,7 @@ void MapEditContext::incrementGrid()
 	if (grid_size_ > 20)
 		grid_size_ = 20;
 
-	addEditorMessage(S_FMT("Grid Size: %dx%d", (int)gridSize(), (int)gridSize()));
+	addEditorMessage(fmt::sprintf("Grid Size: %dx%d", (int)gridSize(), (int)gridSize()));
 	updateStatusText();
 }
 
@@ -782,7 +782,7 @@ void MapEditContext::decrementGrid()
 	if (grid_size_ < mingrid)
 		grid_size_ = mingrid;
 
-	addEditorMessage(S_FMT("Grid Size: %dx%d", (int)gridSize(), (int)gridSize()));
+	addEditorMessage(fmt::sprintf("Grid Size: %dx%d", (int)gridSize(), (int)gridSize()));
 	updateStatusText();
 }
 
@@ -871,14 +871,14 @@ void MapEditContext::tagSectorAt(double x, double y)
 			// Un-tag
 			tagged_sectors_[a] = tagged_sectors_.back();
 			tagged_sectors_.pop_back();
-			addEditorMessage(S_FMT("Untagged sector %u", sector->index()));
+			addEditorMessage(fmt::sprintf("Untagged sector %u", sector->index()));
 			return;
 		}
 	}
 
 	// Tag
 	tagged_sectors_.push_back(sector);
-	addEditorMessage(S_FMT("Tagged sector %u", sector->index()));
+	addEditorMessage(fmt::sprintf("Tagged sector %u", sector->index()));
 }
 
 // -----------------------------------------------------------------------------
@@ -918,7 +918,7 @@ void MapEditContext::endTagEdit(bool accept)
 		if (tagged_sectors_.empty())
 			addEditorMessage("Cleared tags");
 		else
-			addEditorMessage(S_FMT("Set tag %d", current_tag_));
+			addEditorMessage(fmt::sprintf("Set tag %d", current_tag_));
 
 		endUndoRecord(true);
 	}
@@ -1294,16 +1294,16 @@ void MapEditContext::updateStatusText() const
 	}
 
 	if (edit_mode_ != Mode::Visual && !selection_.empty())
-		mode += S_FMT(" (%d selected)", (int)selection_.size());
+		mode += fmt::sprintf(" (%d selected)", (int)selection_.size());
 
 	MapEditor::setStatusText(mode, 1);
 
 	// Grid
 	string grid;
 	if (gridSize() < 1)
-		grid = S_FMT("Grid: %1.2fx%1.2f", gridSize(), gridSize());
+		grid = fmt::sprintf("Grid: %1.2fx%1.2f", gridSize(), gridSize());
 	else
-		grid = S_FMT("Grid: %dx%d", (int)gridSize(), (int)gridSize());
+		grid = fmt::sprintf("Grid: %dx%d", (int)gridSize(), (int)gridSize());
 
 	if (grid_snap_)
 		grid += " (Snapping ON)";
@@ -1412,7 +1412,7 @@ void MapEditContext::doUndo()
 	// Editor message
 	if (!undo_name.empty())
 	{
-		addEditorMessage(S_FMT("Undo: %s", undo_name));
+		addEditorMessage(fmt::sprintf("Undo: %s", undo_name));
 
 		// Refresh stuff
 		// updateTagged();
@@ -1442,7 +1442,7 @@ void MapEditContext::doRedo()
 	// Editor message
 	if (!undo_name.empty())
 	{
-		addEditorMessage(S_FMT("Redo: %s", undo_name));
+		addEditorMessage(fmt::sprintf("Redo: %s", undo_name));
 
 		// Refresh stuff
 		// updateTagged();
@@ -1879,8 +1879,8 @@ bool MapEditContext::handleAction(string_view id)
 			string key_accept = KeyBind::getBind("map_edit_accept").keysAsString();
 			string key_cancel = KeyBind::getBind("map_edit_cancel").keysAsString();
 			setFeatureHelp({ "Tag Edit",
-							 S_FMT("%s = Accept", key_accept),
-							 S_FMT("%s = Cancel", key_cancel),
+							 fmt::sprintf("%s = Accept", key_accept),
+							 fmt::sprintf("%s = Cancel", key_cancel),
 							 "Left Click = Toggle tagged sector" });
 		}
 
@@ -1995,7 +1995,7 @@ CONSOLE_COMMAND(m_check, 0, true)
 
 		Log::console("Available map checks:");
 		for (auto a = 0; a < MapCheck::NumStandardChecks; ++a)
-			Log::console(S_FMT(
+			Log::console(fmt::sprintf(
 				"%s: Check for %s",
 				MapCheck::standardCheckId((MapCheck::StandardCheck)a),
 				MapCheck::standardCheckDesc((MapCheck::StandardCheck)a)));
@@ -2033,7 +2033,7 @@ CONSOLE_COMMAND(m_check, 0, true)
 			if (check)
 				checks.push_back(std::move(check));
 			else
-				Log::console(S_FMT("Unknown check \"%s\"", arg));
+				Log::console(fmt::sprintf("Unknown check \"%s\"", arg));
 		}
 	}
 
@@ -2066,7 +2066,7 @@ CONSOLE_COMMAND(m_test_sector, 0, false)
 	for (unsigned a = 0; a < map.nThings(); a++)
 		map.sectorAt(map.thing(a)->position());
 	long ms = clock.getElapsedTime().asMilliseconds();
-	LOG_MESSAGE(1, "Took %ldms", ms);
+	Log::info(fmt::sprintf("Took %ldms", ms));
 }
 
 CONSOLE_COMMAND(m_test_mobj_backup, 0, false)
@@ -2079,33 +2079,33 @@ CONSOLE_COMMAND(m_test_mobj_backup, 0, false)
 	// Vertices
 	for (unsigned a = 0; a < map.nVertices(); a++)
 		map.vertex(a)->backup(backup);
-	LOG_MESSAGE(1, "Vertices: %dms", clock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Vertices: %dms", clock.getElapsedTime().asMilliseconds()));
 
 	// Lines
 	clock.restart();
 	for (unsigned a = 0; a < map.nLines(); a++)
 		map.line(a)->backup(backup);
-	LOG_MESSAGE(1, "Lines: %dms", clock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Lines: %dms", clock.getElapsedTime().asMilliseconds()));
 
 	// Sides
 	clock.restart();
 	for (unsigned a = 0; a < map.nSides(); a++)
 		map.side(a)->backup(backup);
-	LOG_MESSAGE(1, "Sides: %dms", clock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Sides: %dms", clock.getElapsedTime().asMilliseconds()));
 
 	// Sectors
 	clock.restart();
 	for (unsigned a = 0; a < map.nSectors(); a++)
 		map.sector(a)->backup(backup);
-	LOG_MESSAGE(1, "Sectors: %dms", clock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Sectors: %dms", clock.getElapsedTime().asMilliseconds()));
 
 	// Things
 	clock.restart();
 	for (unsigned a = 0; a < map.nThings(); a++)
 		map.thing(a)->backup(backup);
-	LOG_MESSAGE(1, "Things: %dms", clock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Things: %dms", clock.getElapsedTime().asMilliseconds()));
 
-	LOG_MESSAGE(1, "Total: %dms", totalClock.getElapsedTime().asMilliseconds());
+	Log::info(fmt::sprintf("Total: %dms", totalClock.getElapsedTime().asMilliseconds()));
 }
 
 CONSOLE_COMMAND(m_vertex_attached, 1, false)
@@ -2113,9 +2113,9 @@ CONSOLE_COMMAND(m_vertex_attached, 1, false)
 	MapVertex* vertex = MapEditor::editContext().map().vertex(stoi(args[0]));
 	if (vertex)
 	{
-		LOG_MESSAGE(1, "Attached lines:");
+		Log::info(fmt::sprintf("Attached lines:"));
 		for (unsigned a = 0; a < vertex->nConnectedLines(); a++)
-			LOG_MESSAGE(1, "Line #%lu", vertex->connectedLine(a)->index());
+			Log::info(fmt::sprintf("Line #%lu", vertex->connectedLine(a)->index()));
 	}
 }
 
@@ -2126,12 +2126,12 @@ CONSOLE_COMMAND(m_n_polys, 0, false)
 	for (unsigned a = 0; a < map.nSectors(); a++)
 		npoly += map.sector(a)->polygon()->nSubPolys();
 
-	Log::console(S_FMT("%d polygons total", npoly));
+	Log::console(fmt::sprintf("%d polygons total", npoly));
 }
 
 CONSOLE_COMMAND(mobj_info, 1, false)
 {
-	long id = stol(args[0]);
+	auto id = StrUtil::toInt(args[0]);
 
 	MapObject* obj = MapEditor::editContext().map().getObjectById(id);
 	if (!obj)
@@ -2140,7 +2140,7 @@ CONSOLE_COMMAND(mobj_info, 1, false)
 	{
 		MapObject::Backup bak;
 		obj->backup(&bak);
-		Log::console(S_FMT("Object %d: %s #%lu", id, obj->typeName(), obj->index()));
+		Log::console(fmt::sprintf("Object %d: %s #%lu", id, obj->typeName(), obj->index()));
 		Log::console("Properties:");
 		Log::console(bak.properties.toString());
 		Log::console("Properties (internal):");

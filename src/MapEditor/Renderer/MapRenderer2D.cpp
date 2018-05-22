@@ -792,9 +792,9 @@ void MapRenderer2D::renderRoundThing(
 	if (!tt.icon().empty() && !thing_force_dir && !things_angles_)
 	{
 		if (use_zeth_icons && tt.zethIcon() >= 0)
-			tex = MapEditor::textureManager().editorImage(S_FMT("zethicons/zeth%02d", tt.zethIcon()));
+			tex = MapEditor::textureManager().editorImage(fmt::sprintf("zethicons/zeth%02d", tt.zethIcon()));
 		if (!tex)
-			tex = MapEditor::textureManager().editorImage(S_FMT("thing/%s", tt.icon()));
+			tex = MapEditor::textureManager().editorImage(fmt::sprintf("thing/%s", tt.icon()));
 	}
 
 	if (!tex)
@@ -1001,7 +1001,7 @@ bool MapRenderer2D::renderSquareThing(
 
 	// Check for custom thing icon
 	if (!tt.icon().empty() && showicon && !thing_force_dir && !things_angles_ && !framed)
-		tex = MapEditor::textureManager().editorImage(S_FMT("thing/square/%s", tt.icon()));
+		tex = MapEditor::textureManager().editorImage(fmt::sprintf("thing/square/%s", tt.icon()));
 
 	// Otherwise, no icon
 	int tc_start = 0;
@@ -2008,7 +2008,7 @@ void MapRenderer2D::renderFlatsVBO(int type, bool texture, float alpha)
 		Polygon2D* poly = map_->sector(a)->polygon();
 		if (poly && poly->vboUpdate() > 1)
 		{
-			// LOG_MESSAGE(1, "Updating sector %d polygon vbo data", a);
+			// Log::info(1, "Updating sector %d polygon vbo data", a);
 			updateFlatsVBO();
 			vbo_updated = true;
 		}
@@ -2019,7 +2019,7 @@ void MapRenderer2D::renderFlatsVBO(int type, bool texture, float alpha)
 		updateFlatsVBO();
 
 	// if (vbo_updated)
-	//	LOG_MESSAGE(1, "Updated vbo");
+	//	Log::info(1, "Updated vbo");
 
 	// Setup opengl state
 	if (texture)
@@ -2881,7 +2881,7 @@ void MapRenderer2D::updateVerticesVBO()
 // -----------------------------------------------------------------------------
 void MapRenderer2D::updateLinesVBO(bool show_direction, float base_alpha)
 {
-	LOG_MESSAGE(3, "Updating lines VBO");
+	Log::info(3, "Updating lines VBO");
 
 	// Create VBO if needed
 	if (vbo_lines_ == 0)

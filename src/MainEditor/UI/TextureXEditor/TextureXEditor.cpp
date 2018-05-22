@@ -31,7 +31,6 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "TextureXEditor.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "Dialogs/ExtMessageDialog.h"
@@ -40,6 +39,7 @@
 #include "MainEditor/MainEditor.h"
 #include "MainEditor/UI/MainWindow.h"
 #include "MapEditor/Edit/Input.h"
+#include "TextureXEditor.h"
 #include "UI/Controls/PaletteChooser.h"
 #include "UI/Controls/UndoManagerHistoryPanel.h"
 #include "UI/WxUtils.h"
@@ -557,8 +557,8 @@ bool TextureXEditor::checkTextures()
 					ArchiveEntry* fentry = theResourceManager->getFlatEntry(tex->patch(p)->name());
 					CTexture*     ptex   = theResourceManager->getTexture(tex->patch(p)->name());
 					if (!pentry && !fentry && !ptex)
-						problems +=
-							S_FMT("Texture %s contains invalid/unknown patch %s\n", tex->name(), tex->patch(p)->name());
+						problems += fmt::sprintf(
+							"Texture %s contains invalid/unknown patch %s\n", tex->name(), tex->patch(p)->name());
 				}
 			}
 			else
@@ -567,8 +567,8 @@ bool TextureXEditor::checkTextures()
 				for (unsigned p = 0; p < tex->nPatches(); p++)
 				{
 					if (patch_table_.patchIndex(tex->patch(p)->name()) == -1)
-						problems +=
-							S_FMT("Texture %s contains invalid/unknown patch %s\n", tex->name(), tex->patch(p)->name());
+						problems += fmt::sprintf(
+							"Texture %s contains invalid/unknown patch %s\n", tex->name(), tex->patch(p)->name());
 				}
 			}
 		}
@@ -583,7 +583,7 @@ bool TextureXEditor::checkTextures()
 
 		if (!entry)
 		{
-			problems += S_FMT("Patch %s cannot be found in any open archive\n", patch.name);
+			problems += fmt::sprintf("Patch %s cannot be found in any open archive\n", patch.name);
 		}
 		else
 		{
@@ -593,7 +593,7 @@ bool TextureXEditor::checkTextures()
 			EntryType* type = entry->type();
 
 			if (!type->extraProps().propertyExists("patch"))
-				problems += S_FMT(
+				problems += fmt::sprintf(
 					"Patch %s is of type \"%s\", which is not a valid gfx format for patches. "
 					"Convert it to either Doom Gfx or PNG\n",
 					patch.name,

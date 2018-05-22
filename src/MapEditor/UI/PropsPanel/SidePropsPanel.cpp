@@ -339,7 +339,7 @@ void SidePropsPanel::openSides(vector<MapSide*>& sides) const
 		}
 	}
 	if (!multi)
-		text_offsetx_->SetValue(S_FMT("%d", ofs));
+		text_offsetx_->SetValue(wxString::Format("%d", ofs));
 
 	// Y
 	multi = false;
@@ -353,7 +353,7 @@ void SidePropsPanel::openSides(vector<MapSide*>& sides) const
 		}
 	}
 	if (!multi)
-		text_offsety_->SetValue(S_FMT("%d", ofs));
+		text_offsety_->SetValue(wxString::Format("%d", ofs));
 }
 
 // -----------------------------------------------------------------------------

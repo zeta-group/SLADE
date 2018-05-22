@@ -30,9 +30,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "WolfArchive.h"
 #include "General/UI.h"
 #include "Utility/StringUtils.h"
+#include "WolfArchive.h"
 
 
 // -----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ string findFileCasing(wxFileName filename)
 	wxDir  dir(path);
 	if (!dir.IsOpened())
 	{
-		LOG_MESSAGE(1, "Error: No directory at path %s. This shouldn't happen.");
+		Log::info(1, "Error: No directory at path %s. This shouldn't happen.");
 		return "";
 	}
 
@@ -298,7 +298,7 @@ void ExpandWolfGraphLump(ArchiveEntry* entry, size_t lumpnum, size_t numlumps, h
 
 	if (expanded == 0 || expanded > 65000)
 	{
-		LOG_MESSAGE(1, "ExpandWolfGraphLump: invalid expanded size in entry %d", lumpnum);
+		Log::info(fmt::format("ExpandWolfGraphLump: invalid expanded size in entry {}", lumpnum));
 		return;
 	}
 
@@ -335,7 +335,7 @@ void ExpandWolfGraphLump(ArchiveEntry* entry, size_t lumpnum, size_t numlumps, h
 			huffptr = hufftable + (nodeval - 256);
 		}
 		else
-			LOG_MESSAGE(1, "ExpandWolfGraphLump: nodeval is out of control (%d) in entry %d", nodeval, lumpnum);
+			Log::info(fmt::format("ExpandWolfGraphLump: nodeval is out of control ({}) in entry {}", nodeval, lumpnum));
 	}
 
 	entry->importMem(start, expanded);
@@ -488,7 +488,7 @@ bool WolfArchive::open(MemChunk& mc)
 		if (pages[d].offset != 0 && pages[d].offset < (unsigned)((num_lumps + 1) * 6))
 		{
 			delete[] pages;
-			LOG_MESSAGE(1, "WolfArchive::open: Wolf archive is invalid or corrupt");
+			Log::info(1, "WolfArchive::open: Wolf archive is invalid or corrupt");
 			Global::error = "Archive is invalid and/or corrupt ";
 			setMuted(false);
 			return false;
@@ -509,11 +509,11 @@ bool WolfArchive::open(MemChunk& mc)
 		// Wolf chunks have no names, so just give them a number
 		string name;
 		if (d < spritestart_)
-			name = S_FMT("WAL%05d", l);
+			name = fmt::format("WAL{:05d}", l);
 		else if (d < soundstart_)
-			name = S_FMT("SPR%05d", l - spritestart_);
+			name = fmt::format("SPR{:05d}", l - spritestart_);
 		else
-			name = S_FMT("SND%05d", l - soundstart_);
+			name = fmt::format("SND{:05d}", l - soundstart_);
 
 		++l;
 
@@ -552,7 +552,7 @@ bool WolfArchive::open(MemChunk& mc)
 			if (getEntryOffset(nlump) + size > mc.size())
 			{
 				delete[] pages;
-				LOG_MESSAGE(1, "WolfArchive::open: Wolf archive is invalid or corrupt");
+				Log::info(1, "WolfArchive::open: Wolf archive is invalid or corrupt");
 				Global::error = "Archive is invalid and/or corrupt";
 				setMuted(false);
 				return false;
@@ -689,8 +689,8 @@ bool WolfArchive::openAudio(MemChunk& head, MemChunk& data)
 		// the data file is invalid
 		if (offset + size > data.size())
 		{
-			LOG_MESSAGE(1, "WolfArchive::openAudio: Wolf archive is invalid or corrupt");
-			Global::error = S_FMT("Archive is invalid and/or corrupt in entry %d", d);
+			Log::info(1, "WolfArchive::openAudio: Wolf archive is invalid or corrupt");
+			Global::error = fmt::format("Archive is invalid and/or corrupt in entry {}", d);
 			setMuted(false);
 			return false;
 		}
@@ -719,7 +719,7 @@ bool WolfArchive::openAudio(MemChunk& head, MemChunk& data)
 		if (currentSeg == SegmentMusic)
 			name = searchIMFName(edata);
 		if (name.empty())
-			name = S_FMT("%s%05d", segPrefix[currentSeg], d - dOfs);
+			name = fmt::format("{}{:05d}", segPrefix[currentSeg], d - dOfs);
 
 		// Create & setup lump
 		ArchiveEntry* nlump = new ArchiveEntry(name, size);
@@ -779,8 +779,8 @@ bool WolfArchive::openMaps(MemChunk& head, MemChunk& data)
 		// the data file is invalid
 		if (offset + size > data.size())
 		{
-			LOG_MESSAGE(1, "WolfArchive::openMaps: Wolf archive is invalid or corrupt");
-			Global::error = S_FMT("Archive is invalid and/or corrupt in entry %d", d);
+			Log::info(1, "WolfArchive::openMaps: Wolf archive is invalid or corrupt");
+			Global::error = fmt::format("Archive is invalid and/or corrupt in entry {}", d);
 			setMuted(false);
 			return false;
 		}
@@ -815,7 +815,7 @@ bool WolfArchive::openMaps(MemChunk& head, MemChunk& data)
 		planelen[2] = READ_L16(data, offset + 16);
 		for (int i = 0; i < 3; ++i)
 		{
-			name  = S_FMT("PLANE%d", i);
+			name  = fmt::format("PLANE{}", i);
 			nlump = new ArchiveEntry(name, planelen[i]);
 			nlump->setLoaded(false);
 			nlump->exProp("Offset") = (int)planeofs[i];
@@ -874,7 +874,7 @@ bool WolfArchive::openGraph(MemChunk& head, MemChunk& data, MemChunk& dict)
 	if (dict.size() != 1024)
 	{
 		Global::error =
-			S_FMT("WolfArchive::openGraph: VGADICT is improperly sized (%d bytes instead of 1024)", dict.size());
+			fmt::format("WolfArchive::openGraph: VGADICT is improperly sized ({} bytes instead of 1024)", dict.size());
 		return false;
 	}
 	huffnode nodes[256];
@@ -904,8 +904,8 @@ bool WolfArchive::openGraph(MemChunk& head, MemChunk& data, MemChunk& dict)
 		// the data file is invalid
 		if (offset + size > data.size())
 		{
-			LOG_MESSAGE(1, "WolfArchive::openGraph: Wolf archive is invalid or corrupt");
-			Global::error = S_FMT("Archive is invalid and/or corrupt in entry %d", d);
+			Log::info(1, "WolfArchive::openGraph: Wolf archive is invalid or corrupt");
+			Global::error = fmt::format("Archive is invalid and/or corrupt in entry {}", d);
 			setMuted(false);
 			return false;
 		}
@@ -935,7 +935,7 @@ bool WolfArchive::openGraph(MemChunk& head, MemChunk& data, MemChunk& dict)
 		}
 		else
 			name = "LMP";
-		name += S_FMT("%05d", d);
+		name += fmt::format("{:05d}", d);
 
 
 		// Create & setup lump
@@ -954,7 +954,7 @@ bool WolfArchive::openGraph(MemChunk& head, MemChunk& data, MemChunk& dict)
 	UI::setSplashProgressMessage("Detecting entry types");
 	for (size_t a = 0; a < numEntries(); a++)
 	{
-		// LOG_MESSAGE(1, "Entry %d/%d", a, numEntries());
+		// Log::info(1, "Entry %d/%d", a, numEntries());
 		// Update splash window progress
 		UI::setSplashProgress((((float)a / (float)num_lumps)));
 
@@ -1070,7 +1070,7 @@ bool WolfArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "WolfArchive::loadEntryData: Failed to open datfile %s", filename_);
+		Log::info(fmt::format("WolfArchive::loadEntryData: Failed to open datfile {}", filename_));
 		return false;
 	}
 

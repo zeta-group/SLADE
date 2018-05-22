@@ -101,7 +101,7 @@ bool MapBackupPanel::loadBackups(string archive_name, string_view map_name)
 
 		// Time
 		string time = StrUtil::afterLast(timestamp, '_');
-		cols[1]     = S_FMT("%s:%s:%s", time.substr(0, 2), time.substr(2, 2), time.substr(time.size() - 2, 2));
+		cols[1]     = fmt::sprintf("%s:%s:%s", time.substr(0, 2), time.substr(2, 2), time.substr(time.size() - 2, 2));
 
 		// Add to list
 		list_backups_->addItem(index++, cols);

@@ -80,7 +80,7 @@ string customFlags(int value, const vector<ArgValue>& custom_flags)
 	}
 
 	if (value || flags.empty())
-		flags.push_back(S_FMT("%d", value));
+		flags.push_back(fmt::format("{}", value));
 
 	// Join 'em, in reverse again, to restore the original order
 	string out;
@@ -130,23 +130,23 @@ string Arg::valueString(int value) const
 
 	// Angle
 	case Angle:
-		return S_FMT("%d Degrees", value); // TODO: E/S/W/N/etc
+		return fmt::format("{} Degrees", value); // TODO: E/S/W/N/etc
 
 	// Speed
 	case Speed:
 	{
 		string speed_label = speedLabel(value);
 		if (speed_label.empty())
-			return S_FMT("%d", value);
+			return fmt::format("{}", value);
 		else
-			return S_FMT("%d (%s)", value, speed_label);
+			return fmt::format("{} ({})", value, speed_label);
 	}
 
 	default: break;
 	}
 
 	// Any other type
-	return S_FMT("%d", value);
+	return fmt::format("{}", value);
 }
 
 // -----------------------------------------------------------------------------
@@ -161,15 +161,15 @@ string Arg::speedLabel(int value) const
 	if (value == 0)
 		return "broken";
 	if (value < custom_values.front().value)
-		return S_FMT("< %s", custom_values.front().name);
+		return fmt::format("< {}", custom_values.front().name);
 	if (value > custom_values.back().value)
-		return S_FMT("> %s", custom_values.back().name);
+		return fmt::format("> {}", custom_values.back().name);
 	for (unsigned a = 0; a < custom_values.size(); a++)
 	{
 		if (value == custom_values[a].value)
 			return custom_values[a].name;
 		if (a > 0 && value < custom_values[a].value)
-			return S_FMT("%s ~ %s", custom_values[a - 1].name, custom_values[a].name);
+			return fmt::format("{} ~ {}", custom_values[a - 1].name, custom_values[a].name);
 	}
 	return "";
 }
@@ -246,14 +246,14 @@ void Arg::parse(ParseTreeNode* node, SpecialMap* shared_args)
 		if (val)
 		{
 			for (auto cv : val->allChildren())
-				custom_values.push_back({ Parser::node(cv)->stringValue(), std::stoi(cv->name().to_string()) });
+				custom_values.push_back({ Parser::node(cv)->stringValue(), StrUtil::toInt(cv->name().to_string()) });
 		}
 
 		val = node->getChildPTN("custom_flags");
 		if (val)
 		{
 			for (auto cf : val->allChildren())
-				custom_flags.push_back({ Parser::node(cf)->stringValue(), std::stoi(cf->name().to_string()) });
+				custom_flags.push_back({ Parser::node(cf)->stringValue(), StrUtil::toInt(cf->name().to_string()) });
 		}
 	}
 }

@@ -30,11 +30,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "AudioEntryPanel.h"
 #include "App.h"
 #include "Audio/AudioTags.h"
 #include "Audio/MIDIPlayer.h"
 #include "Audio/ModMusic.h"
+#include "AudioEntryPanel.h"
 #include "MainEditor/Conversions.h"
 #include "UI/Controls/SIconButton.h"
 #include "UI/WxUtils.h"
@@ -83,12 +83,12 @@ AudioEntryPanel::AudioEntryPanel(wxWindow* parent) :
 	key.QueryValue("IsInstalled", &value);
 	if (value == 0)
 	{
-		LOG_MESSAGE(1, "Windows Media Player not installed, mp3 playback disabled.");
+		Log::info(1, "Windows Media Player not installed, mp3 playback disabled.");
 		media_ctrl_ = nullptr;
 	}
 	else
 	{
-		LOG_MESSAGE(3, "Windows Media Player installed, using wxMediaCtrl");
+		Log::info(3, "Windows Media Player installed, using wxMediaCtrl");
 		media_ctrl_ = new wxMediaCtrl(this, -1);
 	}
 #else
@@ -261,11 +261,11 @@ string AudioEntryPanel::statusString()
 	int    hours        = (song_length_ / 3600000);
 	string ret;
 	if (hours)
-		ret = S_FMT("%d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
+		ret = fmt::sprintf("%d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
 	else if (minutes)
-		ret = S_FMT("%d:%02d.%03d", minutes, seconds, milliseconds);
+		ret = fmt::sprintf("%d:%02d.%03d", minutes, seconds, milliseconds);
 	else
-		ret = S_FMT("%d.%03d", seconds, milliseconds);
+		ret = fmt::sprintf("%d.%03d", seconds, milliseconds);
 
 	return ret;
 }
@@ -369,7 +369,7 @@ bool AudioEntryPanel::open()
 	prevfile_ = path.fullPath();
 
 	txt_title_->SetLabel(entry_->path(true));
-	txt_track_->SetLabel(S_FMT("%d/%d", subsong_ + 1, num_tracks_));
+	txt_track_->SetLabel(fmt::sprintf("%d/%d", subsong_ + 1, num_tracks_));
 	updateInfo();
 
 	// Disable prev/next track buttons if only one track is available
@@ -398,7 +398,7 @@ bool AudioEntryPanel::openAudio(MemChunk& audio, string_view filename)
 	// Load into buffer
 	if (sound_buffer_->loadFromMemory((const char*)audio.data(), audio.size()))
 	{
-		LOG_MESSAGE(3, "opened as sound");
+		Log::info(3, "opened as sound");
 		// Bind to sound
 		sound_->setBuffer(*sound_buffer_);
 		audio_type_ = Sound;
@@ -420,7 +420,7 @@ bool AudioEntryPanel::openAudio(MemChunk& audio, string_view filename)
 	}
 	else if (music_->openFromMemory((const char*)audio.data(), audio.size()))
 	{
-		LOG_MESSAGE(3, "opened as music");
+		Log::info(3, "opened as music");
 		// Couldn't open the audio as a sf::SoundBuffer, try sf::Music instead
 		audio_type_ = Music;
 
@@ -434,7 +434,7 @@ bool AudioEntryPanel::openAudio(MemChunk& audio, string_view filename)
 	else
 	{
 		// Couldn't open as sound or music, try the wxMediaCtrl
-		LOG_MESSAGE(3, "opened as media");
+		Log::info(3, "opened as media");
 
 		// Dump audio to temp file
 		audio.exportFile(filename);
@@ -621,17 +621,17 @@ bool AudioEntryPanel::updateInfo() const
 		{
 			size_t samplerate = READ_L16(mc, 2);
 			size_t samples    = READ_L16(mc, 4);
-			info += S_FMT("%lu samples at %lu Hz", (unsigned long)samples, (unsigned long)samplerate);
+			info += fmt::sprintf("%lu samples at %lu Hz", (unsigned long)samples, (unsigned long)samplerate);
 		}
 		else if (entry_->type() == EntryType::fromId("snd_speaker"))
 		{
 			size_t samples = READ_L16(mc, 2);
-			info += S_FMT("%lu samples", (unsigned long)samples);
+			info += fmt::sprintf("%lu samples", (unsigned long)samples);
 		}
 		else if (entry_->type() == EntryType::fromId("snd_audiot"))
 		{
 			size_t samples = READ_L16(mc, 0);
-			info += S_FMT("%lu samples", (unsigned long)samples);
+			info += fmt::sprintf("%lu samples", (unsigned long)samples);
 		}
 		else if (entry_->type() == EntryType::fromId("snd_sun"))
 			info += Audio::getSunInfo(mc);
@@ -671,7 +671,7 @@ bool AudioEntryPanel::updateInfo() const
 		// if (entry->getType() == EntryType::getType("opl_audiot"))
 		//{
 		//	size_t samples = READ_L32(mc, 0);
-		//	info += S_FMT("%zu samples", samples);
+		//	info += fmt::sprintf("%zu samples", samples);
 		//}
 		// info += theOPLPlayer->getInfo();
 		break;
@@ -741,7 +741,7 @@ void AudioEntryPanel::onBtnPrev(wxCommandEvent& e)
 	}
 	// else if (entry->getType()->getFormat().StartsWith("gme"))
 	//	theGMEPlayer->play(subsong);
-	txt_track_->SetLabel(S_FMT("%d/%d", subsong_ + 1, num_tracks_));
+	txt_track_->SetLabel(fmt::sprintf("%d/%d", subsong_ + 1, num_tracks_));
 	updateInfo();
 }
 
@@ -763,7 +763,7 @@ void AudioEntryPanel::onBtnNext(wxCommandEvent& e)
 		if (theGMEPlayer->play(newsong))
 			subsong = newsong;
 	}*/
-	txt_track_->SetLabel(S_FMT("%d/%d", subsong_ + 1, num_tracks_));
+	txt_track_->SetLabel(fmt::sprintf("%d/%d", subsong_ + 1, num_tracks_));
 	updateInfo();
 }
 

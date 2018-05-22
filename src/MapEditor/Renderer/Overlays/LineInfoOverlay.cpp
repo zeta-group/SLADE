@@ -76,24 +76,24 @@ void LineInfoOverlay::update(MapLine* line)
 
 	// General line info
 	if (Global::debug)
-		info_text += (S_FMT("Line #%d (%d)\n", line->index(), line->objId()));
+		info_text += (fmt::sprintf("Line #%d (%d)\n", line->index(), line->objId()));
 	else
-		info_text += (S_FMT("Line #%d\n", line->index()));
-	info_text += (S_FMT("Length: %d\n", MathStuff::round(line->length())));
+		info_text += (fmt::sprintf("Line #%d\n", line->index()));
+	info_text += (fmt::sprintf("Length: %d\n", MathStuff::round(line->length())));
 
 	// Line special
 	int as_id = line->intProperty("special");
 	if (line->props().propertyExists("macro"))
 	{
 		int macro = line->intProperty("macro");
-		info_text += (S_FMT("Macro: #%d\n", macro));
+		info_text += (fmt::sprintf("Macro: #%d\n", macro));
 	}
 	else
-		info_text += (S_FMT("Special: %d (%s)\n", as_id, Game::configuration().actionSpecialName(as_id)));
+		info_text += (fmt::sprintf("Special: %d (%s)\n", as_id, Game::configuration().actionSpecialName(as_id)));
 
 	// Line trigger
 	if (map_format == MAP_HEXEN || map_format == MAP_UDMF)
-		info_text += (S_FMT("Trigger: %s\n", Game::configuration().spacTriggerString(line, map_format)));
+		info_text += (fmt::sprintf("Trigger: %s\n", Game::configuration().spacTriggerString(line, map_format)));
 
 	// Line args (or sector tag)
 	if (map_format == MAP_HEXEN || map_format == MAP_UDMF)
@@ -109,16 +109,16 @@ void LineInfoOverlay::update(MapLine* line)
 		argxstr[1]    = line->stringProperty("arg1str");
 		string argstr = Game::configuration().actionSpecial(as_id).argSpec().stringDesc(args, argxstr);
 		if (!argstr.empty())
-			info_text += (S_FMT("%s", argstr));
+			info_text += (fmt::sprintf("%s", argstr));
 		else
 			info_text += ("No Args");
 	}
 	else
-		info_text += (S_FMT("Sector Tag: %d", line->intProperty("arg0")));
+		info_text += (fmt::sprintf("Sector Tag: %d", line->intProperty("arg0")));
 
 	// Line flags
 	if (map_format != MAP_UDMF)
-		info_text += (S_FMT("\nFlags: %s", Game::configuration().lineFlagsString(line)));
+		info_text += (fmt::sprintf("\nFlags: %s", Game::configuration().lineFlagsString(line)));
 
 	// Setup text box
 	text_box_.setText(info_text);
@@ -135,10 +135,10 @@ void LineInfoOverlay::update(MapLine* line)
 		side_front_.exists = true;
 		if (Global::debug)
 			side_front_.info =
-				S_FMT("Front Side #%d (%d) (Sector %d)", s->index(), s->objId(), s->sector()->index());
+				fmt::sprintf("Front Side #%d (%d) (Sector %d)", s->index(), s->objId(), s->sector()->index());
 		else
-			side_front_.info = S_FMT("Front Side #%d (Sector %d)", s->index(), s->sector()->index());
-		side_front_.offsets      = S_FMT("Offsets: (%d, %d)", xoff, yoff);
+			side_front_.info = fmt::sprintf("Front Side #%d (Sector %d)", s->index(), s->sector()->index());
+		side_front_.offsets      = fmt::sprintf("Offsets: (%d, %d)", xoff, yoff);
 		side_front_.tex_upper    = s->texUpper();
 		side_front_.tex_middle   = s->texMiddle();
 		side_front_.tex_lower    = s->texLower();
@@ -158,10 +158,10 @@ void LineInfoOverlay::update(MapLine* line)
 		side_back_.exists = true;
 		if (Global::debug)
 			side_back_.info =
-				S_FMT("Back Side #%d (%d) (Sector %d)", s->index(), s->objId(), s->sector()->index());
+				fmt::sprintf("Back Side #%d (%d) (Sector %d)", s->index(), s->objId(), s->sector()->index());
 		else
-			side_back_.info = S_FMT("Back Side #%d (Sector %d)", s->index(), s->sector()->index());
-		side_back_.offsets      = S_FMT("Offsets: (%d, %d)", xoff, yoff);
+			side_back_.info = fmt::sprintf("Back Side #%d (Sector %d)", s->index(), s->sector()->index());
+		side_back_.offsets      = fmt::sprintf("Offsets: (%d, %d)", xoff, yoff);
 		side_back_.tex_upper    = s->texUpper();
 		side_back_.tex_middle   = s->texMiddle();
 		side_back_.tex_lower    = s->texLower();

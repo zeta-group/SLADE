@@ -159,7 +159,7 @@ bool NumberTextCtrl::isDivisor() const
 // -----------------------------------------------------------------------------
 void NumberTextCtrl::setNumber(int num)
 {
-	ChangeValue(S_FMT("%d", num));
+	ChangeValue(wxString::Format("%d", num));
 }
 
 // -----------------------------------------------------------------------------
@@ -167,7 +167,7 @@ void NumberTextCtrl::setNumber(int num)
 // -----------------------------------------------------------------------------
 void NumberTextCtrl::setDecNumber(double num)
 {
-	ChangeValue(S_FMT("%1.3f", num));
+	ChangeValue(wxString::Format("%1.3f", num));
 }
 
 

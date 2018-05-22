@@ -44,10 +44,10 @@ protected:
 		uint8_t* dest       = img_data;
 		size_t   plane_size = width / 8 * height;
 
-		const uint8_t* src1 = data.data() + 48; // 80: 10000000	08: 00001000
-		const uint8_t* src2 = src1 + plane_size;   // 40: 01000000 04: 00000100
-		const uint8_t* src3 = src2 + plane_size;   // 20: 00100000 02: 00000010
-		const uint8_t* src4 = src3 + plane_size;   // 10: 00010000 01: 00000001
+		const uint8_t* src1 = data.data() + 48;  // 80: 10000000	08: 00001000
+		const uint8_t* src2 = src1 + plane_size; // 40: 01000000 04: 00000100
+		const uint8_t* src3 = src2 + plane_size; // 20: 00100000 02: 00000010
+		const uint8_t* src4 = src3 + plane_size; // 10: 00010000 01: 00000001
 
 		for (int y = height; y > 0; --y)
 		{
@@ -83,20 +83,20 @@ protected:
 		// Check if data is paletted
 		if (image.type() != SImage::Type::PalMask)
 		{
-			LOG_MESSAGE(1, "Cannot convert truecolour image to planar format - convert to 16-colour first.");
+			Log::info(1, "Cannot convert truecolour image to planar format - convert to 16-colour first.");
 			return false;
 		}
 
 		if (image.countColours() > 16)
 		{
-			LOG_MESSAGE(1, "Cannot convert to planar format, too many colors (%d)", image.countColours());
+			Log::info(fmt::format("Cannot convert to planar format, too many colors ({})", image.countColours()));
 			return false;
 		}
 
 		// Check image size
 		if (!(image.width() == 640 && image.height() == 480))
 		{
-			LOG_MESSAGE(1, "Cannot convert to planar format, invalid size (must be 640x480)");
+			Log::info(1, "Cannot convert to planar format, invalid size (must be 640x480)");
 			return false;
 		}
 
@@ -278,21 +278,20 @@ protected:
 		// Check if data is paletted
 		if (image.type() != SImage::Type::PalMask)
 		{
-			LOG_MESSAGE(1, "Cannot convert truecolour image to 4-bit format - convert to 16-colour first.");
+			Log::info(1, "Cannot convert truecolour image to 4-bit format - convert to 16-colour first.");
 			return false;
 		}
 
 		if (image.countColours() > 16)
 		{
-			LOG_MESSAGE(1, "Cannot convert to 4-bit format, too many colors (%d)", image.countColours());
+			Log::info(fmt::format("Cannot convert to 4-bit format, too many colors ({})", image.countColours()));
 			return false;
 		}
 
 		// Check image size
-		if (!((image.width() == 4 && image.height() == 16)
-			  || (image.width() == 16 && image.height() == 23)))
+		if (!((image.width() == 4 && image.height() == 16) || (image.width() == 16 && image.height() == 23)))
 		{
-			LOG_MESSAGE(1, "No point in converting to 4-bit format, image isn't a valid Hexen size (4x16 or 16x23)");
+			Log::info(1, "No point in converting to 4-bit format, image isn't a valid Hexen size (4x16 or 16x23)");
 			return false;
 		}
 
@@ -369,8 +368,7 @@ public:
 			return NOTWRITABLE;
 		// Can write paletted images of size 4x16 or 16x23
 		if (image.type() == SImage::Type::PalMask
-			&& ((image.width() == 4 && image.height() == 16)
-				|| (image.width() == 16 && image.height() == 23)))
+			&& ((image.width() == 4 && image.height() == 16) || (image.width() == 16 && image.height() == 23)))
 			return WRITABLE;
 		// If it wouldn't work, it wouldn't work
 		return NOTWRITABLE;

@@ -31,8 +31,8 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "SiNArchive.h"
 #include "General/UI.h"
+#include "SiNArchive.h"
 #include "Utility/StringUtils.h"
 
 
@@ -73,7 +73,7 @@ bool SiNArchive::open(MemChunk& mc)
 	// Check it
 	if (pack[0] != 'S' || pack[1] != 'P' || pack[2] != 'A' || pack[3] != 'K')
 	{
-		LOG_MESSAGE(1, "SiNArchive::open: Opening failed, invalid header");
+		Log::info(1, "SiNArchive::open: Opening failed, invalid header");
 		Global::error = "Invalid pak header";
 		return false;
 	}
@@ -105,7 +105,7 @@ bool SiNArchive::open(MemChunk& mc)
 		// Check offset+size
 		if ((unsigned)(offset + size) > mc.size())
 		{
-			LOG_MESSAGE(1, "SiNArchive::open: SiN archive is invalid or corrupt (entry goes past end of file)");
+			Log::info(1, "SiNArchive::open: SiN archive is invalid or corrupt (entry goes past end of file)");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -227,8 +227,8 @@ bool SiNArchive::write(MemChunk& mc, bool update)
 		name.erase(0, 1); // Remove leading /
 		if (name.size() > 120)
 		{
-			LOG_MESSAGE(
-				1, "Warning: Entry %s path is too long (> 120 characters), putting it in the root directory", name);
+			Log::info(fmt::format(
+				"Warning: Entry {} path is too long (> 120 characters), putting it in the root directory", name));
 			wxFileName fn(name);
 			name = fn.GetFullName();
 			StrUtil::truncateIP(name, 120);
@@ -290,7 +290,7 @@ bool SiNArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "SiNArchive::loadEntryData: Unable to open archive file %s", filename_);
+		Log::info(fmt::format("SiNArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

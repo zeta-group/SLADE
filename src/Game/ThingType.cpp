@@ -157,7 +157,7 @@ void ThingType::reset()
 	args_.count = 0;
 	for (unsigned a = 0; a < 5; a++)
 	{
-		args_[a].name = S_FMT("Arg%d", a + 1);
+		args_[a].name = fmt::format("Arg{}", a + 1);
 		args_[a].type = Arg::Type::Number;
 		args_[a].custom_flags.clear();
 		args_[a].custom_values.clear();
@@ -356,12 +356,12 @@ void ThingType::parse(ParseTreeNode* node)
 string ThingType::stringDesc() const
 {
 	// Init return string
-	string ret = S_FMT(
-		R"("%s" in group "%s", colour %d,%d,%d, radius %d)", name_, group_, colour_.r, colour_.g, colour_.b, radius_);
+	string ret = fmt::format(
+		R"("{}" in group "{}", colour {},{},{}, radius {})", name_, group_, colour_.r, colour_.g, colour_.b, radius_);
 
 	// Add any extra info
 	if (!sprite_.empty())
-		ret += S_FMT(", sprite \"%s\"", sprite_);
+		ret += fmt::format(", sprite \"{}\"", sprite_);
 	if (!angled_)
 		ret += ", angle hidden";
 	if (hanging_)

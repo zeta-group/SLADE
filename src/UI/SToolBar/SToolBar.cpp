@@ -154,7 +154,7 @@ SToolBarGroup::SToolBarGroup(SToolBar* parent, string_view name, bool force_name
 	name_{ name.data(), name.size() }
 {
 	// Check if hidden
-	if (StrUtil::contains(toolbars_hidden, S_FMT("[%s]", name)))
+	if (StrUtil::contains(toolbars_hidden, fmt::sprintf("[%s]", name)))
 		hidden_ = true;
 	else
 		hidden_ = false;
@@ -194,7 +194,7 @@ void SToolBarGroup::hide(bool hide)
 	hidden_ = hide;
 
 	// Update 'hidden toolbars' cvar
-	string hname = S_FMT("[%s]", name_);
+	string hname = fmt::sprintf("[%s]", name_);
 	if (hide)
 		toolbars_hidden.value += hname;
 	else

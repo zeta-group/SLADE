@@ -135,7 +135,7 @@ bool MapBackupManager::writeBackup(vector<ArchiveEntry::UPtr>& map_data, string_
 
 		if (same)
 		{
-			LOG_MESSAGE(2, "Same data as previous backup - ignoring");
+			Log::info(2, "Same data as previous backup - ignoring");
 			return true;
 		}
 	}
@@ -167,8 +167,8 @@ bool MapBackupManager::writeBackup(vector<ArchiveEntry::UPtr>& map_data, string_
 // map backup data in a WadArchive
 // -----------------------------------------------------------------------------
 Archive* MapBackupManager::openBackup(string_view archive_name, string_view map_name) const
- {
-	SDialog dlg(MapEditor::windowWx(), S_FMT("Restore %s backup", map_name), "map_backup", 500, 400);
+{
+	SDialog dlg(MapEditor::windowWx(), fmt::sprintf("Restore %s backup", map_name), "map_backup", 500, 400);
 	auto    sizer = new wxBoxSizer(wxVERTICAL);
 	dlg.SetSizer(sizer);
 	auto panel_backup = new MapBackupPanel(&dlg);
@@ -184,7 +184,7 @@ Archive* MapBackupManager::openBackup(string_view archive_name, string_view map_
 	}
 	else
 		wxMessageBox(
-			S_FMT("No backups exist for %s of %s", map_name, archive_name),
+			fmt::sprintf("No backups exist for %s of %s", map_name, archive_name),
 			"Restore Backup",
 			wxICON_INFORMATION,
 			MapEditor::windowWx());

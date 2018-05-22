@@ -87,7 +87,7 @@ MIDIPlayer::MIDIPlayer()
 #ifdef __WXGTK__
 		fs_soundfont_path = "/usr/share/sounds/sf2/FluidR3_GM.sf2:/usr/share/sounds/sf2/FluidR3_GS.sf2";
 #else  // __WXGTK__
-		LOG_MESSAGE(1, "Warning: No fluidsynth soundfont set, MIDI playback will not work");
+		Log::info(1, "Warning: No fluidsynth soundfont set, MIDI playback will not work");
 #endif // __WXGTK__
 	}
 
@@ -96,7 +96,7 @@ MIDIPlayer::MIDIPlayer()
 	reloadSoundfont();
 
 	if (!fs_player_ || !fs_adriver_)
-		LOG_MESSAGE(1, "Warning: Failed to initialise FluidSynth, MIDI playback disabled");
+		Log::info(1, "Warning: Failed to initialise FluidSynth, MIDI playback disabled");
 #endif // NO_FLUIDSYNTH
 }
 
@@ -597,14 +597,15 @@ string MIDIPlayer::getInfo()
 			num_tracks        = READ_B16(data_, pos + 2);
 			uint16_t time_div = READ_B16(data_, pos + 4);
 			if (format == 0)
-				ret += S_FMT("MIDI format 0 with time division %u\n", time_div);
+				ret += fmt::format("MIDI format 0 with time division {}\n", time_div);
 			else
-				ret += S_FMT("MIDI format %u with %u tracks and time division %u\n", format, num_tracks, time_div);
+				ret +=
+					fmt::format("MIDI format {} with {} tracks and time division {}\n", format, num_tracks, time_div);
 		}
 		else if (chunk_name == (size_t)(('M' << 24) | ('T' << 16) | ('r' << 8) | 'k')) // MTrk
 		{
 			if (format == 2)
-				ret += S_FMT("\nTrack %u/%u\n", ++track_counter, num_tracks);
+				ret += fmt::format("\nTrack {}/{}\n", ++track_counter, num_tracks);
 			size_t tpos = pos;
 			while (tpos + 4 < chunk_end)
 			{
@@ -644,13 +645,13 @@ string MIDIPlayer::getInfo()
 
 					switch (evtype)
 					{
-					case 1: ret += S_FMT("Text: %s\n", tmp); break;
-					case 2: ret += S_FMT("Copyright: %s\n", tmp); break;
-					case 3: ret += S_FMT("Title: %s\n", tmp); break;
-					case 4: ret += S_FMT("Instrument: %s\n", tmp); break;
-					case 5: ret += S_FMT("Lyrics: %s\n", tmp); break;
-					case 6: ret += S_FMT("Marker: %s\n", tmp); break;
-					case 7: ret += S_FMT("Cue point: %s\n", tmp); break;
+					case 1: ret += fmt::format("Text: {}\n", tmp); break;
+					case 2: ret += fmt::format("Copyright: {}\n", tmp); break;
+					case 3: ret += fmt::format("Title: {}\n", tmp); break;
+					case 4: ret += fmt::format("Instrument: {}\n", tmp); break;
+					case 5: ret += fmt::format("Lyrics: {}\n", tmp); break;
+					case 6: ret += fmt::format("Marker: {}\n", tmp); break;
+					case 7: ret += fmt::format("Cue point: {}\n", tmp); break;
 					default: break;
 					}
 					tpos += evsize;

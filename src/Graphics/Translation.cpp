@@ -143,7 +143,7 @@ void Translation::parse(string_view def)
 	else if (StrUtil::startsWith(test, "desaturate,"))
 	{
 		built_in_name_ = "Desaturate";
-		auto amt       = std::stoi(test.substr(11));
+		auto amt       = StrUtil::toInt(test.substr(11));
 		desat_amount_  = std::max<int>(std::min<int>(amt, 31), 1);
 		return;
 	}
@@ -186,7 +186,7 @@ void Translation::parseRange(string_view range)
 	Tokenizer tz;
 	tz.setSpecialCharacters("[]:%,=#@$");
 	tz.openString(range);
-	Log::debug(S_FMT("Processing range %s", range));
+	Log::debug(fmt::format("Processing range {}", range));
 
 	// Read original range
 	int o_start, o_end;
@@ -210,13 +210,13 @@ void Translation::parseRange(string_view range)
 		ColRGBA start, end;
 
 		// Read start colour
-		start.r = std::stoi(tz.next().text);
+		start.r = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		start.g = std::stoi(tz.next().text);
+		start.g = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		start.b = std::stoi(tz.next().text);
+		start.b = StrUtil::toInt(tz.next().text);
 
 		// Syntax check
 		if (!tz.advIfNext(']'))
@@ -227,13 +227,13 @@ void Translation::parseRange(string_view range)
 			return;
 
 		// Read end colour
-		end.r = std::stoi(tz.next().text);
+		end.r = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		end.g = std::stoi(tz.next().text);
+		end.g = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		end.b = std::stoi(tz.next().text);
+		end.b = StrUtil::toInt(tz.next().text);
 
 		if (!tz.advIfNext(']'))
 			return;
@@ -294,13 +294,13 @@ void Translation::parseRange(string_view range)
 
 		if (!tz.advIfNext('['))
 			return;
-		colour.r = std::stoi(tz.next().text);
+		colour.r = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		colour.g = std::stoi(tz.next().text);
+		colour.g = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		colour.b = std::stoi(tz.next().text);
+		colour.b = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(']'))
 			return;
 
@@ -311,16 +311,16 @@ void Translation::parseRange(string_view range)
 		// Tint translation
 		ColRGBA colour;
 
-		uint8_t amount = std::stoi(tz.next().text);
+		uint8_t amount = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext('['))
 			return;
-		colour.r = std::stoi(tz.next().text);
+		colour.r = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		colour.g = std::stoi(tz.next().text);
+		colour.g = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(','))
 			return;
-		colour.b = std::stoi(tz.next().text);
+		colour.b = StrUtil::toInt(tz.next().text);
 		if (!tz.advIfNext(']'))
 			return;
 
@@ -380,7 +380,7 @@ void Translation::read(const uint8_t* data)
 		}
 		val = data[i];
 	}
-	LOG_MESSAGE(3, "Translation table analyzed as " + asText());
+	Log::info(3, "Translation table analyzed as " + asText());
 }
 
 // -----------------------------------------------------------------------------
@@ -394,7 +394,7 @@ string Translation::asText()
 	{
 		// Go through translation ranges
 		for (auto& translation : translations_)
-			ret += S_FMT("\"%s\", ", translation->asText()); // Add range to string
+			ret += fmt::format("\"{}\", ", translation->asText()); // Add range to string
 
 		// If any translations were defined, remove last ", "
 		if (!ret.empty())
@@ -408,7 +408,7 @@ string Translation::asText()
 		// ZDoom built-in translation
 		ret = built_in_name_;
 		if (built_in_name_ == "Desaturate")
-			ret += S_FMT(", %d", desat_amount_);
+			ret += fmt::format(", {}", desat_amount_);
 	}
 
 	return ret;
@@ -640,7 +640,7 @@ ColRGBA Translation::translate(const ColRGBA& col, Palette* pal)
 			else if (StrUtil::startsWithCI(spec, "desat"))
 			{
 				// This relies on SpecialBlend::1 to ::31 being occupied with desat
-				auto num = std::stoi(spec.substr(spec.size() - 2));
+				auto num = StrUtil::toInt(spec.substr(spec.size() - 2));
 				if (num < 32 && num > 0)
 					type = num;
 			}

@@ -137,7 +137,7 @@ ParseTreeNode* ParseTreeNode::addChildPTN(string_view name, string_view type)
 // -----------------------------------------------------------------------------
 void ParseTreeNode::logError(const Tokenizer& tz, const string& error) const
 {
-	Log::error(S_FMT("Parse Error in %s (Line %d): %s\n", tz.source(), tz.current().line_no, error));
+	Log::error(fmt::sprintf("Parse Error in %s (Line %d): %s\n", tz.source(), tz.current().line_no, error));
 }
 
 // -----------------------------------------------------------------------------
@@ -145,7 +145,7 @@ void ParseTreeNode::logError(const Tokenizer& tz, const string& error) const
 // -----------------------------------------------------------------------------
 bool ParseTreeNode::parsePreprocessor(Tokenizer& tz)
 {
-	// Log::debug(S_FMT("Preprocessor %s", CHR(tz.current().text)));
+	// Log::debug(fmt::sprintf("Preprocessor %s", CHR(tz.current().text)));
 
 	// #define
 	if (tz.current() == "#define")
@@ -193,7 +193,7 @@ bool ParseTreeNode::parsePreprocessor(Tokenizer& tz)
 			if (!inc_entry) // Try absolute path
 				inc_entry = archive->entryAtPath(inc_path);
 
-			// Log::debug(S_FMT("Include %s", CHR(inc_path)));
+			// Log::debug(fmt::sprintf("Include %s", CHR(inc_path)));
 
 			if (inc_entry)
 			{
@@ -212,7 +212,7 @@ bool ParseTreeNode::parsePreprocessor(Tokenizer& tz)
 					return false;
 			}
 			else
-				logError(tz, S_FMT("Include entry %s not found", inc_path));
+				logError(tz, fmt::sprintf("Include entry %s not found", inc_path));
 		}
 		else
 			tz.adv(); // Skip include path
@@ -226,7 +226,7 @@ bool ParseTreeNode::parsePreprocessor(Tokenizer& tz)
 
 	// Unrecognised
 	else
-		logError(tz, S_FMT("Unrecognised preprocessor directive \"%s\"", tz.current().text));
+		logError(tz, fmt::sprintf("Unrecognised preprocessor directive \"%s\"", tz.current().text));
 
 	return true;
 }
@@ -264,11 +264,11 @@ bool ParseTreeNode::parseAssignment(Tokenizer& tz, ParseTreeNode* child) const
 		else if (token == "false") // Boolean (false)
 			value = false;
 		else if (token.isInteger()) // Integer
-			value = std::stoi(token.text);
+			value = atoi(token.text.c_str());
 		else if (token.isHex())            // Hex (0xXXXXXX)
-			value = std::stoi(token.text); // TODO: check this still works
+			value = atoi(token.text.c_str()); // TODO: check this still works
 		else if (token.isFloat())          // Floating point
-			value = std::stod(token.text);
+			value = atof(token.text.c_str());
 		else // Unknown, just treat as string
 			value = token.text;
 
@@ -280,7 +280,7 @@ bool ParseTreeNode::parseAssignment(Tokenizer& tz, ParseTreeNode* child) const
 			tz.adv(); // Skip it
 		else if (tz.peek() != list_end)
 		{
-			logError(tz, S_FMT(R"(Expected "," or "%c", got "%s")", list_end, tz.peek().text));
+			logError(tz, fmt::sprintf(R"(Expected "," or "%c", got "%s")", list_end, tz.peek().text));
 			return false;
 		}
 
@@ -319,12 +319,12 @@ bool ParseTreeNode::parse(Tokenizer& tz)
 		// If it's a special character (ie not a valid name), parsing fails
 		if (tz.isSpecialCharacter(tz.current().text[0]))
 		{
-			logError(tz, S_FMT("Unexpected special character '%s'", tz.current().text));
+			logError(tz, fmt::sprintf("Unexpected special character '%s'", tz.current().text));
 			return false;
 		}
 
 		// So we have either a node or property name
-		string_view name = tz.current().text, type;
+		string name = tz.current().text, type;
 		if (name.empty())
 		{
 			logError(tz, "Unexpected empty string");
@@ -344,7 +344,7 @@ bool ParseTreeNode::parse(Tokenizer& tz)
 			}
 		}
 
-		// Log::debug(S_FMT("%s \"%s\", op %s", CHR(type), CHR(name), CHR(tz.current().text)));
+		// Log::debug(fmt::sprintf("%s \"%s\", op %s", CHR(type), CHR(name), CHR(tz.current().text)));
 
 		// Assignment
 		if (tz.advIfNext('=', 2))
@@ -399,7 +399,7 @@ bool ParseTreeNode::parse(Tokenizer& tz)
 			}
 			else
 			{
-				logError(tz, S_FMT(R"(Expecting "{" or ";", got "%s")", tz.next().text));
+				logError(tz, fmt::sprintf(R"(Expecting "{" or ";", got "%s")", tz.next().text));
 				return false;
 			}
 		}
@@ -407,7 +407,7 @@ bool ParseTreeNode::parse(Tokenizer& tz)
 		// Unexpected token
 		else
 		{
-			logError(tz, S_FMT("Unexpected token \"%s\"", tz.next().text));
+			logError(tz, fmt::sprintf("Unexpected token \"%s\"", tz.next().text));
 			return false;
 		}
 
@@ -444,9 +444,9 @@ void ParseTreeNode::write(string& out, int indent) const
 
 	// Name
 	if (StrUtil::contains(name_, ' ') || name_.empty())
-		out += S_FMT("\"%s\"", name_);
+		out += fmt::sprintf("\"%s\"", name_);
 	else
-		out += S_FMT("%s", name_);
+		out += fmt::sprintf("%s", name_);
 
 	// Inherit
 	if (!inherit_.empty())
@@ -468,10 +468,10 @@ void ParseTreeNode::write(string& out, int indent) const
 			{
 			case Property::Type::Bool:
 			case Property::Type::Flag: out += value.boolValue() ? "true" : "false"; break;
-			case Property::Type::Int: out += S_FMT("%d", value.intValue()); break;
-			case Property::Type::Float: out += S_FMT("%1.3f", value.floatValue()); break;
-			case Property::Type::UInt: out += S_FMT("%d", value.unsignedValue()); break;
-			default: out += S_FMT("\"%s\"", value.stringValue()); break;
+			case Property::Type::Int: out += fmt::sprintf("%d", value.intValue()); break;
+			case Property::Type::Float: out += fmt::sprintf("%1.3f", value.floatValue()); break;
+			case Property::Type::UInt: out += fmt::sprintf("%d", value.unsignedValue()); break;
+			default: out += fmt::sprintf("\"%s\"", value.stringValue()); break;
 			}
 		}
 
@@ -551,7 +551,7 @@ bool Parser::parseText(MemChunk& mc, string_view source, bool debug) const
 	tz.setReadLowerCase(!case_sensitive_);
 	if (!tz.openMem(mc, source))
 	{
-		LOG_MESSAGE(1, "Unable to open text data for parsing");
+		Log::info(1, "Unable to open text data for parsing");
 		return false;
 	}
 
@@ -566,7 +566,7 @@ bool Parser::parseText(string_view text, string_view source, bool debug) const
 	tz.setReadLowerCase(!case_sensitive_);
 	if (!tz.openString(text, 0, 0, source))
 	{
-		LOG_MESSAGE(1, "Unable to open text data for parsing");
+		Log::info(1, "Unable to open text data for parsing");
 		return false;
 	}
 

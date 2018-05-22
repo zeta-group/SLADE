@@ -476,7 +476,7 @@ void MOPGIntWithArgsProperty::updateArgs(wxPGProperty* args[5])
 
 		if (IsValueUnspecified())
 		{
-			args[a]->SetLabel(S_FMT("Arg%d", a + 1));
+			args[a]->SetLabel(wxString::Format("Arg%d", a + 1));
 			args[a]->SetHelpString("");
 		}
 		else
@@ -517,7 +517,7 @@ void MOPGIntWithArgsProperty::applyValue()
 
 		for (int argn = 0; argn < argspec.count; argn++)
 		{
-			string key = S_FMT("arg%d", argn);
+			string key = fmt::sprintf("arg%d", argn);
 			if (!object->hasProp(key))
 				object->setIntProperty(key, 0);
 		}
@@ -564,7 +564,7 @@ wxString MOPGActionSpecialProperty::ValueToString(wxVariant& value, int argFlags
 	if (special == 0)
 		return "0: None";
 	else
-		return S_FMT("%d: %s", special, Game::configuration().actionSpecial(special).name());
+		return fmt::sprintf("%d: %s", special, Game::configuration().actionSpecial(special).name());
 }
 
 // -----------------------------------------------------------------------------
@@ -616,7 +616,7 @@ wxString MOPGThingTypeProperty::ValueToString(wxVariant& value, int argFlags) co
 		return "0: None";
 
 	auto& tt = Game::configuration().thingType(type);
-	return S_FMT("%d: %s", type, tt.name());
+	return fmt::sprintf("%d: %s", type, tt.name());
 }
 
 // -----------------------------------------------------------------------------
@@ -910,7 +910,7 @@ wxString MOPGAngleProperty::ValueToString(wxVariant& value, int argFlags) const
 	case 225: return "225: Southwest";
 	case 270: return "270: South";
 	case 315: return "315: Southeast";
-	default: return S_FMT("%d", angle);
+	default: return fmt::sprintf("%d", angle);
 	}
 }
 
@@ -1315,7 +1315,7 @@ wxString MOPGSectorSpecialProperty::ValueToString(wxVariant& value, int argFlags
 {
 	int type = value.GetInteger();
 
-	return S_FMT("%d: %s", type, Game::configuration().sectorTypeName(type));
+	return fmt::sprintf("%d: %s", type, Game::configuration().sectorTypeName(type));
 }
 
 // -----------------------------------------------------------------------------

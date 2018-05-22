@@ -132,7 +132,7 @@ public:
 		if (!this)
 			return Debuggable("<sector NULL>");
 
-		return Debuggable(S_FMT("<sector %u>", index_));
+		return Debuggable(fmt::format("<sector {}>", index_));
 	}
 
 private:

@@ -204,7 +204,7 @@ wxRect SCallTip::drawFunctionSpec(wxDC& dc, const TLFunction::Context& context, 
 	if (!context.deprecated.empty())
 	{
 		dc.SetTextForeground(*wxRED);
-		left = drawText(dc, S_FMT("(Deprecated v%s) ", context.deprecated), left, top, &rect);
+		left = drawText(dc, fmt::sprintf("(Deprecated v%s) ", context.deprecated), left, top, &rect);
 	}
 
 	// Draw function qualifiers
@@ -292,7 +292,7 @@ wxRect SCallTip::drawArgs(
 
 		// Default value
 		if (!arg.default_value.empty())
-			left = drawText(dc, S_FMT(" = %s", arg.default_value), left, top, &rect);
+			left = drawText(dc, fmt::sprintf(" = %s", arg.default_value), left, top, &rect);
 
 		// Optional closing bracket
 		if (arg.optional && !txed_calltips_dim_optional)
@@ -446,7 +446,7 @@ wxSize SCallTip::drawCallTip(wxDC& dc, int xoff, int yoff)
 			int width = dc.GetTextExtent("X/X").x;
 			dc.SetTextForeground(wxcol_fg);
 			dc.DrawLabel(
-				S_FMT("%d/%d", context_current_ + 1, function_->contexts().size()),
+				fmt::sprintf("%d/%d", context_current_ + 1, function_->contexts().size()),
 				wxNullBitmap,
 				wxRect(rect_btn_up_.GetRight() + UI::scalePx(4), yoff, width, 900),
 				wxALIGN_CENTER_HORIZONTAL);
@@ -516,7 +516,7 @@ wxSize SCallTip::drawCallTip(wxDC& dc, int xoff, int yoff)
 				wxRect rect;
 				drawText(
 					dc,
-					S_FMT("... %d more", function_->contexts().size() - num),
+					fmt::sprintf("... %d more", function_->contexts().size() - num),
 					xoff,
 					bottom + UI::scalePx(11),
 					&rect);

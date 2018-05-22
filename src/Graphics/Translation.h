@@ -22,7 +22,7 @@ public:
 
 		IndexRange(int start, int end) : start{ (uint8_t)start }, end{ (uint8_t)end } {}
 
-		string asText() const { return S_FMT("%d:%d", start, end); }
+		string asText() const { return fmt::format("{}:{}", start, end); }
 	};
 
 	TransRange(Type type, IndexRange range) : type_{ type }, range_{ range } {}
@@ -64,7 +64,7 @@ public:
 
 	string asText() override
 	{
-		return S_FMT("%d:%d=%d:%d", range_.start, range_.end, dest_range_.start, dest_range_.end);
+		return fmt::format("{}:{}={}:{}", range_.start, range_.end, dest_range_.start, dest_range_.end);
 	}
 
 private:
@@ -74,7 +74,10 @@ private:
 class TransRangeColour : public TransRange
 {
 public:
-	TransRangeColour(IndexRange range, const ColRGBA& col_start = ColRGBA::BLACK, const ColRGBA& col_end = ColRGBA::WHITE) :
+	TransRangeColour(
+		IndexRange     range,
+		const ColRGBA& col_start = ColRGBA::BLACK,
+		const ColRGBA& col_end   = ColRGBA::WHITE) :
 		TransRange{ Type::Colour, range },
 		col_start_{ col_start },
 		col_end_{ col_end }
@@ -95,8 +98,8 @@ public:
 
 	string asText() override
 	{
-		return S_FMT(
-			"%d:%d=[%d,%d,%d]:[%d,%d,%d]",
+		return fmt::format(
+			"{}:{}=[{},{},{}]:[{},{},{}]",
 			range_.start,
 			range_.end,
 			col_start_.r,
@@ -140,8 +143,8 @@ public:
 
 	string asText() override
 	{
-		return S_FMT(
-			"%d:%d=%%[%1.2f,%1.2f,%1.2f]:[%1.2f,%1.2f,%1.2f]",
+		return fmt::format(
+			"{}:{}=%%[%1.2f,%1.2f,%1.2f]:[%1.2f,%1.2f,%1.2f]",
 			range_.start,
 			range_.end,
 			rgb_start_.r,
@@ -168,11 +171,11 @@ public:
 	TransRangeBlend(TransRangeBlend* copy) : TransRange{ Type::Blend, copy->range_ }, colour_{ copy->colour_ } {}
 
 	const ColRGBA& colour() const { return colour_; }
-	void          setColour(const ColRGBA& c) { colour_ = c; }
+	void           setColour(const ColRGBA& c) { colour_ = c; }
 
 	string asText() override
 	{
-		return S_FMT("%d:%d=#[%d,%d,%d]", range_.start, range_.end, colour_.r, colour_.g, colour_.b);
+		return fmt::format("{}:{}=#[{},{},{}]", range_.start, range_.end, colour_.r, colour_.g, colour_.b);
 	}
 
 private:
@@ -195,18 +198,18 @@ public:
 	{
 	}
 
-	ColRGBA  colour() const { return colour_; }
+	ColRGBA colour() const { return colour_; }
 	uint8_t amount() const { return amount_; }
 	void    setColour(const ColRGBA& c) { colour_ = c; }
 	void    setAmount(uint8_t a) { amount_ = a; }
 
 	string asText() override
 	{
-		return S_FMT("%d:%d=@%d[%d,%d,%d]", range_.start, range_.end, amount_, colour_.r, colour_.g, colour_.b);
+		return fmt::format("{}:{}=@{}[{},{},{}]", range_.start, range_.end, amount_, colour_.r, colour_.g, colour_.b);
 	}
 
 private:
-	ColRGBA  colour_;
+	ColRGBA colour_;
 	uint8_t amount_;
 };
 
@@ -225,7 +228,7 @@ public:
 	string getSpecial() const { return special_; }
 	void   setSpecial(string_view sp) { S_SET_VIEW(special_, sp); }
 
-	string asText() override { return S_FMT("%d:%d=$%s", range_.start, range_.end, special_); }
+	string asText() override { return fmt::format("{}:{}=${}", range_.start, range_.end, special_); }
 
 private:
 	string special_;

@@ -446,7 +446,7 @@ void MapTextureManager::importEditorImages(MapTexHashMap& map, ArchiveTreeNode* 
 			string name{ path.data(), path.size() };
 			auto   ename = entry->nameNoExt();
 			name.append(ename.data(), ename.size());
-			LOG_MESSAGE(4, "Loading editor texture %s", name);
+			Log::info(4, fmt::sprintf("Loading editor texture %s", name));
 			auto& mtex   = map[name];
 			mtex.texture = new GLTexture(false);
 			mtex.texture->setFilter(GLTexture::Filter::Mipmap);

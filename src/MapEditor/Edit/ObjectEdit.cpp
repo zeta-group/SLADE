@@ -33,12 +33,12 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ObjectEdit.h"
 #include "General/KeyBind.h"
 #include "General/UI.h"
 #include "MapEditor/MapEditContext.h"
 #include "MapEditor/MapEditor.h"
 #include "MapEditor/SLADEMap/SLADEMap.h"
+#include "ObjectEdit.h"
 #include "Utility/MathStuff.h"
 
 using namespace MapEditor;
@@ -682,8 +682,8 @@ bool ObjectEdit::begin()
 	string key_cancel = KeyBind::getBind("map_edit_cancel").keysAsString();
 	string key_toggle = KeyBind::getBind("me2d_begin_object_edit").keysAsString();
 	context_.setFeatureHelp({ "Object Edit",
-							  S_FMT("%s = Accept", key_accept),
-							  S_FMT("%s or %s = Cancel", key_cancel, key_toggle),
+							  fmt::sprintf("%s = Accept", key_accept),
+							  fmt::sprintf("%s or %s = Cancel", key_cancel, key_toggle),
 							  "Shift = Disable grid snapping",
 							  "Ctrl = Rotate" });
 
@@ -702,7 +702,7 @@ void ObjectEdit::end(bool accept)
 	if (accept)
 	{
 		// Begin recording undo level
-		context_.beginUndoRecord(S_FMT("Edit %s", context_.modeString()));
+		context_.beginUndoRecord(fmt::sprintf("Edit %s", context_.modeString()));
 
 		// Apply changes
 		group_.applyEdit();

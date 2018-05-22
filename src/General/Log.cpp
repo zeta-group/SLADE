@@ -31,6 +31,7 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
+#include "External/fmt/time.h"
 #include <fstream>
 
 
@@ -48,6 +49,25 @@ CVAR(Int, log_verbosity, 1, CVAR_SAVE)
 
 
 // -----------------------------------------------------------------------------
+// Formatter for fmt so that Log::MessageType can be written to a string
+// -----------------------------------------------------------------------------
+namespace Log
+{
+void format_arg(fmt::BasicFormatter<char>& f, const char*& format_str, const Log::MessageType& s)
+{
+	switch (s)
+	{
+	case Log::MessageType::Info: f.writer().write(" [Info]"); break;
+	case Log::MessageType::Warning: f.writer().write(" [Warn]"); break;
+	case Log::MessageType::Error: f.writer().write("[Error]"); break;
+	case Log::MessageType::Debug: f.writer().write("[Debug]"); break;
+	case Log::MessageType::Script: f.writer().write("[Script]"); break;
+	default: f.writer().write("  [Log]"); break;
+	}
+}
+}
+
+// -----------------------------------------------------------------------------
 //
 // FreeImage Error Handler
 //
@@ -61,7 +81,7 @@ void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char* message)
 {
 	string error = "FreeImage: ";
 	if (fif != FIF_UNKNOWN)
-		error += S_FMT("[%s] ", FreeImage_GetFormatFromFIF(fif));
+		error += fmt::format("[{}] ", FreeImage_GetFormatFromFIF(fif));
 	error += message;
 
 	Log::error(error);
@@ -81,7 +101,7 @@ void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char* message)
 // -----------------------------------------------------------------------------
 string Log::Message::formattedMessageLine() const
 {
-	return S_FMT("%s: %s", wxDateTime(timestamp).FormatISOTime(), message);
+	return fmt::format("{:%H:%M:%S}: {} {}", timestamp, type, message);
 }
 
 
@@ -102,15 +122,16 @@ void Log::init()
 	sf::err().rdbuf(log_file.rdbuf());
 
 	// Write logfile header
-	string year = wxNow().Right(4).ToStdString();
+	auto t = std::time(nullptr);
+	auto tm = std::localtime(&t);
 	info("SLADE - It's a Doom Editor");
-	info(S_FMT("Version %s", Global::version));
-	if (Global::sc_rev != "")
-		info(S_FMT("Git Revision %s", Global::sc_rev));
-	info(S_FMT("Written by Simon Judd, 2008-%s", year));
+	info(fmt::format("Version {}", Global::version));
+	if (!Global::sc_rev.empty())
+		info(fmt::format("Git Revision {}", Global::sc_rev));
+	info(fmt::format("Written by Simon Judd, 2008-{:%Y}", *tm));
 #ifdef SFML_VERSION_MAJOR
-	info(S_FMT(
-		"Compiled with wxWidgets %i.%i.%i and SFML %i.%i.%i",
+	info(fmt::format(
+		"Compiled with wxWidgets {}.{}.{} and SFML {}.{}.{}",
 		wxMAJOR_VERSION,
 		wxMINOR_VERSION,
 		wxRELEASE_NUMBER,
@@ -118,7 +139,7 @@ void Log::init()
 		SFML_VERSION_MINOR,
 		SFML_VERSION_PATCH));
 #else
-	info(S_FMT("Compiled with wxWidgets %i.%i.%i", wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER));
+	info(fmt::format("Compiled with wxWidgets {}.{}.{}", wxMAJOR_VERSION, wxMINOR_VERSION, wxRELEASE_NUMBER));
 #endif
 	info("--------------------------------");
 
@@ -157,7 +178,8 @@ void Log::setVerbosity(int verbosity)
 void Log::message(MessageType type, const char* text)
 {
 	// Add log message
-	log.push_back({ text, type, wxDateTime::Now().GetTicks() });
+	auto t = std::time(nullptr);
+	log.push_back({ text, type, *std::localtime(&t) });
 
 	// Write to log file
 	if (log_file.is_open() && type != MessageType::Console)
@@ -171,7 +193,7 @@ vector<Log::Message*> Log::since(time_t time, MessageType type)
 {
 	vector<Message*> list;
 	for (auto& msg : log)
-		if (msg.timestamp >= time && (type == MessageType::Any || msg.type == type))
+		if (mktime(&msg.timestamp) >= time && (type == MessageType::Any || msg.type == type))
 			list.push_back(&msg);
 	return list;
 }
@@ -203,7 +225,8 @@ void Log::message(MessageType type, int level, const char* text)
 		return;
 
 	// Add log message
-	log.push_back({ text, type, wxDateTime::Now().GetTicks() });
+	auto t = std::time(nullptr);
+	log.push_back({ text, type, *std::localtime(&t) });
 
 	// Write to log file
 	if (log_file.is_open() && type != MessageType::Console)

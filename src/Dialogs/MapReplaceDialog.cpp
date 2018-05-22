@@ -32,9 +32,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "MapReplaceDialog.h"
-#include "MainEditor/ArchiveOperations.h"
 #include "General/UI.h"
+#include "MainEditor/ArchiveOperations.h"
+#include "MapReplaceDialog.h"
 
 
 // -----------------------------------------------------------------------------
@@ -86,7 +86,8 @@ void ThingTypeReplacePanel::doReplace(Archive* archive)
 {
 	size_t count = ArchiveOperations::replaceThings(archive, spin_from_->GetValue(), spin_to_->GetValue());
 	wxMessageBox(
-		S_FMT("Replaced %d occurrences. See console log for more detailed information.", count), "Replace Things");
+		fmt::format("Replaced {} occurrences. See console log for more detailed information.", count),
+		"Replace Things");
 }
 
 
@@ -148,7 +149,7 @@ SpecialReplacePanel::SpecialReplacePanel(wxWindow* parent) : wxPanel(parent, -1)
 	for (unsigned a = 0; a < 5; a++)
 	{
 		// Create controls
-		cb_args_[a]        = new wxCheckBox(this, -1, S_FMT("Arg %d", a));
+		cb_args_[a]        = new wxCheckBox(this, -1, fmt::format("Arg {}", a));
 		spin_args_from_[a] = new wxSpinCtrl(
 			this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxTE_PROCESS_ENTER, 0, 255);
 		spin_args_to_[a] = new wxSpinCtrl(
@@ -203,7 +204,8 @@ void SpecialReplacePanel::doReplace(Archive* archive)
 		spin_args_to_[4]->GetValue());
 
 	wxMessageBox(
-		S_FMT("Replaced %d occurrences. See console log for more detailed information.", count), "Replace Specials");
+		fmt::format("Replaced {} occurrences. See console log for more detailed information.", count),
+		"Replace Specials");
 }
 
 
@@ -290,7 +292,8 @@ void TextureReplacePanel::doReplace(Archive* archive)
 		cb_upper_->GetValue());
 
 	wxMessageBox(
-		S_FMT("Replaced %d occurrences. See console log for more detailed information.", count), "Replace Textures");
+		fmt::format("Replaced {} occurrences. See console log for more detailed information.", count),
+		"Replace Textures");
 }
 
 

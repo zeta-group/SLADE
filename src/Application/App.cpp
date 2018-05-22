@@ -54,8 +54,8 @@
 #include "TextEditor/TextLanguage.h"
 #include "TextEditor/TextStyle.h"
 #include "UI/SBrush.h"
-#include "Utility/Tokenizer.h"
 #include "Utility/StringUtils.h"
+#include "Utility/Tokenizer.h"
 
 
 // -----------------------------------------------------------------------------
@@ -168,7 +168,7 @@ bool initDirectories()
 	{
 		if (!wxMkdir(dir_user))
 		{
-			wxMessageBox(S_FMT("Unable to create user directory \"%s\"", dir_user), "Error", wxICON_ERROR);
+			wxMessageBox(fmt::format("Unable to create user directory \"{}\"", dir_user), "Error", wxICON_ERROR);
 			return false;
 		}
 	}
@@ -295,7 +295,7 @@ vector<string> processCommandLine(vector<string>& args)
 
 		// Unknown parameter
 		else
-			Log::warning(S_FMT("Unknown command line parameter: \"%s\"", arg));
+			Log::warning(fmt::format("Unknown command line parameter: \"{}\"", arg));
 	}
 
 	return to_open;
@@ -516,7 +516,7 @@ void App::saveConfigFile()
 	{
 		string path = archive_manager.getBaseResourcePath(a);
 		StrUtil::replaceIP(path, "\\", "/");
-		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
+		file.Write(fmt::format("\t\"{}\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
 
@@ -526,7 +526,7 @@ void App::saveConfigFile()
 	{
 		string path = archive_manager.recentFile(a);
 		StrUtil::replaceIP(path, "\\", "/");
-		file.Write(S_FMT("\t\"%s\"\n", path), wxConvUTF8);
+		file.Write(fmt::format("\t\"{}\"\n", path), wxConvUTF8);
 	}
 	file.Write("}\n");
 
@@ -601,7 +601,7 @@ void App::exit(bool save_config)
 	while (files)
 	{
 		if (!wxRemoveFile(App::path((string)filename, App::Dir::Temp)))
-			LOG_WARNING(1, "Warning: Could not clean up temporary file \"%s\"", filename);
+			Log::warning(fmt::format("Warning: Could not clean up temporary file \"{}\"", filename));
 		files = temp.GetNext(&filename);
 	}
 
@@ -648,7 +648,7 @@ string App::path(string filename, Dir dir)
 		{
 			if (!wxMkdir(dir_temp))
 			{
-				Log::warning(S_FMT("Unable to create temp directory \"%s\"", dir_temp).c_str());
+				Log::warning(fmt::format("Unable to create temp directory \"{}\"", dir_temp));
 				temp_fail_count++;
 				return path(filename, dir);
 			}

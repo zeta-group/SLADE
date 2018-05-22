@@ -33,11 +33,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ExternalEditManager.h"
 #include "App.h"
 #include "Archive/Archive.h"
 #include "Conversions.h"
 #include "EntryOperations.h"
+#include "ExternalEditManager.h"
 #include "General/Executables.h"
 #include "General/Misc.h"
 #include "Graphics/SImage/SIFormat.h"
@@ -133,7 +133,7 @@ public:
 	{
 	}
 	virtual ~GfxExternalFileMonitor() = default;
-	
+
 	void updateEntry() override
 	{
 		// Read file
@@ -158,7 +158,7 @@ public:
 			}
 			else
 			{
-				LOG_MESSAGE(1, "Unable to convert external png to %s", format->name());
+				Log::info(fmt::sprintf("Unable to convert external png to %s", format->name()));
 			}
 		}
 	}
@@ -253,7 +253,7 @@ public:
 
 		else
 		{
-			Global::error = S_FMT("Type %s can not be converted to MIDI", entry_->type()->name());
+			Global::error = fmt::sprintf("Type %s can not be converted to MIDI", entry_->type()->name());
 			return false;
 		}
 
@@ -351,7 +351,7 @@ public:
 
 		else
 		{
-			Global::error = S_FMT("Type %s can not be converted to WAV", entry_->type()->name());
+			Global::error = fmt::sprintf("Type %s can not be converted to WAV", entry_->type()->name());
 			return false;
 		}
 
@@ -406,7 +406,7 @@ bool ExternalEditManager::openEntryExternal(ArchiveEntry* entry, string_view edi
 	for (auto& file_monitor : file_monitors_)
 		if (file_monitor->getEntry() == entry)
 		{
-			LOG_MESSAGE(1, "Entry %s is already open in an external editor", entry->name());
+			Log::info(fmt::sprintf("Entry %s is already open in an external editor", entry->name()));
 			return true;
 		}
 
@@ -438,16 +438,16 @@ bool ExternalEditManager::openEntryExternal(ArchiveEntry* entry, string_view edi
 	if (exe_path.empty())
 #endif
 	{
-		Global::error = S_FMT("External editor %s has invalid path", editor);
+		Global::error = fmt::sprintf("External editor %s has invalid path", editor);
 		return false;
 	}
 
 	// Run external editor
-	string command = S_FMT("\"%s\" \"%s\"", exe_path, monitor->getFilename());
+	string command = fmt::sprintf("\"%s\" \"%s\"", exe_path, monitor->getFilename());
 	long   success = wxExecute(command, wxEXEC_ASYNC, monitor->getProcess());
 	if (success == 0)
 	{
-		Global::error = S_FMT("Failed to launch %s", editor);
+		Global::error = fmt::sprintf("Failed to launch %s", editor);
 		return false;
 	}
 

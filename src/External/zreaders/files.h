@@ -5,6 +5,8 @@
 #include "../zlib/zlib.h"
 #include "../bzip2/bzlib.h"
 #include "../lzma/C/LzmaDec.h"
+#undef max
+#undef min
 #include "Main.h"
 #include "Utility/MemChunk.h"
 #include "templates.h"

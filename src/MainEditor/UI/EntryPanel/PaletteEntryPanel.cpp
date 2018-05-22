@@ -215,7 +215,7 @@ public:
 		cp_colour_->Bind(wxEVT_COLOURPICKER_CHANGED, [&](wxColourPickerEvent&) { redraw(); });
 		slider_amount_->Bind(wxEVT_SLIDER, [&](wxCommandEvent&) {
 			redraw();
-			label_amount_->SetLabel(S_FMT("%d%% ", slider_amount_->GetValue()));
+			label_amount_->SetLabel(fmt::sprintf("%d%% ", slider_amount_->GetValue()));
 		});
 		pal_preview_->Bind(wxEVT_LEFT_UP, [&](wxMouseEvent&) { redraw(); });
 
@@ -339,15 +339,15 @@ public:
 		// Bind events
 		slider_hue_->Bind(wxEVT_SLIDER, [&](wxCommandEvent&) {
 			redraw();
-			label_hue_->SetLabel(S_FMT("%1.3f", getHue()));
+			label_hue_->SetLabel(fmt::sprintf("%1.3f", getHue()));
 		});
 		slider_sat_->Bind(wxEVT_SLIDER, [&](wxCommandEvent&) {
 			redraw();
-			label_sat_->SetLabel(S_FMT("%d%%", slider_sat_->GetValue()));
+			label_sat_->SetLabel(fmt::sprintf("%d%%", slider_sat_->GetValue()));
 		});
 		slider_lum_->Bind(wxEVT_SLIDER, [&](wxCommandEvent&) {
 			redraw();
-			label_lum_->SetLabel(S_FMT("%d%%", slider_lum_->GetValue()));
+			label_lum_->SetLabel(fmt::sprintf("%d%%", slider_lum_->GetValue()));
 		});
 		pal_preview_->Bind(wxEVT_LEFT_UP, [&](wxMouseEvent&) { redraw(); });
 
@@ -730,7 +730,7 @@ string PaletteEntryPanel::statusString()
 	ColRGBA col  = pal_canvas_->getSelectedColour();
 	ColHSL  col2 = Misc::rgbToHsl(col);
 
-	return S_FMT(
+	return fmt::sprintf(
 		"Index %i\tR %d, G %d, B %d\tH %1.3f, S %1.3f, L %1.3f",
 		pal_canvas_->getSelectionStart(),
 		col.r,
@@ -755,7 +755,7 @@ bool PaletteEntryPanel::showPalette(uint32_t index)
 	pal_canvas_->palette()->copyPalette(palettes_[index].get());
 
 	// Set current palette text
-	text_curpal_->SetLabel(S_FMT("%u/%lu", index + 1, palettes_.size()));
+	text_curpal_->SetLabel(fmt::sprintf("%u/%lu", index + 1, palettes_.size()));
 
 	// Refresh
 	Layout();
@@ -818,7 +818,7 @@ bool PaletteEntryPanel::addCustomPalette()
 		return false;
 
 	// Write current palette to the user palettes directory
-	string path = App::path(S_FMT("palettes/%s.pal", name), App::Dir::User);
+	string path = App::path(fmt::sprintf("palettes/%s.pal", name), App::Dir::User);
 	palettes_[cur_palette_]->saveFile(path);
 
 	// Add to palette manager and main palette chooser
@@ -894,7 +894,7 @@ bool PaletteEntryPanel::clearOne()
 	// Always keep at least one palette
 	if (cur_palette_ == 0 && palettes_.size() == 1)
 	{
-		LOG_MESSAGE(1, "Palette cannot be removed, no other palette in this entry.");
+		Log::info(1, "Palette cannot be removed, no other palette in this entry.");
 		return false;
 	}
 
@@ -1509,19 +1509,19 @@ void PaletteEntryPanel::analysePalettes()
 	int i = PALETTECHECK;
 	if (i)
 	{
-		report += S_FMT("Deviation between palettes 0 and %i:\n\n", i);
+		report += fmt::sprintf("Deviation between palettes 0 and %i:\n\n", i);
 		devR = devG = devB = 0;
 		maxR = maxG = maxB = -1;
 		minR = minG = minB = 256;
 		wrongcount         = 0;
 #else
-	report += S_FMT("Changes between %u palettes compared to the first:\n\n", palettes.size());
+	report += fmt::sprintf("Changes between %u palettes compared to the first:\n\n", palettes.size());
 	for (size_t i = 1; i < palettes.size(); ++i)
 	{
 		for (int j = 0; j < 256; ++j)
 			reds[j] = blues[j] = greens[j] = 999;
 #endif
-		report += S_FMT("\n==============\n= Palette %02u =\n==============\n", i);
+		report += fmt::sprintf("\n==============\n= Palette %02u =\n==============\n", i);
 		for (size_t c = 0; c < 256; ++c)
 		{
 			ColRGBA ref1 = palettes_[0]->colour(c);
@@ -1555,7 +1555,7 @@ void PaletteEntryPanel::analysePalettes()
 			if (r | g | b)
 			{
 				++wrongcount;
-				report += S_FMT(
+				report += fmt::sprintf(
 					"Index %003u: [%003i %003i %003i | %1.3f %1.3f %1.3f]->[%003i %003i %003i | %1.3f %1.3f "
 					"%1.3f]\t\tR %+003i\tG %+003i\tB %+003i\t\t\tH %+1.3f\tS %+1.3f\tL %+1.3f\n",
 					c,
@@ -1606,8 +1606,8 @@ void PaletteEntryPanel::analysePalettes()
 #endif
 		}
 #ifdef GPALCOMPANALYSIS
-		report += S_FMT("Deviation sigma: R %+003i G %+003i B %+003i\t%s\n", devR, devG, devB, entry_->nameNoExt());
-		report += S_FMT(
+		report += fmt::sprintf("Deviation sigma: R %+003i G %+003i B %+003i\t%s\n", devR, devG, devB, entry_->nameNoExt());
+		report += fmt::sprintf(
 			"Min R %+003i Min G %+003i Min B %+003i Max R %+003i Max G %+003i Max B %+003i \nError count: %i\n",
 			minR,
 			minG,
@@ -1621,11 +1621,11 @@ void PaletteEntryPanel::analysePalettes()
 		for (size_t i = 0; i < 256; ++i)
 		{
 			if (reds[i] < 999 || greens[i] < 999 || blues[i] < 999)
-				report += S_FMT("| %003d | %003d | %003d | %003d |\n", i, reds[i], greens[i], blues[i]);
+				report += fmt::sprintf("| %003d | %003d | %003d | %003d |\n", i, reds[i], greens[i], blues[i]);
 		}
 		report.Replace("999", "   ");
 #endif
 	}
 
-	LOG_MESSAGE(1, report);
+	Log::info(1, report);
 }

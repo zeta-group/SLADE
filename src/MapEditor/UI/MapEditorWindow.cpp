@@ -161,27 +161,27 @@ void MapEditorWindow::saveLayout()
 	// Console pane
 	file.Write("\"console\" ");
 	auto pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("console"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Item info pane
 	file.Write("\"item_props\" ");
 	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("item_props"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Script editor pane
 	file.Write("\"script_editor\" ");
 	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("script_editor"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Map checks pane
 	file.Write("\"map_checks\" ");
 	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("map_checks"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Undo history pane
 	file.Write("\"undo_history\" ");
 	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("undo_history"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Close file
 	file.Close();
@@ -513,7 +513,7 @@ bool MapEditorWindow::chooseMap(Archive* archive)
 		if (!openMap(md))
 		{
 			Hide();
-			wxMessageBox(S_FMT("Unable to open md %s: %s", md.name, Global::error), "Invalid md error", wxICON_ERROR);
+			wxMessageBox(fmt::sprintf("Unable to open md %s: %s", md.name, Global::error), "Invalid md error", wxICON_ERROR);
 			return false;
 		}
 		else
@@ -531,7 +531,7 @@ bool MapEditorWindow::openMap(const Archive::MapDesc& map)
 	if (MapEditor::editContext().map().isModified())
 	{
 		wxMessageDialog md{ this,
-							S_FMT("Save changes to map %s?", MapEditor::editContext().mapDesc().name),
+							fmt::sprintf("Save changes to map %s?", MapEditor::editContext().mapDesc().name),
 							"Unsaved Changes",
 							wxYES_NO | wxCANCEL };
 		int             answer = md.ShowModal();
@@ -612,15 +612,15 @@ bool MapEditorWindow::openMap(const Archive::MapDesc& map)
 
 		// Set window title
 		if (archive)
-			SetTitle(S_FMT("SLADE - %s of %s", map.name, archive->filename(false)));
+			SetTitle(fmt::sprintf("SLADE - %s of %s", map.name, archive->filename(false)));
 		else
-			SetTitle(S_FMT("SLADE - %s (UNSAVED)", map.name));
+			SetTitle(fmt::sprintf("SLADE - %s (UNSAVED)", map.name));
 
 		// Create backup
 		if (map.head
 			&& !MapEditor::backupManager().writeBackup(
 				   map_data_, map.head->topParent()->filename(false), map.head->nameNoExt()))
-			LOG_MESSAGE(1, "Warning: Failed to backup map data");
+			Log::info(1, "Warning: Failed to backup map data");
 	}
 
 	return ok;
@@ -740,21 +740,21 @@ void MapEditorWindow::buildNodes(Archive* wad)
 	}
 
 	// Build command line
-	StrUtil::replaceIP(command, "$f", S_FMT("\"%s\"", filename));
+	StrUtil::replaceIP(command, "$f", fmt::sprintf("\"%s\"", filename));
 	StrUtil::replaceIP(command, "$o", options);
 
 	// Run nodebuilder
 	if (wxFileExists(builder.path))
 	{
 		wxArrayString out;
-		LOG_MESSAGE(1, "execute \"%s %s\"", builder.path, command);
+		Log::info(fmt::sprintf("execute \"%s %s\"", builder.path, command));
 		wxTheApp->SetTopWindow(this);
 		wxWindow* focus = wxWindow::FindFocus();
-		wxExecute(S_FMT("\"%s\" %s", builder.path, command), out, wxEXEC_HIDE_CONSOLE);
+		wxExecute(fmt::sprintf("\"%s\" %s", builder.path, command), out, wxEXEC_HIDE_CONSOLE);
 		wxTheApp->SetTopWindow(MainEditor::windowWx());
 		if (focus)
 			focus->SetFocusFromKbd();
-		LOG_MESSAGE(1, "Nodebuilder output:");
+		Log::info(1, "Nodebuilder output:");
 		for (const auto& line : out)
 			Log::info(line);
 
@@ -763,7 +763,7 @@ void MapEditorWindow::buildNodes(Archive* wad)
 		wad->open(filename);
 	}
 	else if (nb_warned)
-		LOG_MESSAGE(1, "Nodebuilder path not set up, no nodes were built");
+		Log::info(1, "Nodebuilder path not set up, no nodes were built");
 }
 
 // -----------------------------------------------------------------------------
@@ -887,7 +887,7 @@ bool MapEditorWindow::saveMap()
 	// Create backup
 	if (!MapEditor::backupManager().writeBackup(
 			map_data_, map.head->topParent()->filename(false), map.head->nameNoExt()))
-		LOG_MESSAGE(1, "Warning: Failed to backup map data");
+		Log::info(1, "Warning: Failed to backup map data");
 
 	// Add new map entries
 	for (unsigned a = 1; a < wad->numEntries(); a++)
@@ -964,7 +964,7 @@ bool MapEditorWindow::saveMapAs()
 	}
 
 	// Set window title
-	SetTitle(S_FMT("SLADE - %s of %s", mdesc_current.name, wad.filename(false)));
+	SetTitle(fmt::sprintf("SLADE - %s of %s", mdesc_current.name, wad.filename(false)));
 
 	return true;
 }
@@ -1000,7 +1000,7 @@ bool MapEditorWindow::tryClose()
 	if (MapEditor::editContext().map().isModified())
 	{
 		wxMessageDialog md{ this,
-							S_FMT("Save changes to map %s?", MapEditor::editContext().mapDesc().name),
+							fmt::sprintf("Save changes to map %s?", MapEditor::editContext().mapDesc().name),
 							"Unsaved Changes",
 							wxYES_NO | wxCANCEL };
 		int             answer = md.ShowModal();

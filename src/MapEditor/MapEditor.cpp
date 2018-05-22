@@ -340,15 +340,15 @@ bool MapEditor::editObjectProperties(vector<MapObject*>& list)
 	string selsize;
 	string type    = edit_context->modeString(false);
 	if (list.size() == 1)
-		type += S_FMT(" #%d", list[0]->index());
+		type += fmt::sprintf(" #%d", list[0]->index());
 	else if (list.size() > 1)
-		selsize = S_FMT("(%lu selected)", list.size());
+		selsize = fmt::sprintf("(%lu selected)", list.size());
 
 	// Create dialog for properties panel
 	SDialog dlg(
 		MapEditor::window(),
-		S_FMT("%s Properties %s", type, selsize),
-		S_FMT("mobjprops_%s", edit_context->modeString(false)),
+		fmt::sprintf("%s Properties %s", type, selsize),
+		fmt::sprintf("mobjprops_%s", edit_context->modeString(false)),
 		-1,
 		-1);
 	auto sizer = new wxBoxSizer(wxVERTICAL);

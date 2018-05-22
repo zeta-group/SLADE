@@ -121,26 +121,26 @@ void save_cvars(wxFile& file)
 	{
 		if (cvars[c]->flags & CVAR_SAVE)
 		{
-			file.Write(S_FMT("\t%s ", cvars[c]->name));
+			file.Write(fmt::format("\t{} ", cvars[c]->name));
 
 			int spaces = max_size - cvars[c]->name.size();
 			for (int a = 0; a < spaces; a++) file.Write(" ");
 
 			if (cvars[c]->type == CVAR_INTEGER)
-				file.Write(S_FMT("%d\n", cvars[c]->GetValue().Int));
+				file.Write(fmt::format("{}\n", cvars[c]->GetValue().Int));
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				file.Write(S_FMT("%d\n", cvars[c]->GetValue().Bool));
+				file.Write(fmt::format("{}\n", cvars[c]->GetValue().Bool));
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				file.Write(S_FMT("%1.5f\n", cvars[c]->GetValue().Float));
+				file.Write(fmt::format("{:1.5f}\n", cvars[c]->GetValue().Float));
 
 			if (cvars[c]->type == CVAR_STRING)
 			{
 				string value = StrUtil::escapedString(((CStringCVar*)cvars[c])->value, true);
 				//value.Replace("\\", "/");
 				//value.Replace("\"", "\\\"");
-				file.Write(S_FMT("\"%s\"\n", value), wxConvUTF8);
+				file.Write(fmt::format("\"{}\"\n", value), wxConvUTF8);
 			}
 		}
 	}
@@ -159,13 +159,13 @@ void read_cvar(string name, const string& value)
 		if (name == cvars[c]->name)
 		{
 			if (cvars[c]->type == CVAR_INTEGER)
-				*((CIntCVar*) cvars[c]) = std::stoi(value);
+				*((CIntCVar*) cvars[c]) = StrUtil::toInt(value);
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				*((CBoolCVar*) cvars[c]) = !!(std::stoi(value));
+				*((CBoolCVar*) cvars[c]) = StrUtil::toBoolean(value);
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				*((CFloatCVar*) cvars[c]) = std::stof(value);
+				*((CFloatCVar*) cvars[c]) = StrUtil::toFloat(value);
 
 			if (cvars[c]->type == CVAR_STRING)
 				*((CStringCVar*) cvars[c]) = value;

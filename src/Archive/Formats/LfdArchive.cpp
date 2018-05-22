@@ -140,7 +140,7 @@ bool LfdArchive::open(MemChunk& mc)
 		// the gobfile is invalid
 		if (offset + length > size)
 		{
-			LOG_MESSAGE(1, "LfdArchive::open: lfd archive is invalid or corrupt");
+			Log::info(1, "LfdArchive::open: lfd archive is invalid or corrupt");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -163,7 +163,7 @@ bool LfdArchive::open(MemChunk& mc)
 	}
 
 	if (num_lumps != numEntries())
-		LOG_MESSAGE(1, "Warning: computed %i lumps, but actually %i entries", num_lumps, numEntries());
+		Log::info(fmt::format("Warning: computed {} lumps, but actually {} entries", num_lumps, numEntries()));
 
 	// Detect all entry types
 	MemChunk edata;
@@ -314,7 +314,7 @@ bool LfdArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "LfdArchive::loadEntryData: Failed to open lfdfile %s", filename_);
+		Log::info(fmt::format("LfdArchive::loadEntryData: Failed to open lfdfile {}", filename_));
 		return false;
 	}
 

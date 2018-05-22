@@ -113,9 +113,9 @@ void SectorTextureOverlay::draw(int width, int height, float fade)
 	string ftex = tex_floor_[0];
 	string ctex = tex_ceil_[0];
 	if (tex_floor_.size() > 1)
-		ftex = S_FMT("Multiple (%lu)", tex_floor_.size());
+		ftex = fmt::sprintf("Multiple (%lu)", tex_floor_.size());
 	if (tex_ceil_.size() > 1)
-		ctex = S_FMT("Multiple (%lu)", tex_ceil_.size());
+		ctex = fmt::sprintf("Multiple (%lu)", tex_ceil_.size());
 
 	// Floor texture
 	glEnable(GL_LINE_SMOOTH);

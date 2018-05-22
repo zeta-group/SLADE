@@ -30,8 +30,8 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "LineDraw.h"
 #include "General/KeyBind.h"
+#include "LineDraw.h"
 #include "MapEditor/MapEditContext.h"
 #include "MapEditor/MapEditor.h"
 #include "Utility/MathStuff.h"
@@ -264,8 +264,8 @@ void LineDraw::begin(bool shape)
 	if (shape)
 	{
 		context_.setFeatureHelp({ "Shape Drawing",
-								  S_FMT("%s = Accept", key_accept),
-								  S_FMT("%s = Cancel", key_cancel),
+								  fmt::sprintf("%s = Accept", key_accept),
+								  fmt::sprintf("%s = Cancel", key_cancel),
 								  "Left Click = Draw point",
 								  "Right Click = Undo previous point" });
 		MapEditor::showShapeDrawPanel(true);
@@ -273,8 +273,8 @@ void LineDraw::begin(bool shape)
 	else
 	{
 		context_.setFeatureHelp({ "Line Drawing",
-								  S_FMT("%s = Accept", key_accept),
-								  S_FMT("%s = Cancel", key_cancel),
+								  fmt::sprintf("%s = Accept", key_accept),
+								  fmt::sprintf("%s = Cancel", key_cancel),
 								  "Left Click = Draw point",
 								  "Right Click = Undo previous point",
 								  "Shift = Snap to nearest vertex" });
@@ -325,7 +325,7 @@ void LineDraw::end(bool apply)
 		// Check for intersections
 		auto intersect =
 			map.cutLines(draw_points_[a].x, draw_points_[a].y, draw_points_[a + 1].x, draw_points_[a + 1].y);
-		LOG_MESSAGE(2, "%lu intersect points", intersect.size());
+		Log::info(2, fmt::sprintf("%lu intersect points", intersect.size()));
 
 		// Create line normally if no intersections
 		if (intersect.empty())

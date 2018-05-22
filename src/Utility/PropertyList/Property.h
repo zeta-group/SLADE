@@ -40,37 +40,37 @@ public:
 
 	Property& operator=(bool val)
 	{
-		value_ = val;
+		setValue(val);
 		return *this;
 	}
 
 	Property& operator=(int val)
 	{
-		value_ = val;
+		setValue(val);
 		return *this;
 	}
 
 	Property& operator=(float val)
 	{
-		value_ = (double)val;
+		setValue(val);
 		return *this;
 	}
 
 	Property& operator=(double val)
 	{
-		value_ = val;
+		setValue(val);
 		return *this;
 	}
 
 	Property& operator=(const string& val)
 	{
-		value_ = val;
+		setValue(val);
 		return *this;
 	}
 
 	Property& operator=(unsigned val)
 	{
-		value_ = val;
+		setValue(val);
 		return *this;
 	}
 

@@ -169,7 +169,7 @@ void MapRenderer3D::refresh()
 	skytex1_      = minf.sky1;
 	skytex2_      = minf.sky2;
 	skycol_top_.a = 0;
-	// LOG_MESSAGE(1, "sky1: %s, sky2: %s", skytex1, skytex2);
+	// Log::info(1, "sky1: %s, sky2: %s", skytex1, skytex2);
 }
 
 // -----------------------------------------------------------------------------
@@ -2013,11 +2013,11 @@ void MapRenderer3D::updateThing(unsigned index, MapThing* thing)
 		if (use_zeth_icons && thing3d.type->zethIcon() >= 0)
 		{
 			thing3d.sprite =
-				MapEditor::textureManager().editorImage(S_FMT("zethicons/zeth%02d", thing3d.type->zethIcon()));
+				MapEditor::textureManager().editorImage(fmt::sprintf("zethicons/zeth%02d", thing3d.type->zethIcon()));
 			thing3d.flags |= ZETH;
 		}
 		if (!thing3d.sprite)
-			thing3d.sprite = MapEditor::textureManager().editorImage(S_FMT("thing/%s", thing3d.type->icon()));
+			thing3d.sprite = MapEditor::textureManager().editorImage(fmt::sprintf("thing/%s", thing3d.type->icon()));
 		thing3d.flags |= ICON;
 	}
 	else

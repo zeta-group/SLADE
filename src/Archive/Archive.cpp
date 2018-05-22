@@ -31,8 +31,8 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "Archive.h"
-#include "General/UndoRedo.h"
 #include "General/Clipboard.h"
+#include "General/UndoRedo.h"
 #include "Utility/Parser.h"
 #include <regex>
 
@@ -346,21 +346,21 @@ string Archive::fileExtensionString() const
 	// Multiple extensions
 	if (fmt->extensions.size() > 1)
 	{
-		string         ext_all = S_FMT("Any %s File|", fmt->name);
+		string         ext_all = fmt::format("Any {} File|", fmt->name);
 		vector<string> ext_strings;
-		for (auto ext : fmt->extensions)
+		for (const auto& ext : fmt->extensions)
 		{
-			string ext_case = S_FMT("*.%s;", StrUtil::lower(ext.first));
-			ext_case += S_FMT("*.%s;", StrUtil::upper(ext.first));
-			ext_case += S_FMT("*.%s", StrUtil::capitalize(ext.first));
+			string ext_case = fmt::format("*.{};", StrUtil::lower(ext.first));
+			ext_case += fmt::format("*.{};", StrUtil::upper(ext.first));
+			ext_case += fmt::format("*.{}", StrUtil::capitalize(ext.first));
 
-			ext_all += S_FMT("%s;", ext_case);
-			ext_strings.push_back(S_FMT("%s File (*.%s)|%s", ext.second, ext.first, ext_case));
+			ext_all += fmt::format("{};", ext_case);
+			ext_strings.push_back(fmt::format("{} File (*.{})|{}", ext.second, ext.first, ext_case));
 		}
 
 		ext_all.pop_back();
 		for (const auto& ext : ext_strings)
-			ext_all += S_FMT("|%s", ext);
+			ext_all += fmt::format("|{}", ext);
 
 		return ext_all;
 	}
@@ -369,11 +369,11 @@ string Archive::fileExtensionString() const
 	if (fmt->extensions.size() == 1)
 	{
 		auto&  ext      = fmt->extensions[0];
-		string ext_case = S_FMT("*.%s;", StrUtil::lower(ext.first));
-		ext_case += S_FMT("*.%s;", StrUtil::upper(ext.first));
-		ext_case += S_FMT("*.%s", StrUtil::capitalize(ext.first));
+		string ext_case = fmt::format("*.{};", StrUtil::lower(ext.first));
+		ext_case += fmt::format("*.{};", StrUtil::upper(ext.first));
+		ext_case += fmt::format("*.{}", StrUtil::capitalize(ext.first));
 
-		return S_FMT("%s File (*.%s)|%s", ext.second, ext.first, ext_case);
+		return fmt::format("{} File (*.{})|{}", ext.second, ext.first, ext_case);
 	}
 
 	// No extension (probably unknown type)
@@ -421,7 +421,7 @@ bool Archive::open(string_view filename)
 	sf::Clock timer;
 	if (open(mc))
 	{
-		LOG_MESSAGE(2, "Archive::open took %dms", timer.getElapsedTime().asMilliseconds());
+		Log::info(2, fmt::format("Archive::open took {}ms", timer.getElapsedTime().asMilliseconds()));
 		this->on_disk_ = true;
 		return true;
 	}
@@ -595,7 +595,7 @@ bool Archive::save(string_view filename)
 			{
 				// Copy current file contents to new backup file
 				string bakfile = this->filename_ + ".bak";
-				LOG_MESSAGE(1, "Creating backup %s", bakfile);
+				Log::info(fmt::format("Creating backup {}", bakfile));
 				wxCopyFile(this->filename_, bakfile, true);
 			}
 
@@ -781,7 +781,7 @@ ArchiveTreeNode* Archive::createDir(string_view path, ArchiveTreeNode* base)
 		return base;
 
 	// Create the directory
-	ArchiveTreeNode* dir = (ArchiveTreeNode*)((STreeNode*)base)->addChild(path.data());
+	ArchiveTreeNode* dir = (ArchiveTreeNode*)((STreeNode*)base)->addChild(path);
 
 	// Record undo step
 	if (UndoRedo::currentlyRecording())
@@ -1036,7 +1036,7 @@ bool Archive::swapEntries(ArchiveEntry* entry1, ArchiveEntry* entry2)
 	// Check they are both in the same directory
 	if (entry2->parentDir() != dir)
 	{
-		LOG_MESSAGE(1, "Error: Can't swap two entries in different directories");
+		Log::info(1, "Error: Can't swap two entries in different directories");
 		return false;
 	}
 
@@ -1570,21 +1570,21 @@ bool Archive::loadFormats(MemChunk& mc)
 				fmt.prefer_uppercase = prop->boolValue();
 		}
 
-		LOG_MESSAGE(3, "Read archive format %s: \"%s\"", fmt.id, fmt.name);
+		Log::info(3, fmt::format("Read archive format {}: \"{}\"", fmt.id, fmt.name));
 		if (fmt.supports_dirs)
 		{
-			LOG_MESSAGE(3, "  Supports folders");
+			Log::info(3, "  Supports folders");
 		}
 		if (fmt.names_extensions)
 		{
-			LOG_MESSAGE(3, "  Entry names have extensions");
+			Log::info(3, "  Entry names have extensions");
 		}
 		if (fmt.max_name_length >= 0)
 		{
-			LOG_MESSAGE(3, "  Max entry name length: %d", fmt.max_name_length);
+			Log::info(3, fmt::format("  Max entry name length: {}", fmt.max_name_length));
 		}
 		for (auto ext : fmt.extensions)
-			LOG_MESSAGE(3, "  Extension \"%s\" = \"%s\"", ext.first, ext.second);
+			Log::info(3, fmt::format("  Extension \"{}\" = \"{}\"", ext.first, ext.second));
 
 		formats.push_back(fmt);
 	}

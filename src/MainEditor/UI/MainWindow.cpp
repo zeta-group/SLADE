@@ -165,17 +165,17 @@ void MainWindow::saveLayout() const
 	// Console pane
 	file.Write("\"console\" ");
 	string pinf = m_mgr_->SavePaneInfo(m_mgr_->GetPane("console")).ToStdString();
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Archive Manager pane
 	file.Write("\"archive_manager\" ");
 	pinf = m_mgr_->SavePaneInfo(m_mgr_->GetPane("archive_manager"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Undo History pane
 	file.Write("\"undo_history\" ");
 	pinf = m_mgr_->SavePaneInfo(m_mgr_->GetPane("undo_history"));
-	file.Write(S_FMT("\"%s\"\n", pinf));
+	file.Write(fmt::sprintf("\"%s\"\n", pinf));
 
 	// Close file
 	file.Close();
@@ -654,7 +654,7 @@ bool MainWindow::handleAction(string_view id)
 		wxRemoveFile(icon_filename);
 
 		string year = wxNow().Right(4).ToStdString();
-		info.SetCopyright(S_FMT("(C) 2008-%s Simon Judd <sirjuddington@gmail.com>", year));
+		info.SetCopyright(fmt::sprintf("(C) 2008-%s Simon Judd <sirjuddington@gmail.com>", year));
 
 		wxAboutBox(info);
 

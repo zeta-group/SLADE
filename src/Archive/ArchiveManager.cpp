@@ -94,12 +94,10 @@ bool ArchiveManager::validResDir(string_view dir) const
 		wxFileName fn(WxUtils::stringFromView(dir) + "/" + path);
 		if (!wxFileExists(fn.GetFullPath()))
 		{
-			LOG_MESSAGE(1,
-						"Resource %s was not found in dir %s!\n"
-						"This resource folder cannot be used. "
-						"(Did you install SLADE 3 in a SLumpEd folder?)",
-						path,
-						dir);
+			Log::info(fmt::format(
+				"Resource %s was not found in dir %s!\n"
+				"This resource folder cannot be used. "
+				"(Did you install SLADE 3 in a SLumpEd folder?)", path, dir));
 			return false;
 		}
 	}
@@ -125,7 +123,7 @@ bool ArchiveManager::init()
 		res_archive_open_ = (program_resource_archive_->numEntries() > 0);
 
 		if (!initArchiveFormats())
-			LOG_MESSAGE(1, "An error occurred reading archive formats configuration");
+			Log::info(1, "An error occurred reading archive formats configuration");
 
 		return res_archive_open_;
 	}
@@ -144,14 +142,14 @@ bool ArchiveManager::init()
 	// Open slade.pk3
 	if (!program_resource_archive_->open(dir_slade_pk3))
 	{
-		LOG_MESSAGE(1, "Unable to find slade.pk3!");
+		Log::info(1, "Unable to find slade.pk3!");
 		res_archive_open_ = false;
 	}
 	else
 		res_archive_open_ = true;
 
 	if (!initArchiveFormats())
-		LOG_MESSAGE(1, "An error occurred reading archive formats configuration");
+		Log::info(1, "An error occurred reading archive formats configuration");
 
 	return res_archive_open_;
 }
@@ -267,7 +265,7 @@ Archive* ArchiveManager::openArchive(string_view filename, bool manage, bool sil
 
 	Archive* new_archive = getArchive(filename);
 
-	LOG_MESSAGE(1, "Opening archive %s", filename);
+	Log::info(fmt::format("Opening archive {}", filename));
 
 	// If the archive is already open, just return it
 	if (new_archive)
@@ -365,7 +363,7 @@ Archive* ArchiveManager::openArchive(string_view filename, bool manage, bool sil
 	}
 	else
 	{
-		LOG_MESSAGE(1, "Error: " + Global::error);
+		Log::info(1, "Error: " + Global::error);
 		delete new_archive;
 		return nullptr;
 	}
@@ -484,7 +482,7 @@ Archive* ArchiveManager::openArchive(ArchiveEntry* entry, bool manage, bool sile
 	}
 	else
 	{
-		LOG_MESSAGE(1, "Error: " + Global::error);
+		Log::info(1, "Error: " + Global::error);
 		delete new_archive;
 		return nullptr;
 	}
@@ -498,7 +496,7 @@ Archive* ArchiveManager::openDirArchive(string_view dir, bool manage, bool silen
 {
 	Archive* new_archive = getArchive(dir);
 
-	LOG_MESSAGE(1, "Opening directory %s as archive", dir);
+	Log::info(fmt::format("Opening directory {} as archive", dir));
 
 	// If the archive is already open, just return it
 	if (new_archive)
@@ -544,7 +542,7 @@ Archive* ArchiveManager::openDirArchive(string_view dir, bool manage, bool silen
 	}
 	else
 	{
-		LOG_MESSAGE(1, "Error: " + Global::error);
+		Log::info(1, "Error: " + Global::error);
 		delete new_archive;
 		return nullptr;
 	}
@@ -567,7 +565,7 @@ Archive* ArchiveManager::newArchive(string_view format)
 		new_archive = new ZipArchive();
 	else
 	{
-		Global::error = S_FMT("Can not create archive of format: %s", format);
+		Global::error = fmt::format("Can not create archive of format: {}", format);
 		Log::error(Global::error);
 		return nullptr;
 	}
@@ -575,7 +573,7 @@ Archive* ArchiveManager::newArchive(string_view format)
 	// If the archive was created, set its filename and add it to the list
 	if (new_archive)
 	{
-		new_archive->setFilename(S_FMT("UNSAVED (%s)", new_archive->formatDesc()->name));
+		new_archive->setFilename(fmt::format("UNSAVED ({})", new_archive->formatDesc()->name));
 		addArchive(new_archive);
 	}
 
@@ -752,20 +750,20 @@ string ArchiveManager::getArchiveExtensionsString() const
 	string         ext_all = "Any supported file|";
 	for (auto fmt : formats)
 	{
-		for (auto ext : fmt.extensions)
+		for (const auto& ext : fmt.extensions)
 		{
-			string ext_case = S_FMT("*.%s;", StrUtil::lower(ext.first));
-			ext_case += S_FMT("*.%s;", StrUtil::upper(ext.first));
-			ext_case += S_FMT("*.%s", StrUtil::capitalize(ext.first));
+			string ext_case = fmt::format("*.{};", StrUtil::lower(ext.first));
+			ext_case += fmt::format("*.{};", StrUtil::upper(ext.first));
+			ext_case += fmt::format("*.{}", StrUtil::capitalize(ext.first));
 
-			ext_all += S_FMT("%s;", ext_case);
-			ext_strings.push_back(S_FMT("%s files (*.%s)|%s", ext.second, ext.first, ext_case));
+			ext_all += fmt::format("{};", ext_case);
+			ext_strings.push_back(fmt::format("{} files (*.{})|{}", ext.second, ext.first, ext_case));
 		}
 	}
 
 	ext_all.pop_back();
 	for (const auto& ext : ext_strings)
-		ext_all += S_FMT("|%s", ext);
+		ext_all += fmt::format("|{}", ext);
 
 	return ext_all;
 }
@@ -896,7 +894,7 @@ bool ArchiveManager::openBaseResource(int index)
 		return false;
 
 	// Attempt to open the file
-	UI::showSplash(S_FMT("Opening %s...", filename), true);
+	UI::showSplash(fmt::format("Opening {}...", filename), true);
 	if (base_resource_archive_->open(filename))
 	{
 		base_resource = index;
@@ -1278,12 +1276,12 @@ void ArchiveManager::onAnnouncement(Announcer* announcer, string_view event_name
 // -----------------------------------------------------------------------------
 CONSOLE_COMMAND(list_archives, 0, true)
 {
-	LOG_MESSAGE(1, "%d Open Archives:", App::archiveManager().numArchives());
+	Log::info(fmt::format("{} Open Archives:", App::archiveManager().numArchives()));
 
 	for (int a = 0; a < App::archiveManager().numArchives(); a++)
 	{
 		Archive* archive = App::archiveManager().getArchive(a);
-		LOG_MESSAGE(1, "%d: \"%s\"", a + 1, archive->filename());
+		Log::info(fmt::format("{}: \"{}\"", a + 1, archive->filename()));
 	}
 }
 

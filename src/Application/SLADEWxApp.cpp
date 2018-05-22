@@ -31,18 +31,18 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
-#include "SLADEWxApp.h"
 #include "Archive/ArchiveManager.h"
 #include "External/email/wxMailer.h"
 #include "General/Console/Console.h"
 #include "General/Web.h"
 #include "MainEditor/MainEditor.h"
-#include "MainEditor/UI/MainWindow.h"
 #include "MainEditor/UI/ArchiveManagerPanel.h"
+#include "MainEditor/UI/MainWindow.h"
 #include "MainEditor/UI/StartPage.h"
 #include "OpenGL/OpenGL.h"
-#include <wx/statbmp.h>
+#include "SLADEWxApp.h"
 #include "Utility/StringUtils.h"
+#include <wx/statbmp.h>
 
 #undef BOOL
 
@@ -145,15 +145,15 @@ public:
 	{
 		string location = "[unknown location] ";
 		if (frame.HasSourceLocation())
-			location = S_FMT("(%s:%d) ", frame.GetFileName(), frame.GetLine());
+			location = fmt::format("({}:{}) ", frame.GetFileName(), frame.GetLine());
 
 		wxUIntPtr address   = wxPtrToUInt(frame.GetAddress());
 		string    func_name = frame.GetName().ToStdString();
 		if (func_name.empty())
-			func_name = S_FMT("[unknown:%d]", address);
+			func_name = fmt::format("[unknown:{}]", address);
 
-		string line = S_FMT("%s%s", location, func_name);
-		stack_trace_.append(S_FMT("%d: %s\n", frame.GetLevel(), line));
+		string line = fmt::format("{}{}", location, func_name);
+		stack_trace_.append(fmt::format("{}: {}\n", frame.GetLevel(), line));
 
 		if (frame.GetLevel() == 0)
 			top_level_ = line;
@@ -221,11 +221,11 @@ public:
 #endif
 
 		// SLADE info
-		trace_ = S_FMT("Version: %s\n", Global::version);
+		trace_ = fmt::format("Version: {}\n", Global::version);
 		if (current_action.empty())
 			trace_ += "No current action\n";
 		else
-			trace_ += S_FMT("Current action: %s", current_action);
+			trace_ += fmt::format("Current action: {}", current_action);
 		trace_ += "\n";
 
 		// System info
@@ -312,7 +312,7 @@ public:
 		msg.SetFrom("SLADE");
 		msg.SetTo("slade.errors@gmail.com");
 		msg.SetSubject("[" + Global::version + "] @ " + top_level_);
-		msg.SetMessage(S_FMT("Description:\n%s\n\n%s", text_description_->GetValue(), trace_));
+		msg.SetMessage(fmt::format("Description:\n{}\n\n{}", text_description_->GetValue(), trace_));
 		msg.AddAttachment(App::path("slade3.log", App::Dir::User));
 		msg.Finalize();
 
@@ -531,7 +531,7 @@ bool SLADEWxApp::OnInit()
 	// Get Windows version
 #ifdef __WXMSW__
 	wxGetOsVersion(&Global::win_version_major, &Global::win_version_minor);
-	LOG_MESSAGE(1, "Windows Version: %d.%d", Global::win_version_major, Global::win_version_minor);
+	Log::info(fmt::format("Windows Version: {}.{}", Global::win_version_major, Global::win_version_minor));
 #endif
 
 	// Reroute wx log messages
@@ -587,6 +587,15 @@ void SLADEWxApp::OnFatalException()
 	sd.ShowModal();
 #endif //_DEBUG
 #endif // wxUSE_STACKWALKER
+}
+
+bool SLADEWxApp::OnExceptionInMainLoop()
+{
+#ifdef _DEBUG
+	throw;
+#else
+	return wxApp::OnExceptionInMainLoop();
+#endif
 }
 
 #ifdef __APPLE__
@@ -661,7 +670,7 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	// Check failed
 	if (e.GetString() == "connect_failed")
 	{
-		LOG_MESSAGE(1, "Version check failed, unable to connect");
+		Log::info(1, "Version check failed, unable to connect");
 		if (update_check_message_box)
 			wxMessageBox(
 				"Update check failed: unable to connect to internet. "
@@ -676,7 +685,7 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	// Check for correct info
 	if (info.size() != 5)
 	{
-		LOG_MESSAGE(1, "Version check failed, received invalid version info");
+		Log::info(1, "Version check failed, received invalid version info");
 		if (update_check_message_box)
 			wxMessageBox("Update check failed: received invalid version info.", "Check for Updates");
 		return;
@@ -687,8 +696,8 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	auto version_beta   = std::stoi(info[1]);
 	auto beta_num       = std::stoi(info[2]);
 
-	LOG_MESSAGE(1, "Latest stable release: v%ld \"%s\"", version_stable, StrUtil::trim(info[1]));
-	LOG_MESSAGE(1, "Latest beta release: v%ld_b%ld \"%s\"", version_beta, beta_num, StrUtil::trim(info[4]));
+	Log::info(fmt::format("Latest stable release: v{} \"{}\"", version_stable, StrUtil::trim(info[1])));
+	Log::info(fmt::format("Latest beta release: v{}_b{} \"{}\"", version_beta, beta_num, StrUtil::trim(info[4])));
 
 	// Check if new stable version
 	bool new_stable = false;
@@ -719,8 +728,8 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 		// New Beta
 		caption = "New Beta Version Available";
 		version = StrUtil::trim(info[4]);
-		message = S_FMT(
-			"A new beta version of SLADE is available (%s), click OK to visit the SLADE homepage "
+		message = fmt::format(
+			"A new beta version of SLADE is available ({}), click OK to visit the SLADE homepage "
 			"and download the update.",
 			version);
 	}
@@ -729,8 +738,8 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 		// New Stable
 		caption = "New Version Available";
 		version = StrUtil::trim(info[1]);
-		message = S_FMT(
-			"A new version of SLADE is available (%s), click OK to visit the SLADE homepage and "
+		message = fmt::format(
+			"A new version of SLADE is available ({}), click OK to visit the SLADE homepage and "
 			"download the update.",
 			version);
 	}

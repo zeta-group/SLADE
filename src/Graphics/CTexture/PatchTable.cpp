@@ -259,7 +259,7 @@ bool PatchTable::loadPNAMES(ArchiveEntry* pnames, Archive* parent)
 	pnames->seek(0, SEEK_SET);
 	if (!pnames->read(&n_pnames, 4))
 	{
-		LOG_MESSAGE(1, "Error: PNAMES lump is corrupt");
+		Log::info(1, "Error: PNAMES lump is corrupt");
 		return false;
 	}
 
@@ -272,7 +272,7 @@ bool PatchTable::loadPNAMES(ArchiveEntry* pnames, Archive* parent)
 		// Try to read pname
 		if (!pnames->read(&pname, 8))
 		{
-			LOG_MESSAGE(1, "Error: PNAMES entry %i is corrupt", a);
+			Log::info(fmt::format("Error: PNAMES entry {} is corrupt", a));
 			return false;
 		}
 

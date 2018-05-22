@@ -410,14 +410,14 @@ string TextLanguage::autocompletionList(string_view start, bool include_custom)
 	{
 		for (auto& word : word_lists_[type].list)
 			if (StrUtil::startsWithCI(word, start))
-				list.push_back(word + S_FMT("?%d", type + 1));
+				list.push_back(fmt::sprintf("%s?%d", word, type + 1));
 
 		if (!include_custom)
 			continue;
 
 		for (auto& word : word_lists_custom_[type].list)
 			if (StrUtil::startsWithCI(word, start))
-				list.push_back(word + S_FMT("?%d", type + 1));
+				list.push_back(fmt::sprintf("%s?%d", word, type + 1));
 	}
 
 	// Add functions
@@ -559,7 +559,7 @@ bool TextLanguage::readLanguageDefinition(MemChunk& mc, string_view source)
 	// Open the given text data
 	if (!tz.openMem(mc, source))
 	{
-		LOG_MESSAGE(1, "Unable to open file");
+		Log::info(1, "Unable to open file");
 		return false;
 	}
 
@@ -583,8 +583,8 @@ bool TextLanguage::readLanguageDefinition(MemChunk& mc, string_view source)
 			if (inherit)
 				inherit->copyTo(lang);
 			else
-				LOG_MESSAGE(
-					1, "Warning: Language %s inherits from undefined language %s", node->name(), node->inherit());
+				Log::info(fmt::sprintf(
+					"Warning: Language %s inherits from undefined language %s", node->name(), node->inherit()));
 		}
 
 		// Parse language info

@@ -1,7 +1,7 @@
 
 #include "Main.h"
-#include "MapInfo.h"
 #include "Archive/Archive.h"
+#include "MapInfo.h"
 #include "Utility/StringUtils.h"
 
 using namespace Game;
@@ -86,8 +86,8 @@ bool MapInfo::checkEqualsToken(Tokenizer& tz, string_view parsing) const
 {
 	if (tz.next() != "=")
 	{
-		Log::error(
-			S_FMT(R"(Error Parsing %s: Expected "=", got "%s" at line %d)", parsing, tz.current().text, tz.lineNo()));
+		Log::error(fmt::format(
+			R"(Error Parsing {}: Expected "=", got "{}" at line {})", parsing, tz.current().text, tz.lineNo()));
 		return false;
 	}
 
@@ -110,8 +110,8 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 
 			if (!include_entry)
 			{
-				Log::warning(S_FMT(
-					R"(Warning - Parsing ZMapInfo "%s": Unable to include "%s" at line %d)",
+				Log::warning(fmt::format(
+					R"(Warning - Parsing ZMapInfo "{}": Unable to include "{}" at line {})",
 					entry->name(),
 					tz.current().text,
 					tz.lineNo()));
@@ -137,7 +137,7 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 		// Unknown block (skip it)
 		else if (tz.check("{"))
 		{
-			Log::warning(2, S_FMT("Warning - Parsing ZMapInfo \"%s\": Skipping {} block", entry->name()));
+			Log::warning(2, fmt::format("Warning - Parsing ZMapInfo \"{}\": Skipping {{}} block", entry->name()));
 
 			tz.adv();
 			tz.skipSection("{", "}");
@@ -148,13 +148,15 @@ bool MapInfo::parseZMapInfo(ArchiveEntry* entry)
 		else
 		{
 			Log::warning(
-				2, S_FMT(R"(Warning - Parsing ZMapInfo "%s": Unknown token "%s")", entry->name(), tz.current().text));
+				2,
+				fmt::format(
+					R"(Warning - Parsing ZMapInfo "{}": Unknown token "{}")", entry->name(), tz.current().text));
 		}
 
 		tz.adv();
 	}
 
-	LOG_MESSAGE(2, "Parsed ZMapInfo entry %s successfully", entry->name());
+	Log::info(2, fmt::format("Parsed ZMapInfo entry {} successfully", entry->name()));
 
 	return true;
 }
@@ -189,8 +191,8 @@ bool MapInfo::parseZMap(Tokenizer& tz, string type)
 
 	if (!tz.advIf("{"))
 	{
-		Log::error(
-			S_FMT(R"(Error Parsing ZMapInfo: Expecting "{", got "%s" at line %d)", tz.current().text, tz.lineNo()));
+		Log::error(fmt::format(
+			R"(Error Parsing ZMapInfo: Expecting "{{", got "{}" at line {})", tz.current().text, tz.lineNo()));
 		return false;
 	}
 
@@ -320,7 +322,7 @@ bool MapInfo::parseZMap(Tokenizer& tz, string type)
 
 	if (type == "map")
 	{
-		LOG_MESSAGE(2, "Parsed ZMapInfo Map %s (%s) successfully", map.entry_name, map.name);
+		Log::info(2, fmt::format("Parsed ZMapInfo Map {} ({}) successfully", map.entry_name, map.name));
 
 		// Update existing map
 		bool updated = false;
@@ -347,7 +349,8 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 	// Opening brace
 	if (!tz.advIfNext("{", 2))
 	{
-		Log::error(S_FMT(R"(Error Parsing ZMapInfo: Expecting "{", got "%s" at line %d)", tz.peek().text, tz.lineNo()));
+		Log::error(
+			fmt::format(R"(Error Parsing ZMapInfo: Expecting "{{", got "{}" at line {})", tz.peek().text, tz.lineNo()));
 		return false;
 	}
 
@@ -356,8 +359,8 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 		// Editor number
 		if (!tz.current().isInteger())
 		{
-			Log::error(S_FMT(
-				"Error Parsing ZMapInfo DoomEdNums: Expecting editor number, got \"%s\" at line %d",
+			Log::error(fmt::format(
+				"Error Parsing ZMapInfo DoomEdNums: Expecting editor number, got \"{}\" at line {}",
 				tz.current().text,
 				tz.lineNo()));
 			return false;
@@ -372,8 +375,8 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 		// =
 		if (!tz.advIfNext("="))
 		{
-			Log::error(S_FMT(
-				R"(Error Parsing ZMapInfo DoomEdNums: Expecting "=", got "%s" at line %d)",
+			Log::error(fmt::format(
+				R"(Error Parsing ZMapInfo DoomEdNums: Expecting "=", got "{}" at line {})",
 				tz.current().text,
 				tz.lineNo()));
 			return false;
@@ -398,8 +401,8 @@ bool MapInfo::parseDoomEdNums(Tokenizer& tz)
 			{
 				if (!tz.current().isInteger() && !tz.check("+"))
 				{
-					Log::error(S_FMT(
-						"Error Parsing ZMapInfo DoomEdNums: Expecting arg value, got \"%s\" at line %d",
+					Log::error(fmt::format(
+						"Error Parsing ZMapInfo DoomEdNums: Expecting arg value, got \"{}\" at line {}",
 						tz.current().text,
 						tz.current().line_no));
 					return false;
@@ -425,9 +428,8 @@ void MapInfo::dumpDoomEdNums()
 		if (num.second.actor_class.empty())
 			continue;
 
-		LOG_MESSAGE(
-			1,
-			"DoomEdNum %d: Class \"%s\", Special \"%s\", Args %d,%d,%d,%d,%d",
+		Log::info(fmt::format(
+			"DoomEdNum %d: Class \"{}\", Special \"{}\", Args {},{},{},{},{}",
 			num.first,
 			num.second.actor_class,
 			num.second.special,
@@ -435,7 +437,7 @@ void MapInfo::dumpDoomEdNums()
 			num.second.args[1],
 			num.second.args[2],
 			num.second.args[3],
-			num.second.args[4]);
+			num.second.args[4]));
 	}
 }
 

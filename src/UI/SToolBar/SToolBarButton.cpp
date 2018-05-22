@@ -100,18 +100,18 @@ SToolBarButton::SToolBarButton(wxWindow* parent, string_view action, string_view
 	// Add shortcut to help text if it exists
 	string sc = action_->shortcutText();
 	if (!sc.empty())
-		help_text_ += S_FMT(" (Shortcut: %s)", sc);
+		help_text_ += fmt::sprintf(" (Shortcut: %s)", sc);
 
 	// Set tooltip
 	if (!show_name)
 	{
 		string tip = StrUtil::replace(action_->text(), StrUtil::AMPERSAND, StrUtil::EMPTY);
 		if (!sc.empty())
-			tip += S_FMT(" (Shortcut: %s)", sc);
+			tip += fmt::sprintf(" (Shortcut: %s)", sc);
 		SetToolTip(tip);
 	}
 	else if (!sc.empty())
-		SetToolTip(S_FMT("Shortcut: %s", sc));
+		SetToolTip(wxString::Format("Shortcut: %s", sc));
 
 	// Bind events
 	Bind(wxEVT_PAINT, &SToolBarButton::onPaint, this);

@@ -199,14 +199,14 @@ bool CTPatchEx::parse(Tokenizer& tz, Type type)
 				string translate;
 				string temp = tz.next().text;
 				if (StrUtil::contains(temp, '='))
-					temp = S_FMT("\"%s\"", temp);
+					temp = fmt::format("\"{}\"", temp);
 				translate += temp;
 				while (tz.checkNext(","))
 				{
 					translate += tz.next().text; // add ','
 					temp = tz.next().text;
 					if (StrUtil::contains(temp, '='))
-						temp = S_FMT("\"%s\"", temp);
+						temp = fmt::format("\"{}\"", temp);
 					translate += temp;
 				}
 				// Parse whole string
@@ -247,12 +247,12 @@ bool CTPatchEx::parse(Tokenizer& tz, Type type)
 						// Third value exists, must be R,G,B,A format
 						// RGB are ints in the 0-255 range; A is float in the 0.0-1.0 range
 						tz.adv(); // Skip ,
-						colour_.r = std::stod(first);
+						colour_.r = StrUtil::toDouble(first);
 						colour_.g = second;
 						colour_.b = tz.next().asInt();
 						if (!tz.checkNext(","))
 						{
-							Log::error(S_FMT("Invalid TEXTURES definition, expected ',', got '%s'", tz.peek().text));
+							Log::error(fmt::format("Invalid TEXTURES definition, expected ',', got '{}'", tz.peek().text));
 							return false;
 						}
 						tz.adv(); // Skip ,
@@ -287,7 +287,7 @@ string CTPatchEx::asText()
 	string typestring = "Patch";
 	if (type_ == Type::Graphic)
 		typestring = "Graphic";
-	string text = S_FMT("\t%s \"%s\", %d, %d\n", typestring, name_, offset_x_, offset_y_);
+	string text = fmt::format("\t{} \"{}\", {}, {}\n", typestring, name_, offset_x_, offset_y_);
 
 	// Check if we need to write any extra properties
 	if (!flip_x_ && !flip_y_ && !use_offsets_ && rotation_ == 0 && blendtype_ == 0 && alpha_ == 1.0f
@@ -304,7 +304,7 @@ string CTPatchEx::asText()
 	if (use_offsets_)
 		text += "\t\tUseOffsets\n";
 	if (rotation_ != 0)
-		text += S_FMT("\t\tRotate %d\n", rotation_);
+		text += fmt::format("\t\tRotate {}\n", rotation_);
 	if (blendtype_ == 1 && !translation_.isEmpty())
 	{
 		text += "\t\tTranslation ";
@@ -314,17 +314,17 @@ string CTPatchEx::asText()
 	if (blendtype_ >= 2)
 	{
 		wxColour col(colour_.r, colour_.g, colour_.b);
-		text += S_FMT("\t\tBlend \"%s\"", col.GetAsString(wxC2S_HTML_SYNTAX));
+		text += fmt::format("\t\tBlend \"{}\"", col.GetAsString(wxC2S_HTML_SYNTAX));
 
 		if (blendtype_ == 3)
-			text += S_FMT(", %1.1f\n", (double)colour_.a / 255.0);
+			text += fmt::format(", {:1.1f}\n", (double)colour_.a / 255.0);
 		else
 			text += "\n";
 	}
 	if (alpha_ < 1.0f)
-		text += S_FMT("\t\tAlpha %1.2f\n", alpha_);
+		text += fmt::format("\t\tAlpha {:1.2f}\n", alpha_);
 	if (!(StrUtil::equalCI(style_, "Copy")))
-		text += S_FMT("\t\tStyle %s\n", style_);
+		text += fmt::format("\t\tStyle {}\n", style_);
 
 	// Write ending
 	text += "\t}\n";
@@ -637,7 +637,7 @@ bool CTexture::parse(Tokenizer& tz, string_view type)
 			// Check if end of text is reached (error)
 			if (tz.atEnd())
 			{
-				Log::error(S_FMT("Error parsing texture %s: End of text found, missing } perhaps?", name_));
+				Log::error(fmt::format("Error parsing texture {}: End of text found, missing }} perhaps?", name_));
 				return false;
 			}
 
@@ -736,22 +736,22 @@ string CTexture::asText()
 
 	// Define block
 	if (defined_)
-		return S_FMT("define \"%s\" %d %d\n", name_, def_width_, def_height_);
+		return fmt::format("define \"{}\" {} {}\n", name_, def_width_, def_height_);
 
 	// Init text string
 	string text;
 	if (optional_)
-		text = S_FMT("%s Optional \"%s\", %d, %d\n{\n", type_, name_, width_, height_);
+		text = fmt::format("{} Optional \"{}\", {}, {}\n{\n", type_, name_, width_, height_);
 	else
-		text = S_FMT("%s \"%s\", %d, %d\n{\n", type_, name_, width_, height_);
+		text = fmt::format("{} \"{}\", {}, {}\n{\n", type_, name_, width_, height_);
 
 	// Write texture properties
 	if (scale_x_ != 1.0)
-		text += S_FMT("\tXScale %1.3f\n", scale_x_);
+		text += fmt::format("\tXScale {:1.3f}\n", scale_x_);
 	if (scale_y_ != 1.0)
-		text += S_FMT("\tYScale %1.3f\n", scale_y_);
+		text += fmt::format("\tYScale {:1.3f}\n", scale_y_);
 	if (offset_x_ != 0 || offset_y_ != 0)
-		text += S_FMT("\tOffset %d, %d\n", offset_x_, offset_y_);
+		text += fmt::format("\tOffset {}, {}\n", offset_x_, offset_y_);
 	if (world_panning_)
 		text += "\tWorldPanning\n";
 	if (no_decals_)

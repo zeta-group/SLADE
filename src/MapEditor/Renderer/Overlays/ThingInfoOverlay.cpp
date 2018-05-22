@@ -31,7 +31,6 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ThingInfoOverlay.h"
 #include "Game/Configuration.h"
 #include "General/ColourConfiguration.h"
 #include "MapEditor/MapEditContext.h"
@@ -40,6 +39,7 @@
 #include "MapEditor/SLADEMap/MapThing.h"
 #include "OpenGL/Drawing.h"
 #include "OpenGL/OpenGL.h"
+#include "ThingInfoOverlay.h"
 
 
 // -----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ void ThingInfoOverlay::update(MapThing* thing)
 	if (!thing)
 		return;
 
-	string info_text;
+	fmt::StringWriter info_text;
 	sprite_        = "";
 	translation_   = "";
 	palette_       = "";
@@ -81,22 +81,22 @@ void ThingInfoOverlay::update(MapThing* thing)
 
 	// Index + type
 	auto&  tt   = Game::configuration().thingType(thing->type());
-	string type = S_FMT("%s (Type %d)", tt.name(), thing->type());
+	string type = fmt::sprintf("{} (Type {})", tt.name(), thing->type());
 	if (Global::debug)
-		info_text += S_FMT("Thing #%d (%d): %s\n", thing->index(), thing->objId(), type);
+		info_text.write("Thing #{} ({}): {}\n", thing->index(), thing->objId(), type);
 	else
-		info_text += S_FMT("Thing #%d: %s\n", thing->index(), type);
+		info_text.write("Thing #{}: {}\n", thing->index(), type);
 
 	// Position
 	if (map_format != MAP_DOOM)
-		info_text += S_FMT(
-			"Position: %d, %d, %d\n", (int)thing->xPos(), (int)thing->yPos(), (int)(thing->floatProperty("height")));
+		info_text.write(
+			"Position: {}, {}, {}\n", (int)thing->xPos(), (int)thing->yPos(), (int)(thing->floatProperty("height")));
 	else
-		info_text += S_FMT("Position: %d, %d\n", (int)thing->xPos(), (int)thing->yPos());
+		info_text.write("Position: {}, {}\n", (int)thing->xPos(), (int)thing->yPos());
 
 	// Direction
 	int    angle = thing->intProperty("angle");
-	string dir   = S_FMT("%d degrees", angle);
+	string dir   = fmt::format("{} degrees", angle);
 	if (angle == 0)
 		dir = "East";
 	else if (angle == 45)
@@ -113,14 +113,14 @@ void ThingInfoOverlay::update(MapThing* thing)
 		dir = "South";
 	else if (angle == 315)
 		dir = "Southeast";
-	info_text += S_FMT("Direction: %s\n", dir);
+	info_text.write("Direction: {}\n", dir);
 
 	// Special and Args (if in hexen format or udmf with thing args)
 	if (map_format == MAP_HEXEN
 		|| (map_format == MAP_UDMF && Game::configuration().getUDMFProperty("arg0", MapObject::Type::Thing)))
 	{
 		int as_id = thing->intProperty("special");
-		info_text += S_FMT("Special: %d (%s)\n", as_id, Game::configuration().actionSpecialName(as_id));
+		info_text.write("Special: {} ({})\n", as_id, Game::configuration().actionSpecialName(as_id));
 		int args[5];
 		args[0] = thing->intProperty("arg0");
 		args[1] = thing->intProperty("arg1");
@@ -137,21 +137,18 @@ void ThingInfoOverlay::update(MapThing* thing)
 			argstr = Game::configuration().actionSpecial(as_id).argSpec().stringDesc(args, argxstr);
 
 		if (!argstr.empty())
-			info_text += S_FMT("%s\n", argstr);
+			info_text.write("{}\n", argstr);
 		else
-			info_text += "No Args\n";
+			info_text.write("No Args\n");
 	}
 
 	// Flags
 	if (map_format != MAP_UDMF)
-		info_text += S_FMT("Flags: %s\n", Game::configuration().thingFlagsString(thing->intProperty("flags")));
+		info_text.write("Flags: {}\n", Game::configuration().thingFlagsString(thing->intProperty("flags")));
 
 	// TID (if in doom64/hexen/udmf format)
 	if (map_format != MAP_DOOM)
-		info_text += S_FMT("TID: %i", thing->intProperty("id"));
-
-	if (info_text.back() == '\n')
-		info_text.pop_back();
+		info_text.write("TID: {}", thing->intProperty("id"));
 
 	// Set sprite and translation
 	sprite_      = tt.sprite();
@@ -161,7 +158,10 @@ void ThingInfoOverlay::update(MapThing* thing)
 	zeth_        = tt.zethIcon();
 
 	// Setup text box
-	text_box_.setText(info_text);
+	if (info_text.buffer()[info_text.size() - 1] == '\n')
+		text_box_.setText({ info_text.data(), info_text.size() - 1 });
+	else
+		text_box_.setText(info_text.c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -192,8 +192,8 @@ void ThingInfoOverlay::draw(int bottom, int right, float alpha)
 	// Get colours
 	ColRGBA col_bg = ColourConfiguration::colour("map_overlay_background");
 	ColRGBA col_fg = ColourConfiguration::colour("map_overlay_foreground");
-	col_fg.a      = col_fg.a * alpha;
-	col_bg.a      = col_bg.a * alpha;
+	col_fg.a       = col_fg.a * alpha;
+	col_bg.a       = col_bg.a * alpha;
 	ColRGBA col_border(0, 0, 0, 140);
 
 	// Draw overlay background
@@ -210,9 +210,9 @@ void ThingInfoOverlay::draw(int bottom, int right, float alpha)
 	if (!tex)
 	{
 		if (use_zeth_icons && zeth_ >= 0)
-			tex = MapEditor::textureManager().editorImage(S_FMT("zethicons/zeth%02d", zeth_));
+			tex = MapEditor::textureManager().editorImage(fmt::sprintf("zethicons/zeth%02d", zeth_));
 		if (!tex)
-			tex = MapEditor::textureManager().editorImage(S_FMT("thing/%s", icon_));
+			tex = MapEditor::textureManager().editorImage(fmt::sprintf("thing/%s", icon_));
 		isicon = true;
 	}
 	glEnable(GL_TEXTURE_2D);

@@ -416,7 +416,7 @@ void ZTextureEditorPanel::updatePatchControls()
 			auto patch = (CTPatchEx*)tex_current_->patch(selection[0]);
 			if (!patch)
 			{
-				LOG_MESSAGE(1, "Error: Selected patch does not exist in texture");
+				Log::info(1, "Error: Selected patch does not exist in texture");
 				return;
 			}
 

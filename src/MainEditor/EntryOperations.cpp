@@ -30,7 +30,6 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "EntryOperations.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "Archive/EntryType/EntryDataFormat.h"
@@ -39,6 +38,7 @@
 #include "Dialogs/ExtMessageDialog.h"
 #include "Dialogs/ModifyOffsetsDialog.h"
 #include "Dialogs/Preferences/PreferencesDialog.h"
+#include "EntryOperations.h"
 #include "General/Console/Console.h"
 #include "General/Misc.h"
 #include "MainEditor/MainEditor.h"
@@ -134,9 +134,9 @@ bool EntryOperations::gfxConvert(
 	if (target_colformat != SImage::Type::Any && !fmt->canWriteType(target_colformat))
 	{
 		if (target_colformat == SImage::Type::RGBA)
-			LOG_MESSAGE(1, "Format \"%s\" cannot be written as RGBA data", fmt->name());
+			Log::info(fmt::sprintf("Format \"%s\" cannot be written as RGBA data", fmt->name()));
 		else if (target_colformat == SImage::Type::PalMask)
-			LOG_MESSAGE(1, "Format \"%s\" cannot be written as paletted data", fmt->name());
+			Log::info(fmt::sprintf("Format \"%s\" cannot be written as paletted data", fmt->name()));
 
 		return false;
 	}
@@ -148,7 +148,8 @@ bool EntryOperations::gfxConvert(
 	int writable = fmt->canWrite(image);
 	if (writable == SIFormat::NOTWRITABLE)
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" could not be converted to target format \"%s\"", entry->name(), fmt->name());
+		Log::info(
+			fmt::sprintf("Entry \"%s\" could not be converted to target format \"%s\"", entry->name(), fmt->name()));
 		return false;
 	}
 	else if (writable == SIFormat::CONVERTIBLE)
@@ -183,8 +184,8 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" || entryformat == "img_doom_alpha"
 		  || entryformat == "img_doom_beta" || entryformat == "img_png"))
 	{
-		LOG_MESSAGE(
-			1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name());
+		Log::info(fmt::sprintf(
+			"Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name()));
 		return false;
 	}
 
@@ -234,7 +235,7 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
 	{
 		// Read width and height from IHDR chunk
 		const uint8_t* data = entry->dataRaw(true);
-		const IHDR*  ihdr = (IHDR*)(data + 12);
+		const IHDR*    ihdr = (IHDR*)(data + 12);
 		uint32_t       w    = wxINT32_SWAP_ON_LE(ihdr->width);
 		uint32_t       h    = wxINT32_SWAP_ON_LE(ihdr->height);
 
@@ -247,10 +248,10 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
 			// Check for 'grAb' header
 			if (data[a] == 'g' && data[a + 1] == 'r' && data[a + 2] == 'A' && data[a + 3] == 'b')
 			{
-				grab_start         = a - 4;
+				grab_start      = a - 4;
 				GrabChunk* grab = (GrabChunk*)(data + a);
-				xoff               = wxINT32_SWAP_ON_LE(grab->xoff);
-				yoff               = wxINT32_SWAP_ON_LE(grab->yoff);
+				xoff            = wxINT32_SWAP_ON_LE(grab->xoff);
+				yoff            = wxINT32_SWAP_ON_LE(grab->yoff);
 				break;
 			}
 
@@ -265,9 +266,9 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
 		yoff             = offsets.y;
 
 		// Create new grAb chunk
-		uint32_t     csize = wxUINT32_SWAP_ON_LE(8);
+		uint32_t  csize = wxUINT32_SWAP_ON_LE(8);
 		GrabChunk gc    = { { 'g', 'r', 'A', 'b' }, wxINT32_SWAP_ON_LE(xoff), wxINT32_SWAP_ON_LE(yoff) };
-		uint32_t     dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 12));
+		uint32_t  dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 12));
 
 		// Build new PNG from the original w/ the new grAb chunk
 		MemChunk npng;
@@ -334,8 +335,8 @@ bool EntryOperations::setGfxOffsets(ArchiveEntry* entry, int x, int y)
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" || entryformat == "img_doom_alpha"
 		  || entryformat == "img_doom_beta" || entryformat == "img_png"))
 	{
-		LOG_MESSAGE(
-			1, "Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name());
+		Log::info(fmt::sprintf(
+			"Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name()));
 		return false;
 	}
 
@@ -395,9 +396,9 @@ bool EntryOperations::setGfxOffsets(ArchiveEntry* entry, int x, int y)
 		}
 
 		// Create new grAb chunk
-		uint32_t     csize = wxUINT32_SWAP_ON_LE(8);
+		uint32_t  csize = wxUINT32_SWAP_ON_LE(8);
 		GrabChunk gc    = { { 'g', 'r', 'A', 'b' }, wxINT32_SWAP_ON_LE(x), wxINT32_SWAP_ON_LE(y) };
-		uint32_t     dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 12));
+		uint32_t  dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 12));
 
 		// Build new PNG from the original w/ the new grAb chunk
 		MemChunk npng;
@@ -516,16 +517,16 @@ bool EntryOperations::openMapDB2(ArchiveEntry* entry)
 	}
 
 	// Generate Doom Builder command line
-	string cmd = S_FMT("%s \"%s\" -map %s", path, filename, entry->name());
+	string cmd = fmt::sprintf("%s \"%s\" -map %s", path, filename, entry->name());
 
 	// Add base resource archive to command line
 	Archive* base = App::archiveManager().baseResourceArchive();
 	if (base)
 	{
 		if (base->formatId() == "wad")
-			cmd += S_FMT(" -resource wad \"%s\"", base->filename());
+			cmd += fmt::sprintf(" -resource wad \"%s\"", base->filename());
 		else if (base->formatId() == "zip")
-			cmd += S_FMT(" -resource pk3 \"%s\"", base->filename());
+			cmd += fmt::sprintf(" -resource pk3 \"%s\"", base->filename());
 	}
 
 	// Add resource archives to command line
@@ -535,9 +536,9 @@ bool EntryOperations::openMapDB2(ArchiveEntry* entry)
 
 		// Check archive type (only wad and zip supported by db2)
 		if (archive->formatId() == "wad")
-			cmd += S_FMT(" -resource wad \"%s\"", archive->filename());
+			cmd += fmt::sprintf(" -resource wad \"%s\"", archive->filename());
 		else if (archive->formatId() == "zip")
-			cmd += S_FMT(" -resource pk3 \"%s\"", archive->filename());
+			cmd += fmt::sprintf(" -resource pk3 \"%s\"", archive->filename());
 	}
 
 	// Run DB2
@@ -565,13 +566,13 @@ bool EntryOperations::modifyalPhChunk(ArchiveEntry* entry, bool value)
 	// Check entry type
 	if (!(entry->type()->formatId() == "img_png"))
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->type()->name());
+		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->type()->name()));
 		return false;
 	}
 
 	// Read width and height from IHDR chunk
 	const uint8_t* data = entry->dataRaw(true);
-	const IHDR*  ihdr = (IHDR*)(data + 12);
+	const IHDR*    ihdr = (IHDR*)(data + 12);
 
 	// Find existing alPh chunk
 	uint32_t alph_start = 0;
@@ -610,9 +611,9 @@ bool EntryOperations::modifyalPhChunk(ArchiveEntry* entry, bool value)
 		npng.write(data, 33);
 
 		// Create new alPh chunk
-		uint32_t     csize = wxUINT32_SWAP_ON_LE(0);
+		uint32_t  csize = wxUINT32_SWAP_ON_LE(0);
 		AlphChunk gc    = { 'a', 'l', 'P', 'h' };
-		uint32_t     dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 4));
+		uint32_t  dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 4));
 
 		// Create alPh chunk
 		npng.write(&csize, 4);
@@ -672,13 +673,13 @@ bool EntryOperations::modifytRNSChunk(ArchiveEntry* entry, bool value)
 	// Check entry type
 	if (!(entry->type()->formatId() == "img_png"))
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString());
+		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
 	// Read width and height from IHDR chunk
 	const uint8_t* data = entry->dataRaw(true);
-	const IHDR*  ihdr = (IHDR*)(data + 12);
+	const IHDR*    ihdr = (IHDR*)(data + 12);
 
 	// tRNS chunks are only valid for paletted PNGs, and must be before the first IDAT.
 	// Specs say they must be after PLTE chunk as well, so to play it safe, we'll insert
@@ -691,9 +692,9 @@ bool EntryOperations::modifytRNSChunk(ArchiveEntry* entry, bool value)
 		// Check for 'tRNS' header
 		if (data[a] == 't' && data[a + 1] == 'R' && data[a + 2] == 'N' && data[a + 3] == 'S')
 		{
-			trns_start          = a - 4;
+			trns_start       = a - 4;
 			TransChunk* trns = (TransChunk*)(data + a);
-			trns_size           = 12 + READ_B32(data, a - 4);
+			trns_size        = 12 + READ_B32(data, a - 4);
 		}
 
 		// Stop when we get to the 'IDAT' chunk
@@ -730,9 +731,9 @@ bool EntryOperations::modifytRNSChunk(ArchiveEntry* entry, bool value)
 		npng.write(data, idat_start);
 
 		// Create new tRNS chunk
-		uint32_t      csize = wxUINT32_SWAP_ON_LE(1);
+		uint32_t   csize = wxUINT32_SWAP_ON_LE(1);
 		TransChunk gc    = { 't', 'R', 'N', 'S', '\0' };
-		uint32_t      dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 5));
+		uint32_t   dcrc  = wxUINT32_SWAP_ON_LE(Misc::crc((uint8_t*)&gc, 5));
 
 		// Write tRNS chunk
 		npng.write(&csize, 4);
@@ -786,7 +787,7 @@ bool EntryOperations::getalPhChunk(ArchiveEntry* entry)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString());
+		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -818,7 +819,7 @@ bool EntryOperations::gettRNSChunk(ArchiveEntry* entry)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString());
+		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -852,7 +853,7 @@ bool EntryOperations::readgrAbChunk(ArchiveEntry* entry, point2_t& offsets)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		LOG_MESSAGE(1, "Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString());
+		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -941,17 +942,16 @@ bool EntryOperations::addToPatchTable(vector<ArchiveEntry*> entries)
 		// Check entry type
 		if (!(entry->type()->extraProps().propertyExists("image")))
 		{
-			LOG_MESSAGE(1, "Entry %s is not a valid image", entry->name());
+			Log::info(fmt::sprintf("Entry %s is not a valid image", entry->name()));
 			continue;
 		}
 
 		// Check entry name
 		if (entry->nameNoExt().size() > 8)
 		{
-			LOG_MESSAGE(
-				1,
+			Log::info(fmt::sprintf(
 				"Entry %s has too long a name to add to the patch table (name must be 8 characters max)",
-				entry->name());
+				entry->name()));
 			continue;
 		}
 
@@ -1047,7 +1047,7 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		// Check entry type
 		if (!(entry->type()->extraProps().propertyExists("image")))
 		{
-			LOG_MESSAGE(1, "Entry %s is not a valid image", entry->name());
+			Log::info(fmt::sprintf("Entry %s is not a valid image", entry->name()));
 			continue;
 		}
 
@@ -1055,10 +1055,9 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		auto name = entry->nameNoExt();
 		if (name.size() > 8)
 		{
-			LOG_MESSAGE(
-				1,
+			Log::info(fmt::sprintf(
 				"Entry %s has too long a name to add to the patch table (name must be 8 characters max)",
-				entry->name());
+				entry->name()));
 			continue;
 		}
 
@@ -1242,7 +1241,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 	if (!include_paths.empty())
 	{
 		for (const auto& include_path : include_paths)
-			opt += S_FMT(" -i \"%s\"", include_path);
+			opt += fmt::sprintf(" -i \"%s\"", include_path);
 	}
 
 	// Find/export any resource libraries
@@ -1264,7 +1263,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 		string path = App::path(StrUtil::join(res_entry->nameNoExt(), ".acs"), App::Dir::Temp);
 		res_entry->exportFile(path);
 		lib_paths.Add(path);
-		LOG_MESSAGE(2, "Exporting ACS library %s", res_entry->name());
+		Log::info(2, fmt::sprintf("Exporting ACS library %s", res_entry->name()));
 	}
 
 	// Export script to file
@@ -1407,7 +1406,7 @@ bool EntryOperations::exportAsPNG(ArchiveEntry* entry, string filename)
 	SImage image;
 	if (!Misc::loadImageFromEntry(&image, entry))
 	{
-		LOG_MESSAGE(1, "Error converting %s: %s", entry->name(), Global::error);
+		Log::info(fmt::sprintf("Error converting %s: %s", entry->name(), Global::error));
 		return false;
 	}
 
@@ -1416,7 +1415,7 @@ bool EntryOperations::exportAsPNG(ArchiveEntry* entry, string filename)
 	SIFormat* fmt_png = SIFormat::getFormat("png");
 	if (!fmt_png->saveImage(image, png, MainEditor::currentPalette(entry)))
 	{
-		LOG_MESSAGE(1, "Error converting %s", entry->name());
+		Log::info(fmt::sprintf("Error converting %s", entry->name()));
 		return false;
 	}
 
@@ -1451,7 +1450,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	if ((pngpathc.empty() || !wxFileExists(pngpathc)) && (pngpatho.empty() || !wxFileExists(pngpatho))
 		&& (pngpathd.empty() || !wxFileExists(pngpathd)))
 	{
-		LOG_MESSAGE(1, "PNG tool paths not defined or invalid, no optimization done.");
+		Log::info(1, "PNG tool paths not defined or invalid, no optimization done.");
 		return false;
 	}
 
@@ -1514,7 +1513,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 				for (size_t i = 0; i < output.GetCount(); ++i)
 					crushlog += output[i] + "\n";
 			}
-			LOG_MESSAGE(1, crushlog);
+			Log::info(1, crushlog);
 		}
 	}
 
@@ -1567,7 +1566,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 				for (size_t i = 0; i < output.GetCount(); ++i)
 					pngoutlog += output[i] + "\n";
 			}
-			LOG_MESSAGE(1, pngoutlog);
+			Log::info(1, pngoutlog);
 		}
 	}
 
@@ -1605,7 +1604,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 				for (size_t i = 0; i < output.GetCount(); ++i)
 					defloptlog += output[i] + "\n";
 			}
-			LOG_MESSAGE(1, defloptlog);
+			Log::info(1, defloptlog);
 		}
 	}
 	output.Clear();
@@ -1617,15 +1616,14 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	if (grabchunk)
 		setGfxOffsets(entry, offsets.x, offsets.y);
 
-	LOG_MESSAGE(
-		1,
+	Log::info(fmt::sprintf(
 		"PNG %s size %i =PNGCrush=> %i =PNGout=> %i =DeflOpt=> %i =+grAb/alPh=> %i",
 		entry->name(),
 		oldsize,
 		crushsize,
 		outsize,
 		deflsize,
-		entry->size());
+		entry->size()));
 
 
 	if (!crushed && !outed && !errormessages.empty())
@@ -1658,7 +1656,7 @@ bool EntryOperations::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, b
 		// reads an entry
 		if (cursor + sizeof(AnimatedEntry) > eodata)
 		{
-			LOG_MESSAGE(1, "Error: ANIMATED entry is corrupt");
+			Log::info(1, "Error: ANIMATED entry is corrupt");
 			return false;
 		}
 		animation = (AnimatedEntry*)cursor;
@@ -1667,7 +1665,7 @@ bool EntryOperations::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, b
 		// Create animation string
 		if (animdefs)
 		{
-			conversion = S_FMT(
+			conversion = fmt::sprintf(
 				"%s\tOptional\t%-8s\tRange\t%-8s\tTics %i%s",
 				(animation->type ? "Texture" : "Flat"),
 				animation->first,
@@ -1679,7 +1677,7 @@ bool EntryOperations::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, b
 		{
 			if ((animation->type > 1 ? 1 : animation->type) != lasttype)
 			{
-				conversion = S_FMT(
+				conversion = fmt::sprintf(
 					"#animated %s, spd is number of frames between changes\n"
 					"[%s]\n#spd    last        first\n",
 					animation->type ? "textures" : "flats",
@@ -1690,7 +1688,7 @@ bool EntryOperations::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, b
 				animdata->reSize(animdata->size() + conversion.length(), true);
 				animdata->write(conversion.data(), conversion.length());
 			}
-			conversion = S_FMT("%-8d%-12s%-12s\n", animation->speed, animation->last, animation->first);
+			conversion = fmt::sprintf("%-8d%-12s%-12s\n", animation->speed, animation->last, animation->first);
 		}
 
 		// Write string to animdata
@@ -1724,7 +1722,7 @@ bool EntryOperations::convertSwitches(ArchiveEntry* entry, MemChunk* animdata, b
 		// reads an entry
 		if (cursor + sizeof(SwitchesEntry) > eodata)
 		{
-			LOG_MESSAGE(1, "Error: SWITCHES entry is corrupt");
+			Log::info(1, "Error: SWITCHES entry is corrupt");
 			return false;
 		}
 		switches = (SwitchesEntry*)cursor;
@@ -1733,12 +1731,12 @@ bool EntryOperations::convertSwitches(ArchiveEntry* entry, MemChunk* animdata, b
 		// Create animation string
 		if (animdefs)
 		{
-			conversion =
-				S_FMT("Switch\tDoom %d\t\t%-8s\tOn Pic\t%-8s\tTics 0\n", switches->type, switches->off, switches->on);
+			conversion = fmt::sprintf(
+				"Switch\tDoom %d\t\t%-8s\tOn Pic\t%-8s\tTics 0\n", switches->type, switches->off, switches->on);
 		}
 		else
 		{
-			conversion = S_FMT("%-8d%-12s%-12s\n", switches->type, switches->off, switches->on);
+			conversion = fmt::sprintf("%-8d%-12s%-12s\n", switches->type, switches->off, switches->on);
 		}
 
 		// Write string to animdata
@@ -1771,20 +1769,16 @@ bool EntryOperations::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata, b
 				string first = tz.getToken();
 				if (last.length() > 8)
 				{
-					LOG_MESSAGE(
-						1,
-						"Error: string %s is too long for an animated %s name!",
-						last,
-						(texture ? "texture" : "flat"));
+					Log::info(fmt::sprintf(
+						"Error: string %s is too long for an animated %s name!", last, (texture ? "texture" : "flat")));
 					return false;
 				}
 				if (first.length() > 8)
 				{
-					LOG_MESSAGE(
-						1,
+					Log::info(fmt::sprintf(
 						"Error: string %s is too long for an animated %s name!",
 						first,
-						(texture ? "texture" : "flat"));
+						(texture ? "texture" : "flat")));
 					return false;
 				}
 
@@ -1832,12 +1826,12 @@ bool EntryOperations::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata, b
 				string on   = tz.getToken();
 				if (off.length() > 8)
 				{
-					LOG_MESSAGE(1, "Error: string %s is too long for a switch name!", off);
+					Log::info(fmt::sprintf("Error: string %s is too long for a switch name!", off));
 					return false;
 				}
 				if (on.length() > 8)
 				{
-					LOG_MESSAGE(1, "Error: string %s is too long for a switch name!", on);
+					Log::info(fmt::sprintf("Error: string %s is too long for a switch name!", on));
 					return false;
 				}
 
@@ -1896,27 +1890,26 @@ void fixpngsrc(ArchiveEntry* entry)
 	{
 		if (pointer + 12 > entry->size())
 		{
-			LOG_MESSAGE(1, "Entry %s cannot be repaired.", entry->name());
+			Log::info(fmt::sprintf("Entry %s cannot be repaired.", entry->name()));
 			delete[] data;
 			return;
 		}
 		uint32_t chsz = READ_B32(data, pointer);
 		if (pointer + 12 + chsz > entry->size())
 		{
-			LOG_MESSAGE(1, "Entry %s cannot be repaired.", entry->name());
+			Log::info(fmt::sprintf("Entry %s cannot be repaired.", entry->name()));
 			delete[] data;
 			return;
 		}
 		uint32_t crc = Misc::crc(data + pointer + 4, 4 + chsz);
 		if (crc != READ_B32(data, pointer + 8 + chsz))
 		{
-			LOG_MESSAGE(
-				1,
+			Log::info(fmt::sprintf(
 				"Chunk %c%c%c%c has bad CRC",
 				data[pointer + 4],
 				data[pointer + 5],
 				data[pointer + 6],
-				data[pointer + 7]);
+				data[pointer + 7]));
 			neededchange              = true;
 			data[pointer + 8 + chsz]  = crc >> 24;
 			data[pointer + 9 + chsz]  = (crc & 0x00ffffff) >> 16;
@@ -1946,7 +1939,7 @@ CONSOLE_COMMAND(fixpngcrc, 0, true)
 	vector<ArchiveEntry*> selection = MainEditor::currentEntrySelection();
 	if (selection.empty())
 	{
-		LOG_MESSAGE(1, "No entry selected");
+		Log::info(1, "No entry selected");
 		return;
 	}
 	for (auto& entry : selection)

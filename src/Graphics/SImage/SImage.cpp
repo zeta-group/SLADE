@@ -35,9 +35,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "SImage.h"
 #include "Graphics/Translation.h"
 #include "SIFormat.h"
+#include "SImage.h"
 #include "Utility/MathStuff.h"
 
 #undef BOOL
@@ -110,7 +110,7 @@ bool SImage::dataRGBA(MemChunk& mc, Palette* pal)
 	else if (type_ == Type::AlphaMap)
 	{
 		uint8_t rgba[4];
-		ColRGBA  col;
+		ColRGBA col;
 		for (unsigned a = 0; a < num_pixels_; a++)
 		{
 			// Get pixel as colour (greyscale)
@@ -168,7 +168,7 @@ bool SImage::dataRGB(MemChunk& mc, Palette* pal)
 		// Alpha map, convert to RGB
 
 		uint8_t rgba[4];
-		ColRGBA  col;
+		ColRGBA col;
 		for (unsigned a = 0; a < num_pixels_; a++)
 		{
 			// Get pixel as colour (greyscale)
@@ -731,7 +731,7 @@ bool SImage::convertPaletted(Palette* pal_target, Palette* pal_current)
 	// Do conversion
 	data_      = new uint8_t[num_pixels_];
 	unsigned i = 0;
-	ColRGBA   col;
+	ColRGBA  col;
 	for (unsigned a = 0; a < num_pixels_; a++)
 	{
 		col.r    = rgba_data[i++];
@@ -854,7 +854,7 @@ bool SImage::maskFromBrightness(Palette* pal)
 		{
 			// Set mask from pixel colour brightness value
 			ColRGBA col = pal->colour(data_[a]);
-			mask_[a]   = ((double)col.r * 0.3) + ((double)col.g * 0.59) + ((double)col.b * 0.11);
+			mask_[a]    = ((double)col.r * 0.3) + ((double)col.g * 0.59) + ((double)col.b * 0.11);
 		}
 	}
 	else if (type_ == Type::RGBA)
@@ -980,7 +980,7 @@ bool SImage::setPixel(int x, int y, uint8_t pal_index, uint8_t alpha)
 	{
 		// Set the pixel
 		ColRGBA col = palette_.colour(pal_index);
-		col.a      = alpha;
+		col.a       = alpha;
 		col.write(data_ + (y * (size_.x * 4) + (x * 4)));
 	}
 
@@ -1103,7 +1103,7 @@ bool SImage::rotate(int angle)
 		}
 		if (j >= num_pixels_)
 		{
-			LOG_MESSAGE(1, "Pixel %i remapped to %i, how did this even happen?", i, j);
+			Log::info(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
 			delete[] nd;
 			if (mask_)
 				delete[] nm;
@@ -1162,7 +1162,7 @@ bool SImage::mirror(bool vertical)
 			j = ((i / size_.x) * size_.x) + ((size_.x - 1) - (i % size_.x));
 		if (j >= num_pixels_)
 		{
-			LOG_MESSAGE(1, "Pixel %i remapped to %i, how did this even happen?", i, j);
+			Log::info(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
 			delete[] nd;
 			if (mask_)
 				delete[] nm;
@@ -1387,7 +1387,7 @@ bool SImage::applyTranslation(Translation* tr, Palette* pal, bool truecolor)
 			continue;
 
 		ColRGBA col;
-		int    q = p * bpp;
+		int     q = p * bpp;
 		if (type_ == Type::PalMask)
 			col.set(pal->colour(data_[p]));
 		else if (type_ == Type::RGBA)
@@ -1602,7 +1602,7 @@ bool SImage::drawImage(SImage& img, int x_pos, int y_pos, DrawProps& properties,
 			if (img.type_ == Type::PalMask)
 			{
 				ColRGBA col = pal_src->colour(img.data_[sp]);
-				col.a      = img.mask_[sp];
+				col.a       = img.mask_[sp];
 				drawPixel(x, y, col, properties, pal_dest);
 			}
 			else if (img.type_ == Type::RGBA)
@@ -1640,7 +1640,7 @@ bool SImage::colourise(ColRGBA colour, Palette* pal, int start, int stop)
 
 	// Go through all pixels
 	uint8_t bpp = this->bpp();
-	ColRGBA  col;
+	ColRGBA col;
 	for (unsigned a = 0; a < num_pixels_ * bpp; a += bpp)
 	{
 		// Skip colors out of range if desired
@@ -1690,7 +1690,7 @@ bool SImage::tint(ColRGBA colour, float amount, Palette* pal, int start, int sto
 
 	// Go through all pixels
 	uint8_t bpp = this->bpp();
-	ColRGBA  col;
+	ColRGBA col;
 	for (unsigned a = 0; a < num_pixels_ * bpp; a += bpp)
 	{
 		// Skip colors out of range if desired

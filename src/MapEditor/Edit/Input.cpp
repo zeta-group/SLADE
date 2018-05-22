@@ -30,11 +30,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "Input.h"
 #include "App.h"
 #include "General/Clipboard.h"
 #include "General/KeyBind.h"
 #include "General/UI.h"
+#include "Input.h"
 #include "MapEditor/MapEditContext.h"
 #include "MapEditor/Renderer/Overlays/MCOverlay.h"
 #include "MapEditor/UI/MapEditorWindow.h"
@@ -99,9 +99,9 @@ bool Input::mouseMove(int new_x, int new_y)
 	double my = context_.snapToGrid(mouse_pos_map_.y, false);
 	string status_text;
 	if (context_.mapDesc().format == MAP_UDMF)
-		status_text = S_FMT("Position: (%1.3f, %1.3f)", mx, my);
+		status_text = fmt::sprintf("Position: (%1.3f, %1.3f)", mx, my);
 	else
-		status_text = S_FMT("Position: (%d, %d)", (int)mx, (int)my);
+		status_text = fmt::sprintf("Position: (%d, %d)", (int)mx, (int)my);
 	MapEditor::setStatusText(status_text, 3);
 
 	// Object edit
@@ -936,8 +936,8 @@ void Input::handleKeyBind2d(string_view name)
 					string key_accept = KeyBind::getBind("map_edit_accept").keysAsString();
 					string key_cancel = KeyBind::getBind("map_edit_cancel").keysAsString();
 					context_.setFeatureHelp({ "Tag Edit",
-											  S_FMT("%s = Accept", key_accept),
-											  S_FMT("%s = Cancel", key_cancel),
+											  fmt::sprintf("%s = Accept", key_accept),
+											  fmt::sprintf("%s = Cancel", key_cancel),
 											  "Left Click = Toggle tagged sector" });
 				}
 			}
@@ -1014,7 +1014,7 @@ void Input::handleKeyBind3d(string_view name) const
 		{
 			render_3d_brightness = 1.0;
 		}
-		context_.addEditorMessage(S_FMT("Brightness set to %1.1f", (double)render_3d_brightness));
+		context_.addEditorMessage(fmt::sprintf("Brightness set to %1.1f", (double)render_3d_brightness));
 	}
 
 	// Toggle gravity
@@ -1180,6 +1180,6 @@ string Input::mouseButtonKBName(MouseButton button)
 	case Middle: return "mouse3";
 	case Mouse4: return "mouse4";
 	case Mouse5: return "mouse5";
-	default: return S_FMT("mouse%d", button);
+	default: return fmt::sprintf("mouse%d", button);
 	}
 }

@@ -133,7 +133,7 @@ bool MapEntryPanel::loadEntry(ArchiveEntry* entry)
 	// Load map into preview canvas
 	if (map_canvas_->openMap(thismap))
 	{
-		label_stats_->SetLabel(S_FMT(
+		label_stats_->SetLabel(fmt::sprintf(
 			"Vertices: %d, Sides: %d, Lines: %d, Sectors: %d, Things: %d, Total Size: %dx%d",
 			map_canvas_->nVertices(),
 			map_canvas_->nSides(),
@@ -176,13 +176,13 @@ bool MapEntryPanel::createImage()
 			min<int>(map_image_width, map_canvas_->GetSize().x),
 			min<int>(map_image_height, map_canvas_->GetSize().y));
 
-	string     name = S_FMT("%s_%s", entry_->parent()->filename(false), entry_->name());
+	string     name = fmt::sprintf("%s_%s", entry_->parent()->filename(false), entry_->name());
 	wxFileName fn(name);
 
 	// Create save file dialog
 	wxFileDialog dialog_save(
 		this,
-		S_FMT("Save Map Preview \"%s\"", name),
+		fmt::sprintf("Save Map Preview \"%s\"", name),
 		dir_last.value,
 		fn.GetFullName(),
 		"PNG (*.PNG)|*.png",

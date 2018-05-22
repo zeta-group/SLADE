@@ -656,7 +656,7 @@ void TextStylePrefsPanel::onBtnSaveStyleSet(wxCommandEvent& e)
 	std::replace(name.begin(), name.end(), ' ', '_');
 
 	// Write set to file
-	string filename = App::path(S_FMT("text_styles/%s.sss", name), App::Dir::User);
+	string filename = App::path(fmt::format("text_styles/{}.sss", name), App::Dir::User);
 	ss_temp.writeFile(filename);
 
 	// Add new set to list

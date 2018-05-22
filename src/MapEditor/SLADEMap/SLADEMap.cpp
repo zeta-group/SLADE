@@ -30,7 +30,6 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "SLADEMap.h"
 #include "App.h"
 #include "Archive/Archive.h"
 #include "Archive/Formats/WadArchive.h"
@@ -38,6 +37,7 @@
 #include "General/ResourceManager.h"
 #include "General/UI.h"
 #include "MapEditor/SectorBuilder.h"
+#include "SLADEMap.h"
 #include "Utility/MathStuff.h"
 #include "Utility/Parser.h"
 
@@ -714,7 +714,7 @@ bool SLADEMap::readDoomVertexes(ArchiveEntry* entry)
 		addVertex(vert_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu vertices", vertices_.size());
+	Log::info(3, fmt::sprintf("Read %lu vertices", vertices_.size()));
 
 	return true;
 }
@@ -734,7 +734,7 @@ bool SLADEMap::readDoomSidedefs(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapSide::DoomData))
 	{
-		LOG_MESSAGE(3, "Read 0 sides");
+		Log::info(3, "Read 0 sides");
 		return true;
 	}
 
@@ -747,7 +747,7 @@ bool SLADEMap::readDoomSidedefs(ArchiveEntry* entry)
 		addSide(side_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu sides", sides_.size());
+	Log::info(3, fmt::sprintf("Read %lu sides", sides_.size()));
 
 	return true;
 }
@@ -767,7 +767,7 @@ bool SLADEMap::readDoomLinedefs(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapLine::DoomData))
 	{
-		LOG_MESSAGE(3, "Read 0 lines");
+		Log::info(3, "Read 0 lines");
 		return true;
 	}
 
@@ -778,10 +778,10 @@ bool SLADEMap::readDoomLinedefs(ArchiveEntry* entry)
 	{
 		UI::setSplashProgress(p + ((float)a / nl) * 0.2f);
 		if (!addLine(line_data[a]))
-			LOG_MESSAGE(2, "Line %lu invalid, not added", a);
+			Log::info(2, fmt::sprintf("Line %lu invalid, not added", a));
 	}
 
-	LOG_MESSAGE(3, "Read %lu lines", lines_.size());
+	Log::info(3, fmt::sprintf("Read %lu lines", lines_.size()));
 
 	return true;
 }
@@ -801,7 +801,7 @@ bool SLADEMap::readDoomSectors(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapSector::DoomData))
 	{
-		LOG_MESSAGE(3, "Read 0 sectors");
+		Log::info(3, "Read 0 sectors");
 		return true;
 	}
 
@@ -814,7 +814,7 @@ bool SLADEMap::readDoomSectors(ArchiveEntry* entry)
 		addSector(sect_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu sectors", sectors_.size());
+	Log::info(3, fmt::sprintf("Read %lu sectors", sectors_.size()));
 
 	return true;
 }
@@ -834,7 +834,7 @@ bool SLADEMap::readDoomThings(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapThing::DoomData))
 	{
-		LOG_MESSAGE(3, "Read 0 things");
+		Log::info(3, "Read 0 things");
 		return true;
 	}
 
@@ -847,7 +847,7 @@ bool SLADEMap::readDoomThings(ArchiveEntry* entry)
 		addThing(thng_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu things", things_.size());
+	Log::info(3, fmt::sprintf("Read %lu things", things_.size()));
 
 	return true;
 }
@@ -857,7 +857,7 @@ bool SLADEMap::readDoomThings(ArchiveEntry* entry)
 // -----------------------------------------------------------------------------
 bool SLADEMap::readDoomMap(Archive::MapDesc map)
 {
-	LOG_MESSAGE(2, "Reading Doom format map");
+	Log::info(2, "Reading Doom format map");
 
 	// Find map entries
 	ArchiveEntry* v     = nullptr;
@@ -1050,7 +1050,7 @@ bool SLADEMap::readHexenLinedefs(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapLine::HexenData))
 	{
-		LOG_MESSAGE(3, "Read 0 lines");
+		Log::info(3, "Read 0 lines");
 		return true;
 	}
 
@@ -1063,7 +1063,7 @@ bool SLADEMap::readHexenLinedefs(ArchiveEntry* entry)
 		addLine(line_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu lines", lines_.size());
+	Log::info(3, fmt::sprintf("Read %lu lines", lines_.size()));
 
 	return true;
 }
@@ -1082,7 +1082,7 @@ bool SLADEMap::readHexenThings(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapThing::HexenData))
 	{
-		LOG_MESSAGE(3, "Read 0 things");
+		Log::info(3, "Read 0 things");
 		return true;
 	}
 
@@ -1095,7 +1095,7 @@ bool SLADEMap::readHexenThings(ArchiveEntry* entry)
 		addThing(thng_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu things", things_.size());
+	Log::info(3, fmt::sprintf("Read %lu things", things_.size()));
 
 	return true;
 }
@@ -1105,7 +1105,7 @@ bool SLADEMap::readHexenThings(ArchiveEntry* entry)
 // -----------------------------------------------------------------------------
 bool SLADEMap::readHexenMap(Archive::MapDesc map)
 {
-	LOG_MESSAGE(2, "Reading Hexen format map");
+	Log::info(2, "Reading Hexen format map");
 
 	// Find map entries
 	ArchiveEntry* v     = nullptr;
@@ -1191,7 +1191,7 @@ bool SLADEMap::readDoom64Vertexes(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapVertex::Doom64Data))
 	{
-		LOG_MESSAGE(3, "Read 0 vertices");
+		Log::info(3, "Read 0 vertices");
 		return true;
 	}
 
@@ -1204,7 +1204,7 @@ bool SLADEMap::readDoom64Vertexes(ArchiveEntry* entry)
 		addVertex(vert_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu vertices", vertices_.size());
+	Log::info(3, fmt::sprintf("Read %lu vertices", vertices_.size()));
 
 	return true;
 }
@@ -1223,7 +1223,7 @@ bool SLADEMap::readDoom64Sidedefs(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapSide::Doom64Data))
 	{
-		LOG_MESSAGE(3, "Read 0 sides");
+		Log::info(3, "Read 0 sides");
 		return true;
 	}
 
@@ -1236,7 +1236,7 @@ bool SLADEMap::readDoom64Sidedefs(ArchiveEntry* entry)
 		addSide(side_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu sides", sides_.size());
+	Log::info(3, fmt::sprintf("Read %lu sides", sides_.size()));
 
 	return true;
 }
@@ -1255,7 +1255,7 @@ bool SLADEMap::readDoom64Linedefs(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapLine::Doom64Data))
 	{
-		LOG_MESSAGE(3, "Read 0 lines");
+		Log::info(3, "Read 0 lines");
 		return true;
 	}
 
@@ -1268,7 +1268,7 @@ bool SLADEMap::readDoom64Linedefs(ArchiveEntry* entry)
 		addLine(line_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu lines", lines_.size());
+	Log::info(3, fmt::sprintf("Read %lu lines", lines_.size()));
 
 	return true;
 }
@@ -1287,7 +1287,7 @@ bool SLADEMap::readDoom64Sectors(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapSector::Doom64Data))
 	{
-		LOG_MESSAGE(3, "Read 0 sectors");
+		Log::info(3, "Read 0 sectors");
 		return true;
 	}
 
@@ -1300,7 +1300,7 @@ bool SLADEMap::readDoom64Sectors(ArchiveEntry* entry)
 		addSector(sect_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu sectors", sectors_.size());
+	Log::info(3, fmt::sprintf("Read %lu sectors", sectors_.size()));
 
 	return true;
 }
@@ -1319,7 +1319,7 @@ bool SLADEMap::readDoom64Things(ArchiveEntry* entry)
 	// Check for empty entry
 	if (entry->size() < sizeof(MapThing::Doom64Data))
 	{
-		LOG_MESSAGE(3, "Read 0 things");
+		Log::info(3, "Read 0 things");
 		return true;
 	}
 
@@ -1332,7 +1332,7 @@ bool SLADEMap::readDoom64Things(ArchiveEntry* entry)
 		addThing(thng_data[a]);
 	}
 
-	LOG_MESSAGE(3, "Read %lu things", things_.size());
+	Log::info(3, fmt::sprintf("Read %lu things", things_.size()));
 
 	return true;
 }
@@ -1342,7 +1342,7 @@ bool SLADEMap::readDoom64Things(ArchiveEntry* entry)
 // -----------------------------------------------------------------------------
 bool SLADEMap::readDoom64Map(Archive::MapDesc map)
 {
-	LOG_MESSAGE(2, "Reading Doom 64 format map");
+	Log::info(2, "Reading Doom 64 format map");
 
 	// Find map entries
 	ArchiveEntry* v     = nullptr;
@@ -1494,7 +1494,7 @@ bool SLADEMap::addSide(ParseTreeNode* def)
 			ns->offset_.y = prop->intValue();
 		else
 			ns->properties_[prop->name()] = prop->value();
-		// LOG_MESSAGE(1, "Property %s type %s (%s)", prop->name(), prop->getValue().typeString(),
+		// Log::info(1, "Property %s type %s (%s)", prop->name(), prop->getValue().typeString(),
 		// prop->getValue().getStringValue());
 	}
 
@@ -2038,7 +2038,7 @@ bool SLADEMap::writeHexenLinedefs(ArchiveEntry* entry)
 
 		// Args
 		for (unsigned arg = 0; arg < 5; arg++)
-			data.args[arg] = line->intProperty(S_FMT("arg%u", arg));
+			data.args[arg] = line->intProperty(fmt::sprintf("arg%u", arg));
 
 		// Sides
 		data.side1 = -1;
@@ -2086,7 +2086,7 @@ bool SLADEMap::writeHexenThings(ArchiveEntry* entry)
 
 		// Args
 		for (unsigned arg = 0; arg < 5; arg++)
-			data.args[arg] = thing->intProperty(S_FMT("arg%u", arg));
+			data.args[arg] = thing->intProperty(fmt::sprintf("arg%u", arg));
 
 		entry->write(&data, 20);
 	}
@@ -2366,16 +2366,15 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	if (!textmap)
 		return false;
 
-	// Open temp text file
-	wxFile tempfile(App::path("sladetemp.txt", App::Dir::Temp), wxFile::write);
+	fmt::MemoryWriter udmf_text;
 
 	// Write map namespace
-	tempfile.Write("// Written by SLADE3\n");
-	tempfile.Write(S_FMT("namespace=\"%s\";\n", udmf_namespace_));
+	udmf_text.write("// Written by SLADE3\n");
+	udmf_text.write(fmt::sprintf("namespace=\"%s\";\n", udmf_namespace_));
 
 	// Write map-scope props
-	tempfile.Write(udmf_props_.toString(true));
-	tempfile.Write("\n");
+	udmf_text.write(udmf_props_.toString(true));
+	udmf_text.write("\n");
 
 	// sf::Clock clock;
 
@@ -2383,16 +2382,15 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	setlocale(LC_NUMERIC, "C");
 
 	// Write things
-	string object_def;
 	for (unsigned a = 0; a < things_.size(); a++)
 	{
-		object_def = S_FMT("thing//#%u\n{\n", a);
+		udmf_text.write("thing//#{}\n{{\n", a);
 
 		// Basic properties
-		object_def += S_FMT(
-			"x=%1.3f;\ny=%1.3f;\ntype=%d;\n", things_[a]->position_.x, things_[a]->position_.y, things_[a]->type_);
+		udmf_text.write(
+			"x={:1.3f};\ny={:1.3f};\ntype={};\n", things_[a]->position_.x, things_[a]->position_.y, things_[a]->type_);
 		if (things_[a]->angle_ != 0)
-			object_def += S_FMT("angle=%d;\n", things_[a]->angle_);
+			udmf_text.write("angle={};\n", things_[a]->angle_);
 
 		// Remove internal 'flags' property if it exists
 		things_[a]->props().removeProperty("flags");
@@ -2401,29 +2399,29 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 		if (!things_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(things_[a]);
-			object_def += things_[a]->properties_.toString(true);
+			udmf_text.write(things_[a]->properties_.toString(true));
 		}
 
-		object_def += "}\n\n";
-		tempfile.Write(object_def);
+		udmf_text.write("}}\n\n");
+		udmf_text.write(udmf_text.c_str());
 	}
-	// LOG_MESSAGE(1, "Writing things took %dms", clock.getElapsedTime().asMilliseconds());
+	// Log::info(1, "Writing things took %dms", clock.getElapsedTime().asMilliseconds());
 
 	// Write lines
 	// clock.restart();
 	for (unsigned a = 0; a < lines_.size(); a++)
 	{
-		object_def = S_FMT("linedef//#%u\n{\n", a);
+		udmf_text.write("linedef//#{}\n{{\n", a);
 
 		// Basic properties
-		object_def +=
-			S_FMT("v1=%d;\nv2=%d;\nsidefront=%d;\n", lines_[a]->v1Index(), lines_[a]->v2Index(), lines_[a]->s1Index());
+		udmf_text.write(
+			"v1={};\nv2={};\nsidefront={};\n", lines_[a]->v1Index(), lines_[a]->v2Index(), lines_[a]->s1Index());
 		if (lines_[a]->s2())
-			object_def += S_FMT("sideback=%d;\n", lines_[a]->s2Index());
+			udmf_text.write("sideback={};\n", lines_[a]->s2Index());
 		if (lines_[a]->special_ != 0)
-			object_def += S_FMT("special=%d;\n", lines_[a]->special_);
+			udmf_text.write("special={};\n", lines_[a]->special_);
 		if (lines_[a]->id_ != 0)
-			object_def += S_FMT("id=%d;\n", lines_[a]->id_);
+			udmf_text.write("id={};\n", lines_[a]->id_);
 
 		// Remove internal 'flags' property if it exists
 		lines_[a]->props().removeProperty("flags");
@@ -2432,105 +2430,102 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 		if (!lines_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(lines_[a]);
-			object_def += lines_[a]->properties_.toString(true);
+			udmf_text.write(lines_[a]->properties_.toString(true));
 		}
 
-		object_def += "}\n\n";
-		tempfile.Write(object_def);
+		udmf_text.write("}}\n\n");
+		udmf_text.write(udmf_text.c_str());
 	}
-	// LOG_MESSAGE(1, "Writing lines took %dms", clock.getElapsedTime().asMilliseconds());
+	// Log::info(1, "Writing lines took %dms", clock.getElapsedTime().asMilliseconds());
 
 	// Write sides
 	// clock.restart();
 	for (unsigned a = 0; a < sides_.size(); a++)
 	{
-		object_def = S_FMT("sidedef//#%u\n{\n", a);
+		udmf_text.write("sidedef//#{}\n{{\n", a);
 
 		// Basic properties
-		object_def += S_FMT("sector=%u;\n", sides_[a]->sector_->index_);
+		udmf_text.write("sector={};\n", sides_[a]->sector_->index_);
 		if (sides_[a]->tex_upper_ != "-")
-			object_def += S_FMT("texturetop=\"%s\";\n", sides_[a]->tex_upper_);
+			udmf_text.write("texturetop=\"{}\";\n", sides_[a]->tex_upper_);
 		if (sides_[a]->tex_middle_ != "-")
-			object_def += S_FMT("texturemiddle=\"%s\";\n", sides_[a]->tex_middle_);
+			udmf_text.write("texturemiddle=\"{}\";\n", sides_[a]->tex_middle_);
 		if (sides_[a]->tex_lower_ != "-")
-			object_def += S_FMT("texturebottom=\"%s\";\n", sides_[a]->tex_lower_);
+			udmf_text.write("texturebottom=\"{}\";\n", sides_[a]->tex_lower_);
 		if (sides_[a]->offset_.x != 0)
-			object_def += S_FMT("offsetx=%d;\n", sides_[a]->offset_.x);
+			udmf_text.write("offsetx={};\n", sides_[a]->offset_.x);
 		if (sides_[a]->offset_.y != 0)
-			object_def += S_FMT("offsety=%d;\n", sides_[a]->offset_.y);
+			udmf_text.write("offsety={};\n", sides_[a]->offset_.y);
 
 		// Other properties
 		if (!sides_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(sides_[a]);
-			object_def += sides_[a]->properties_.toString(true);
+			udmf_text.write(sides_[a]->properties_.toString(true));
 		}
 
-		object_def += "}\n\n";
-		tempfile.Write(object_def);
+		udmf_text.write("}}\n\n");
+		udmf_text.write(udmf_text.c_str());
 	}
-	// LOG_MESSAGE(1, "Writing sides took %dms", clock.getElapsedTime().asMilliseconds());
+	// Log::info(1, "Writing sides took %dms", clock.getElapsedTime().asMilliseconds());
 
 	// Write vertices
 	// clock.restart();
 	for (unsigned a = 0; a < vertices_.size(); a++)
 	{
-		object_def = S_FMT("vertex//#%u\n{\n", a);
+		udmf_text.write("vertex//#{}\n{{\n", a);
 
 		// Basic properties
-		object_def += S_FMT("x=%1.3f;\ny=%1.3f;\n", vertices_[a]->position_.x, vertices_[a]->position_.y);
+		udmf_text.write("x={:1.3f};\ny={:1.3f};\n", vertices_[a]->position_.x, vertices_[a]->position_.y);
 
 		// Other properties
 		if (!vertices_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(vertices_[a]);
-			object_def += vertices_[a]->properties_.toString(true);
+			udmf_text.write(vertices_[a]->properties_.toString(true));
 		}
 
-		object_def += "}\n\n";
-		tempfile.Write(object_def);
+		udmf_text.write("}}\n\n");
+		udmf_text.write(udmf_text.c_str());
 	}
-	// LOG_MESSAGE(1, "Writing vertices took %dms", clock.getElapsedTime().asMilliseconds());
+	// Log::info(1, "Writing vertices took %dms", clock.getElapsedTime().asMilliseconds());
 
 	// Write sectors
 	// clock.restart();
 	for (unsigned a = 0; a < sectors_.size(); a++)
 	{
-		object_def = S_FMT("sector//#%u\n{\n", a);
+		udmf_text.write("sector//#{}\n{{\n", a);
 
 		// Basic properties
-		object_def += S_FMT(
-			"texturefloor=\"%s\";\ntextureceiling=\"%s\";\n",
+		udmf_text.write(
+			"texturefloor=\"{}\";\ntextureceiling=\"{}\";\n",
 			sectors_[a]->floor_.texture,
 			sectors_[a]->ceiling_.texture);
 		if (sectors_[a]->floor_.height != 0)
-			object_def += S_FMT("heightfloor=%d;\n", sectors_[a]->floor_.height);
+			udmf_text.write("heightfloor={};\n", sectors_[a]->floor_.height);
 		if (sectors_[a]->ceiling_.height != 0)
-			object_def += S_FMT("heightceiling=%d;\n", sectors_[a]->ceiling_.height);
+			udmf_text.write("heightceiling={};\n", sectors_[a]->ceiling_.height);
 		if (sectors_[a]->light_ != 160)
-			object_def += S_FMT("lightlevel=%d;\n", sectors_[a]->light_);
+			udmf_text.write("lightlevel={};\n", sectors_[a]->light_);
 		if (sectors_[a]->special_ != 0)
-			object_def += S_FMT("special=%d;\n", sectors_[a]->special_);
+			udmf_text.write("special={};\n", sectors_[a]->special_);
 		if (sectors_[a]->id_ != 0)
-			object_def += S_FMT("id=%d;\n", sectors_[a]->id_);
+			udmf_text.write("id={};\n", sectors_[a]->id_);
 
 		// Other properties
 		if (!sectors_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(sectors_[a]);
-			object_def += sectors_[a]->properties_.toString(true);
+			udmf_text.write(sectors_[a]->properties_.toString(true));
 		}
 
-		object_def += "}\n\n";
-		tempfile.Write(object_def);
+		udmf_text.write("}}\n\n");
+		udmf_text.write(udmf_text.c_str());
 	}
-	// LOG_MESSAGE(1, "Writing sectors took %dms", clock.getElapsedTime().asMilliseconds());
+	// Log::info(1, "Writing sectors took %dms", clock.getElapsedTime().asMilliseconds());
 
-	// Close file
-	tempfile.Close();
-
-	// Load file to entry
-	textmap->importFile(App::path("sladetemp.txt", App::Dir::Temp));
+	// Load buffer to entry
+	textmap->importMem(udmf_text.data(), udmf_text.size());
 
 	return true;
 }
@@ -2673,7 +2668,7 @@ bool SLADEMap::removeLine(unsigned index)
 	if (index >= lines_.size())
 		return false;
 
-	LOG_MESSAGE(4, "id %u  index %u  objindex %u", lines_[index]->id_, index, lines_[index]->index_);
+	Log::info(4, fmt::sprintf("id %u  index %u  objindex %u", lines_[index]->id_, index, lines_[index]->index_));
 
 	// Init
 	lines_[index]->resetInternals();
@@ -3462,11 +3457,10 @@ void SLADEMap::taggingThingsById(int id, int type, vector<MapThing*>& list, int 
 			case TagType::Interpolation:
 				path_type = 9075;
 
-				tid      = thing->intProperty("id");
-				fits     = ((path_type == ttype) && (IDEQ(tid)) && (tt.needsTag() == needs_tag));
+				tid  = thing->intProperty("id");
+				fits = ((path_type == ttype) && (IDEQ(tid)) && (tt.needsTag() == needs_tag));
 				break;
-			default:
-				continue;
+			default: continue;
 			}
 			if (fits)
 				list.push_back(thing);
@@ -3760,7 +3754,7 @@ MapSector* SLADEMap::lineSideSector(MapLine* line, bool front)
 	// and return the appropriate sector
 	if (index >= 0)
 	{
-		// LOG_MESSAGE(3, "Closest line %d", index);
+		// Log::info(3, "Closest line %d", index);
 		MapLine* l = lines_[index];
 
 		// Check side of line
@@ -4014,7 +4008,7 @@ MapVertex* SLADEMap::createVertex(double x, double y, double split_dist)
 
 			if (lines_[a]->distanceTo(point) < split_dist)
 			{
-				// LOG_MESSAGE(1, "Vertex at (%1.2f,%1.2f) splits line %d", x, y, a);
+				// Log::info(1, "Vertex at (%1.2f,%1.2f) splits line %d", x, y, a);
 				splitLine(lines_[a], nv);
 			}
 		}
@@ -4040,7 +4034,7 @@ MapLine* SLADEMap::createLine(double x1, double y1, double x2, double y2, double
 		y2 = MathStuff::round(y2);
 	}
 
-	// LOG_MESSAGE(1, "Create line (%1.2f,%1.2f) to (%1.2f,%1.2f)", x1, y1, x2, y2);
+	// Log::info(1, "Create line (%1.2f,%1.2f) to (%1.2f,%1.2f)", x1, y1, x2, y2);
 
 	// Get vertices at points
 	MapVertex* vertex1 = vertexAt(x1, y1);
@@ -4216,7 +4210,7 @@ void SLADEMap::mergeVertices(unsigned vertex1, unsigned vertex2)
 	}
 
 	// Delete the vertex
-	LOG_MESSAGE(4, "Merging vertices %u and %u (removing %u)", vertex1, vertex2, vertex2);
+	Log::info(4, fmt::sprintf("Merging vertices %u and %u (removing %u)", vertex1, vertex2, vertex2));
 	removeMapObject(v2);
 	vertices_[vertex2]         = vertices_.back();
 	vertices_[vertex2]->index_ = vertex2;
@@ -4225,7 +4219,7 @@ void SLADEMap::mergeVertices(unsigned vertex1, unsigned vertex2)
 	// Delete any resulting zero-length lines
 	for (auto& line : zlines)
 	{
-		LOG_MESSAGE(4, "Removing zero-length line %u", line->index());
+		Log::info(4, fmt::sprintf("Removing zero-length line %u", line->index()));
 		removeLine(line);
 	}
 
@@ -4376,7 +4370,8 @@ void SLADEMap::splitLinesAt(MapVertex* vertex, double split_dist)
 
 		if (lines_[a]->distanceTo(vertex->position_) < split_dist)
 		{
-			LOG_MESSAGE(2, "Vertex at (%1.2f,%1.2f) splits line %u", vertex->position_.x, vertex->position_.y, a);
+			Log::info(
+				2, fmt::sprintf("Vertex at (%1.2f,%1.2f) splits line %u", vertex->position_.x, vertex->position_.y, a));
 			splitLine(lines_[a], vertex);
 		}
 	}
@@ -4690,7 +4685,7 @@ bool SLADEMap::mergeArch(vector<MapVertex*> vertices)
 	// Remove overlapping lines
 	for (auto& line : remove_lines)
 	{
-		LOG_MESSAGE(4, "Removing overlapping line %u (#%u)", line->obj_id_, line->index_);
+		Log::info(4, fmt::sprintf("Removing overlapping line %u (#%u)", line->obj_id_, line->index_));
 		removeLine(line);
 	}
 	for (unsigned a = 0; a < connected_lines.size(); a++)
@@ -4724,11 +4719,11 @@ bool SLADEMap::mergeArch(vector<MapVertex*> vertices)
 
 	if (merged)
 	{
-		LOG_MESSAGE(4, "Architecture merged");
+		Log::info(4, "Architecture merged");
 	}
 	else
 	{
-		LOG_MESSAGE(4, "No Architecture merged");
+		Log::info(4, "No Architecture merged");
 	}
 
 	return merged;
@@ -4932,7 +4927,7 @@ void SLADEMap::correctSectors(vector<MapLine*> lines, bool existing_only)
 			removeSide(edge.line->side2_);
 	}
 
-	// LOG_MESSAGE(1, "Ran sector builder %d times", runs);
+	// Log::info(1, "Ran sector builder %d times", runs);
 
 	// Check if any lines need to be flipped
 	for (auto& line : lines)
@@ -4992,7 +4987,7 @@ void SLADEMap::correctSectors(vector<MapLine*> lines, bool existing_only)
 		// Set middle texture if needed
 		if (sides_[a] == line->s1() && !line->s2() && sides_[a]->stringProperty("texturemiddle") == "-")
 		{
-			// LOG_MESSAGE(1, "midtex");
+			// Log::info(1, "midtex");
 			// Find adjacent texture (any)
 			string tex = adjacentLineTexture(line->v1());
 			if (tex == "-")
@@ -5021,13 +5016,12 @@ void SLADEMap::mapOpenChecks()
 	int rsec    = removeDetachedSectors();
 	int risides = removeInvalidSides();
 
-	LOG_MESSAGE(
-		1,
+	Log::info(fmt::sprintf(
 		"Removed %d detached vertices, %d detached sides, %d invalid sides and %d detached sectors",
 		rverts,
 		rsides,
 		risides,
-		rsec);
+		rsec));
 }
 
 // -----------------------------------------------------------------------------

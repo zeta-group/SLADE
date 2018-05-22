@@ -112,7 +112,7 @@ string PatchBrowserItem::itemInfo()
 
 	// Add dimensions if known
 	if (image_)
-		info += S_FMT("%dx%d", image_->getWidth(), image_->getHeight());
+		info += fmt::sprintf("%dx%d", image_->getWidth(), image_->getHeight());
 	else
 		info += "Unknown size";
 

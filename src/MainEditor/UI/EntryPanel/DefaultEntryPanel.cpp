@@ -113,9 +113,9 @@ DefaultEntryPanel::DefaultEntryPanel(wxWindow* parent) : EntryPanel(parent, "def
 bool DefaultEntryPanel::loadEntry(ArchiveEntry* entry)
 {
 	// Update labels
-	label_index_->SetLabel(S_FMT("Entry Index: %d", entry->parentDir()->entryIndex(entry)));
-	label_type_->SetLabel(S_FMT("Entry Type: %s", entry->typeString()));
-	label_size_->SetLabel(S_FMT("Entry Size: %d bytes", entry->size()));
+	label_index_->SetLabel(fmt::sprintf("Entry Index: %d", entry->parentDir()->entryIndex(entry)));
+	label_type_->SetLabel(fmt::sprintf("Entry Type: %s", entry->typeString()));
+	label_size_->SetLabel(fmt::sprintf("Entry Size: %d bytes", entry->size()));
 
 	// Setup actions frame
 	btn_gfx_convert_->Show(false);
@@ -150,11 +150,11 @@ bool DefaultEntryPanel::loadEntry(ArchiveEntry* entry)
 bool DefaultEntryPanel::loadEntries(vector<ArchiveEntry*>& entries)
 {
 	// Update labels
-	label_type_->SetLabel(S_FMT("%lu selected entries", entries.size()));
+	label_type_->SetLabel(fmt::sprintf("%lu selected entries", entries.size()));
 	unsigned size = 0;
 	for (auto& entry : entries)
 		size += entry->size();
-	label_size_->SetLabel(S_FMT("Total Size: %s", Misc::sizeAsString(size)));
+	label_size_->SetLabel(fmt::sprintf("Total Size: %s", Misc::sizeAsString(size)));
 
 	// Setup actions frame
 	btn_gfx_convert_->Show(false);
@@ -185,7 +185,7 @@ bool DefaultEntryPanel::loadEntries(vector<ArchiveEntry*>& entries)
 
 		this->entries_.push_back(entry);
 	}
-	label_index_->SetLabel(S_FMT("Entry Indices: from %lu to %lu", (unsigned long)min, (unsigned long)max));
+	label_index_->SetLabel(fmt::sprintf("Entry Indices: from %lu to %lu", (unsigned long)min, (unsigned long)max));
 	if (gfx)
 	{
 		frame_actions_->Show(true);

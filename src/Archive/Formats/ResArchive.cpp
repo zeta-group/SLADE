@@ -30,8 +30,8 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ResArchive.h"
 #include "General/UI.h"
+#include "ResArchive.h"
 
 
 // -----------------------------------------------------------------------------
@@ -81,7 +81,7 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 {
 	if (!parent)
 	{
-		LOG_MESSAGE(1, "ReadDir: No parent node");
+		Log::info(1, "ReadDir: No parent node");
 		Global::error = "Archive is invalid and/or corrupt";
 		return false;
 	}
@@ -108,7 +108,8 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 		// Check the identifier
 		if (magic[0] != 'R' || magic[1] != 'e' || magic[2] != 'S' || magic[3] != 0)
 		{
-			LOG_MESSAGE(1, "ResArchive::readDir: Entry %s (%i@0x%x) has invalid directory entry", name, size, offset);
+			Log::info(fmt::format(
+				"ResArchive::readDir: Entry {} ({}@{0:#x}) has invalid directory entry", name, size, offset));
 			Global::error = "Archive is invalid and/or corrupt";
 			return false;
 		}
@@ -120,25 +121,25 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 
 		mc.read(&dumze, 2);
 		if (dumze)
-			LOG_MESSAGE(1, "Flag guard not null for entry %s", name);
+			Log::info(fmt::format("Flag guard not null for entry {}", name));
 		mc.read(&flags, 1);
 		if (flags != 1 && flags != 17)
-			LOG_MESSAGE(1, "Unknown flag value for entry %s", name);
+			Log::info(fmt::format("Unknown flag value for entry {}", name));
 		mc.read(&dumzero1, 4);
 		if (dumzero1)
-			LOG_MESSAGE(1, "Near-end values not set to zero for entry %s", name);
+			Log::info(fmt::format("Near-end values not set to zero for entry {}", name));
 		mc.read(&dumff, 2);
 		if (dumff != 0xFFFF)
-			LOG_MESSAGE(1, "Dummy set to a non-FF value for entry %s", name);
+			Log::info(fmt::format("Dummy set to a non-FF value for entry {}", name));
 		mc.read(&dumzero2, 4);
 		if (dumzero2)
-			LOG_MESSAGE(1, "Trailing values not set to zero for entry %s", name);
+			Log::info(fmt::format("Trailing values not set to zero for entry {}", name));
 
 		// If the lump data goes past the end of the file,
 		// the resfile is invalid
 		if (offset + size > mc.size())
 		{
-			LOG_MESSAGE(1, "ResArchive::readDirectory: Res archive is invalid or corrupt, offset overflow");
+			Log::info(1, "ResArchive::readDirectory: Res archive is invalid or corrupt, offset overflow");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -166,7 +167,7 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 			ArchiveTreeNode* ndir = createDir(name, parent);
 			if (ndir)
 			{
-				UI::setSplashProgressMessage(S_FMT("Reading res archive data: %s directory", name));
+				UI::setSplashProgressMessage(fmt::format("Reading res archive data: {} directory", name));
 				// Save offset to restore it once the recursion is done
 				size_t myoffset = mc.currentPos();
 				readDirectory(mc, d_o, n_l, ndir);
@@ -223,14 +224,14 @@ bool ResArchive::open(MemChunk& mc)
 	// Check the header
 	if (magic[0] != 'R' || magic[1] != 'e' || magic[2] != 's' || magic[3] != '!')
 	{
-		LOG_MESSAGE(1, "ResArchive::openFile: File %s has invalid header", filename_);
+		Log::info(fmt::format("ResArchive::openFile: File {} has invalid header", filename_));
 		Global::error = "Invalid res header";
 		return false;
 	}
 
 	if (dir_size % DIRENTRYSIZE)
 	{
-		LOG_MESSAGE(1, "ResArchive::openFile: File %s has invalid directory size", filename_);
+		Log::info(fmt::format("ResArchive::openFile: File {} has invalid directory size", filename_));
 		Global::error = "Invalid res directory size";
 		return false;
 	}
@@ -338,7 +339,7 @@ bool ResArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "ResArchive::loadEntryData: Failed to open resfile %s", filename_);
+		Log::info(fmt::format("ResArchive::loadEntryData: Failed to open resfile {}", filename_));
 		return false;
 	}
 

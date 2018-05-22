@@ -187,7 +187,7 @@ int Misc::detectPaletteHack(ArchiveEntry* entry)
 	else if (entry->type()->formatId() == "img_wolfpic" && StrUtil::startsWith(entry->name(), "END"))
 	{
 		// Spear of Destiny ending screens (extra-hacky!)
-		long endscreen = std::stol(entry->name().substr(entry->name().size() - 3));
+		auto endscreen = StrUtil::toInt(entry->name().substr(entry->name().size() - 3));
 		if (endscreen > 0)
 			return PAL_SODENDHACK + endscreen - 81;
 	}
@@ -232,7 +232,7 @@ bool Misc::loadPaletteFromArchive(Palette* pal, Archive* archive, int lump)
 	{
 		int endscreen = lump - PAL_SODENDHACK;
 		endscreen += 154;
-		string palname = S_FMT("PAL%05d", endscreen);
+		string palname = fmt::format("PAL{:05d}", endscreen);
 		playpal        = archive->getEntry(palname, true);
 		sixbit         = true;
 	}
@@ -300,17 +300,17 @@ string Misc::sizeAsString(uint32_t size)
 {
 	if (size < 1024 || !size_as_string)
 	{
-		return S_FMT("%d", size);
+		return fmt::format("{}", size);
 	}
 	else if (size < 1024 * 1024)
 	{
 		double kb = (double)size / 1024;
-		return S_FMT("%1.2fkb", kb);
+		return fmt::format("{:1.2f}kb", kb);
 	}
 	else
 	{
 		double mb = (double)size / (1024 * 1024);
-		return S_FMT("%1.2fmb", mb);
+		return fmt::format("{:1.2f}mb", mb);
 	}
 }
 
@@ -330,10 +330,10 @@ void Misc::lumpNameToFileName(string& lump)
 			if ((chr < 'a' || chr > 'z') && (chr < 'A' || chr > 'Z') && (chr < '0' || chr > '9') && chr != '-'
 				&& chr != '.' && chr != '_' && chr != '~')
 			{
-				file += S_FMT("%%%02X", chr);
+				file += fmt::format("%{:02X}", chr);
 			}
 			else
-				file += S_FMT("%c", chr);
+				file += fmt::format("{}", chr);
 		}
 		lump = file;
 	}
@@ -359,11 +359,11 @@ string Misc::fileNameToLumpName(string_view file)
 			{
 				auto code    = file.substr(a + 1, 2).to_string();
 				auto percent = std::stoul(code);
-				lump += S_FMT("%c", percent);
+				lump += fmt::format("{:c}", percent);
 				a += 2;
 			}
 			else
-				lump += S_FMT("%c", file[a]);
+				lump += fmt::format("{:c}", file[a]);
 		}
 		return lump;
 	}
@@ -800,5 +800,5 @@ void Misc::readWindowInfo(Tokenizer& tz)
 void Misc::writeWindowInfo(wxFile& file)
 {
 	for (auto& info : window_info)
-		file.Write(S_FMT("\t%s %d %d %d %d\n", info.id, info.width, info.height, info.left, info.top));
+		file.Write(fmt::format("\t{} {} {} {} {}\n", info.id, info.width, info.height, info.left, info.top));
 }

@@ -90,11 +90,9 @@ void Edit2D::mirror(bool x_axis) const
 		{
 			// Position
 			if (x_axis)
-				context_.map().moveThing(
-					thing->index(), bbox.midX() - (thing->xPos() - bbox.midX()), thing->yPos());
+				context_.map().moveThing(thing->index(), bbox.midX() - (thing->xPos() - bbox.midX()), thing->yPos());
 			else
-				context_.map().moveThing(
-					thing->index(), thing->xPos(), bbox.midY() - (thing->yPos() - bbox.midY()));
+				context_.map().moveThing(thing->index(), thing->xPos(), bbox.midY() - (thing->yPos() - bbox.midY()));
 
 			// Direction
 			int angle = thing->angle();
@@ -184,7 +182,7 @@ void Edit2D::editObjectProperties()
 		return;
 
 	// Begin recording undo level
-	context_.beginUndoRecord(S_FMT("Property Edit (%s)", context_.modeString(false)));
+	context_.beginUndoRecord(fmt::sprintf("Property Edit (%s)", context_.modeString(false)));
 	for (auto item : selection)
 		context_.recordPropertyChangeUndoStep(item);
 
@@ -346,7 +344,7 @@ void Edit2D::changeSectorHeight(int amount, bool floor, bool ceiling) const
 		inc    = "decreased";
 		amount = -amount;
 	}
-	context_.addEditorMessage(S_FMT("%s height %s by %d", what, inc, amount));
+	context_.addEditorMessage(fmt::sprintf("%s height %s by %d", what, inc, amount));
 
 	// Update display
 	context_.updateDisplay();
@@ -391,7 +389,7 @@ void Edit2D::changeSectorLight(bool up, bool fine) const
 
 	// Add editor message
 	int amount = fine ? 1 : Game::configuration().lightLevelInterval();
-	context_.addEditorMessage(S_FMT("Light level %s by %d", up ? "increased" : "decreased", amount));
+	context_.addEditorMessage(fmt::sprintf("Light level %s by %d", up ? "increased" : "decreased", amount));
 
 	// Update display
 	context_.updateDisplay();
@@ -541,9 +539,9 @@ void Edit2D::joinSectors(bool remove_lines) const
 
 	// Editor message
 	if (nlines == 0)
-		context_.addEditorMessage(S_FMT("Joined %lu Sectors", sectors.size()));
+		context_.addEditorMessage(fmt::sprintf("Joined %lu Sectors", sectors.size()));
 	else
-		context_.addEditorMessage(S_FMT("Joined %lu Sectors (removed %d Lines)", sectors.size(), nlines));
+		context_.addEditorMessage(fmt::sprintf("Joined %lu Sectors (removed %d Lines)", sectors.size(), nlines));
 }
 
 // -----------------------------------------------------------------------------
@@ -571,9 +569,9 @@ void Edit2D::changeThingType() const
 		// Add editor message
 		string type_name = Game::configuration().thingType(newtype).name();
 		if (selection.size() == 1)
-			context_.addEditorMessage(S_FMT("Changed type to \"%s\"", type_name));
+			context_.addEditorMessage(fmt::sprintf("Changed type to \"%s\"", type_name));
 		else
-			context_.addEditorMessage(S_FMT("Changed %lu things to type \"%s\"", selection.size(), type_name));
+			context_.addEditorMessage(fmt::sprintf("Changed %lu things to type \"%s\"", selection.size(), type_name));
 
 		// Update display
 		context_.updateDisplay();
@@ -630,7 +628,7 @@ void Edit2D::copy() const
 		theClipboard->putItem(c);
 
 		// Editor message
-		context_.addEditorMessage(S_FMT("Copied %s", c->info()));
+		context_.addEditorMessage(fmt::sprintf("Copied %s", c->info()));
 	}
 
 	// Copy things
@@ -645,7 +643,7 @@ void Edit2D::copy() const
 		theClipboard->putItem(c);
 
 		// Editor message
-		context_.addEditorMessage(S_FMT("Copied %s", c->info()));
+		context_.addEditorMessage(fmt::sprintf("Copied %s", c->info()));
 	}
 }
 
@@ -667,7 +665,7 @@ void Edit2D::paste(fpoint2_t mouse_pos) const
 			auto pos       = context_.relativeSnapToGrid(clip->midpoint(), mouse_pos);
 			auto new_verts = clip->pasteToMap(&context_.map(), pos);
 			context_.map().mergeArch(new_verts);
-			context_.addEditorMessage(S_FMT("Pasted %s", clip->info()));
+			context_.addEditorMessage(fmt::sprintf("Pasted %s", clip->info()));
 			context_.endUndoRecord(true);
 		}
 
@@ -680,7 +678,7 @@ void Edit2D::paste(fpoint2_t mouse_pos) const
 			// position relative to the grid
 			auto pos = context_.relativeSnapToGrid(clip->midpoint(), mouse_pos);
 			clip->pasteToMap(&context_.map(), pos);
-			context_.addEditorMessage(S_FMT("Pasted %s", clip->info()));
+			context_.addEditorMessage(fmt::sprintf("Pasted %s", clip->info()));
 			context_.endUndoRecord(true);
 		}
 	}
@@ -846,7 +844,7 @@ void Edit2D::createObject(double x, double y) const
 			context_.endUndoRecord(true);
 
 			// Editor message
-			context_.addEditorMessage(S_FMT("Created %lu line(s)", context_.selection().size() - 1));
+			context_.addEditorMessage(fmt::sprintf("Created %lu line(s)", context_.selection().size() - 1));
 
 			// Clear selection
 			context_.selection().clear();
@@ -890,7 +888,7 @@ void Edit2D::createVertex(double x, double y) const
 
 	// Editor message
 	if (vertex)
-		context_.addEditorMessage(S_FMT("Created vertex at (%d, %d)", (int)vertex->xPos(), (int)vertex->yPos()));
+		context_.addEditorMessage(fmt::sprintf("Created vertex at (%d, %d)", (int)vertex->xPos(), (int)vertex->yPos()));
 }
 
 // -----------------------------------------------------------------------------
@@ -922,7 +920,7 @@ void Edit2D::createThing(double x, double y) const
 
 	// Editor message
 	if (thing)
-		context_.addEditorMessage(S_FMT("Created thing at (%d, %d)", (int)thing->xPos(), (int)thing->yPos()));
+		context_.addEditorMessage(fmt::sprintf("Created thing at (%d, %d)", (int)thing->xPos(), (int)thing->yPos()));
 }
 
 // -----------------------------------------------------------------------------
@@ -980,7 +978,7 @@ void Edit2D::createSector(double x, double y) const
 	// Editor message
 	if (ok)
 	{
-		context_.addEditorMessage(S_FMT("Created sector #%lu", map.nSectors() - 1));
+		context_.addEditorMessage(fmt::sprintf("Created sector #%lu", map.nSectors() - 1));
 		context_.endUndoRecord(true);
 	}
 	else
@@ -1034,9 +1032,9 @@ void Edit2D::deleteVertex() const
 
 	// Editor message
 	if (verts.size() == 1)
-		context_.addEditorMessage(S_FMT("Deleted vertex #%d", index));
+		context_.addEditorMessage(fmt::sprintf("Deleted vertex #%d", index));
 	else if (verts.size() > 1)
-		context_.addEditorMessage(S_FMT("Deleted %lu vertices", verts.size()));
+		context_.addEditorMessage(fmt::sprintf("Deleted %lu vertices", verts.size()));
 }
 
 // -----------------------------------------------------------------------------
@@ -1066,9 +1064,9 @@ void Edit2D::deleteLine() const
 
 	// Editor message
 	if (lines.size() == 1)
-		context_.addEditorMessage(S_FMT("Deleted line #%d", index));
+		context_.addEditorMessage(fmt::sprintf("Deleted line #%d", index));
 	else if (lines.size() > 1)
-		context_.addEditorMessage(S_FMT("Deleted %lu lines", lines.size()));
+		context_.addEditorMessage(fmt::sprintf("Deleted %lu lines", lines.size()));
 }
 
 // -----------------------------------------------------------------------------
@@ -1095,9 +1093,9 @@ void Edit2D::deleteThing() const
 
 	// Editor message
 	if (things.size() == 1)
-		context_.addEditorMessage(S_FMT("Deleted thing #%d", index));
+		context_.addEditorMessage(fmt::sprintf("Deleted thing #%d", index));
 	else if (things.size() > 1)
-		context_.addEditorMessage(S_FMT("Deleted %lu things", things.size()));
+		context_.addEditorMessage(fmt::sprintf("Deleted %lu things", things.size()));
 }
 
 // -----------------------------------------------------------------------------
@@ -1178,9 +1176,9 @@ void Edit2D::deleteSector() const
 
 	// Editor message
 	if (sectors.size() == 1)
-		context_.addEditorMessage(S_FMT("Deleted sector #%d", index));
+		context_.addEditorMessage(fmt::sprintf("Deleted sector #%d", index));
 	else if (sectors.size() > 1)
-		context_.addEditorMessage(S_FMT("Deleted %lu sector", sectors.size()));
+		context_.addEditorMessage(fmt::sprintf("Deleted %lu sector", sectors.size()));
 
 	// Remove detached vertices
 	context_.map().removeDetachedVertices();

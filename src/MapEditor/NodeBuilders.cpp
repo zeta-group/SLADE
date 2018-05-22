@@ -142,7 +142,7 @@ void NodeBuilders::saveBuilderPaths(wxFile& file)
 	{
 		string path = builder.path;
 		std::replace(path.begin(), path.end(), '\\', '/');
-		file.Write(S_FMT("\t%s \"%s\"\n", builder.id, path));
+		file.Write(fmt::sprintf("\t%s \"%s\"\n", builder.id, path));
 	}
 	file.Write("}\n");
 }

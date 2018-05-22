@@ -30,9 +30,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "StringUtils.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
+#include "StringUtils.h"
 #include "Tokenizer.h"
 #include <regex>
 
@@ -87,22 +87,50 @@ bool StrUtil::isHex(string_view str)
 // -----------------------------------------------------------------------------
 bool StrUtil::isFloat(string_view str)
 {
+	if (str.empty() || str[0] == '$')
+		return false;
+
 	return std::regex_search(str.data(), re_float);
 }
 
 bool StrUtil::equalCI(string_view left, string_view right)
 {
-	return _stricmp(left.data(), right.data()) == 0;
+	auto sz = left.size();
+	if (right.size() != sz)
+		return false;
+
+	for (auto a = 0u; a < sz; ++a)
+		if (tolower(left[a]) != tolower(right[a]))
+			return false;
+
+	return true;
+	// return _stricmp(left.data(), right.data()) == 0;
 }
 
 bool StrUtil::equalCI(string_view left, const char* right)
 {
-	return _stricmp(left.data(), right) == 0;
+	auto a  = 0u;
+	auto sz = left.size();
+	while (a < sz && right[a] != 0)
+	{
+		if (tolower(left[a]) != tolower(right[a]))
+			return false;
+		++a;
+	}
+
+	return true;
+
+	// return _stricmp(left.data(), right) == 0;
 }
 
 bool StrUtil::startsWith(string_view str, string_view check)
 {
 	return check.size() <= str.size() && str.compare(0, check.size(), check) == 0;
+}
+
+bool StrUtil::startsWith(string_view str, char check)
+{
+	return !str.empty() && str[0] == check;
 }
 
 bool StrUtil::startsWithCI(string_view str, string_view check)
@@ -118,9 +146,19 @@ bool StrUtil::startsWithCI(string_view str, string_view check)
 	return true;
 }
 
+bool StrUtil::startsWithCI(string_view str, char check)
+{
+	return !str.empty() && tolower(str[0]) == tolower(check);
+}
+
 bool StrUtil::endsWith(string_view str, string_view check)
 {
 	return check.size() <= str.size() && str.compare(str.size() - check.size(), check.size(), check) == 0;
+}
+
+bool StrUtil::endsWith(string_view str, char check)
+{
+	return !str.empty() && str.back() == check;
 }
 
 bool StrUtil::endsWithCI(string_view str, string_view check)
@@ -135,6 +173,11 @@ bool StrUtil::endsWithCI(string_view str, string_view check)
 			return false;
 
 	return true;
+}
+
+bool endsWithCI(string_view str, char check)
+{
+	return !str.empty() && tolower(str.back()) == tolower(check);
 }
 
 bool StrUtil::contains(string_view str, char check)
@@ -508,9 +551,9 @@ void StrUtil::Path::set(string_view full_path)
 	std::replace(full_path_.begin(), full_path_.end(), '\\', '/');
 
 	auto last_sep_pos = full_path_.find_last_of('/');
-	filename_start_ = last_sep_pos == string::npos ? 0 : last_sep_pos + 1;
-	auto ext_pos = full_path_.find('.');
-	filename_end_ = ext_pos == string::npos ? full_path_.size() : ext_pos;
+	filename_start_   = last_sep_pos == string::npos ? 0 : last_sep_pos + 1;
+	auto ext_pos      = full_path_.find('.');
+	filename_end_     = ext_pos == string::npos ? full_path_.size() : ext_pos;
 }
 
 void StrUtil::Path::setPath(string_view path)
@@ -536,7 +579,7 @@ void StrUtil::Path::setPath(string_view path)
 	{
 		full_path_.replace(0, filename_start_ - 1, path.data(), path.size());
 		auto fn_start_old = filename_start_;
-		filename_start_ = path.size() + 1;
+		filename_start_   = path.size() + 1;
 		filename_end_ -= fn_start_old - filename_start_;
 	}
 }
@@ -711,7 +754,7 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 				done = true;
 			}
 			else
-				Log::info(2, S_FMT("Couldn't find entry to #include: %s", name));
+				Log::info(2, fmt::sprintf("Couldn't find entry to #include: %s", name));
 
 			// Look in resource pack
 			if (use_res && !done && App::archiveManager().programResourceArchive())
@@ -727,9 +770,8 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 
 			// Okay, we've exhausted all possibilities
 			if (!done)
-				Log::info(
-					1,
-					S_FMT("Error: Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
+				Log::info(fmt::sprintf(
+					"Error: Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
 		}
 		else
 			out.append(line + "\n");
@@ -739,4 +781,49 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 
 	// Delete temp file
 	wxRemoveFile(filename);
+}
+
+int StrUtil::toInt(const string& str)
+{
+	try
+	{
+		return std::stoi(str);
+	}
+	catch (const std::exception& ex)
+	{
+		Log::error(fmt::format("Can't convert \"{}\" to an integer: {}", str, ex.what()));
+		return 0;
+	}
+}
+
+float StrUtil::toFloat(const string& str)
+{
+	try
+	{
+		return std::stof(str);
+	}
+	catch (const std::exception& ex)
+	{
+		Log::error(fmt::format("Can't convert \"{}\" to a float: {}", str, ex.what()));
+		return 0.f;
+	}
+}
+
+double StrUtil::toDouble(const string& str)
+{
+	try
+	{
+		return std::stod(str);
+	}
+	catch (const std::exception& ex)
+	{
+		Log::error(fmt::format("Can't convert \"{}\" to a double: {}", str, ex.what()));
+		return 0.;
+	}
+}
+
+bool StrUtil::toBoolean(const string& str)
+{
+	// Empty, 0 or "false" are false, everything else true
+	return !(str.empty() || str == "0" || equalCI(str, "false"));
 }

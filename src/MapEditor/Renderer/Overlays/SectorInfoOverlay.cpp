@@ -70,22 +70,22 @@ void SectorInfoOverlay::update(MapSector* sector)
 
 	// Info (index + type)
 	int t = sector->intProperty("special");
-	string type = S_FMT("%s (Type %d)", Game::configuration().sectorTypeName(t), t);
+	string type = fmt::sprintf("%s (Type %d)", Game::configuration().sectorTypeName(t), t);
 	if (Global::debug)
-		info_text += S_FMT("Sector #%d (%d): %s\n", sector->index(), sector->objId(), type);
+		info_text += fmt::sprintf("Sector #%d (%d): %s\n", sector->index(), sector->objId(), type);
 	else
-		info_text += S_FMT("Sector #%d: %s\n", sector->index(), type);
+		info_text += fmt::sprintf("Sector #%d: %s\n", sector->index(), type);
 
 	// Height
 	int fh = sector->intProperty("heightfloor");
 	int ch = sector->intProperty("heightceiling");
-	info_text += S_FMT("Height: %d to %d (%d total)\n", fh, ch, ch - fh);
+	info_text += fmt::sprintf("Height: %d to %d (%d total)\n", fh, ch, ch - fh);
 
 	// Brightness
-	info_text += S_FMT("Brightness: %d\n", sector->intProperty("lightlevel"));
+	info_text += fmt::sprintf("Brightness: %d\n", sector->intProperty("lightlevel"));
 
 	// Tag
-	info_text += S_FMT("Tag: %d", sector->intProperty("id"));
+	info_text += fmt::sprintf("Tag: %d", sector->intProperty("id"));
 
 	// Textures
 	ftex_ = sector->floor().texture;

@@ -193,7 +193,7 @@ bool ColourConfiguration::readConfiguration(MemChunk& mc)
 				}
 
 				else
-					LOG_MESSAGE(1, "Warning: unknown colour definition property \"%s\"", prop->name());
+					Log::info(fmt::format("Warning: unknown colour definition property \"{}\"", prop->name()));
 			}
 		}
 	}
@@ -217,7 +217,7 @@ bool ColourConfiguration::readConfiguration(MemChunk& mc)
 				flat_alpha = prop->floatValue();
 
 			else
-				LOG_MESSAGE(1, "Warning: unknown theme property \"%s\"", prop->name());
+				Log::info(fmt::format("Warning: unknown theme property \"{}\"", prop->name()));
 		}
 	}
 
@@ -240,20 +240,20 @@ bool ColourConfiguration::writeConfiguration(MemChunk& mc)
 			continue;
 
 		// Colour definition name
-		cfgstring += S_FMT("\t%s\n\t{\n", i.first);
+		cfgstring += fmt::format("\t{}\n\t{{\n", i.first);
 
 		// Full name
-		cfgstring += S_FMT("\t\tname = \"%s\";\n", cc.name);
+		cfgstring += fmt::format("\t\tname = \"{}\";\n", cc.name);
 
 		// Group
-		cfgstring += S_FMT("\t\tgroup = \"%s\";\n", cc.group);
+		cfgstring += fmt::format("\t\tgroup = \"{}\";\n", cc.group);
 
 		// Colour values
-		cfgstring += S_FMT("\t\trgb = %d, %d, %d;\n", cc.colour.r, cc.colour.g, cc.colour.b);
+		cfgstring += fmt::format("\t\trgb = {}, {}, {};\n", cc.colour.r, cc.colour.g, cc.colour.b);
 
 		// Alpha
 		if (cc.colour.a < 255)
-			cfgstring += S_FMT("\t\talpha = %d;\n", cc.colour.a);
+			cfgstring += fmt::format("\t\talpha = {};\n", cc.colour.a);
 
 		// Additive
 		if (cc.colour.blend == 1)
@@ -264,9 +264,9 @@ bool ColourConfiguration::writeConfiguration(MemChunk& mc)
 
 	cfgstring += "}\n\ntheme\n{\n";
 
-	cfgstring += S_FMT("\tline_hilight_width = %1.3f;\n", line_hilight_width);
-	cfgstring += S_FMT("\tline_selection_width = %1.3f;\n", line_selection_width);
-	cfgstring += S_FMT("\tflat_alpha = %1.3f;\n", flat_alpha);
+	cfgstring += fmt::format("\tline_hilight_width = {:1.3f};\n", line_hilight_width);
+	cfgstring += fmt::format("\tline_selection_width = {:1.3f};\n", line_selection_width);
+	cfgstring += fmt::format("\tflat_alpha = {:1.3f};\n", flat_alpha);
 	cfgstring += "}\n";
 
 	mc.write(cfgstring.data(), cfgstring.size());
@@ -369,7 +369,7 @@ CONSOLE_COMMAND(ccfg, 1, false)
 		sort(list.begin(), list.end());
 
 		// Dump list to console
-		Log::console(S_FMT("%lu Colours:", list.size()));
+		Log::console(fmt::format("{} Colours:", list.size()));
 		for (const auto& col : list)
 			Log::console(col);
 	}
@@ -379,19 +379,19 @@ CONSOLE_COMMAND(ccfg, 1, false)
 		if (args.size() >= 4)
 		{
 			// Read RGB
-			int red   = std::stoi(args[1]);
-			int green = std::stoi(args[2]);
-			int blue  = std::stoi(args[3]);
+			int red   = StrUtil::toInt(args[1]);
+			int green = StrUtil::toInt(args[2]);
+			int blue  = StrUtil::toInt(args[3]);
 
 			// Read alpha (if specified)
 			int alpha = -1;
 			if (args.size() >= 5)
-				alpha = std::stoi(args[4]);
+				alpha = StrUtil::toInt(args[4]);
 
 			// Read blend (if specified)
 			int blend = -1;
 			if (args.size() >= 6)
-				blend = std::stoi(args[5]);
+				blend = StrUtil::toInt(args[5]);
 
 			// Set colour
 			ColourConfiguration::setColour(args[0], red, green, blue, alpha, blend);
@@ -399,7 +399,7 @@ CONSOLE_COMMAND(ccfg, 1, false)
 
 		// Print colour
 		ColRGBA col = ColourConfiguration::colour(args[0]);
-		Log::console(S_FMT("Colour \"%s\" = %d %d %d %d %d", args[0], col.r, col.g, col.b, col.a, col.blend));
+		Log::console(fmt::format("Colour \"{}\" = {} {} {} {} {}", args[0], col.r, col.g, col.b, col.a, col.blend));
 	}
 }
 

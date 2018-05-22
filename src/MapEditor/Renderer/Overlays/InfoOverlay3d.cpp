@@ -93,11 +93,11 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 		object_ = side;
 
 		// --- Line/side info ---
-		info_.push_back(S_FMT("Line #%d", line->index()));
+		info_.push_back(fmt::sprintf("Line #%d", line->index()));
 		if (side == line->s1())
-			info_.push_back(S_FMT("Front Side #%d", side->index()));
+			info_.push_back(fmt::sprintf("Front Side #%d", side->index()));
 		else
-			info_.push_back(S_FMT("Back Side #%d", side->index()));
+			info_.push_back(fmt::sprintf("Back Side #%d", side->index()));
 
 		// Relevant flags
 		string flags;
@@ -111,7 +111,7 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 			StrUtil::removeLastIP(flags, 2);
 		info_.push_back(flags);
 
-		info_.push_back(S_FMT("Length: %d", (int)line->length()));
+		info_.push_back(fmt::sprintf("Length: %d", (int)line->length()));
 
 		// Other potential info: special, sector#
 
@@ -142,11 +142,11 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 			// Add x offset string
 			string xoff_info;
 			if (xoff_part == 0)
-				xoff_info = S_FMT("%d", xoff);
+				xoff_info = fmt::sprintf("%d", xoff);
 			else if (xoff_part > 0)
-				xoff_info = S_FMT("%1.2f (%d+%1.2f)", (double)xoff + xoff_part, xoff, xoff_part);
+				xoff_info = fmt::sprintf("%1.2f (%d+%1.2f)", (double)xoff + xoff_part, xoff, xoff_part);
 			else
-				xoff_info = S_FMT("%1.2f (%d-%1.2f)", (double)xoff + xoff_part, xoff, -xoff_part);
+				xoff_info = fmt::sprintf("%1.2f (%d-%1.2f)", (double)xoff + xoff_part, xoff, -xoff_part);
 
 			// Get y offset info
 			int    yoff = side->intProperty("offsety");
@@ -161,18 +161,18 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 			// Add y offset string
 			string yoff_info;
 			if (yoff_part == 0)
-				yoff_info = S_FMT("%d", yoff);
+				yoff_info = fmt::sprintf("%d", yoff);
 			else if (yoff_part > 0)
-				yoff_info = S_FMT("%1.2f (%d+%1.2f)", (double)yoff + yoff_part, yoff, yoff_part);
+				yoff_info = fmt::sprintf("%1.2f (%d+%1.2f)", (double)yoff + yoff_part, yoff, yoff_part);
 			else
-				yoff_info = S_FMT("%1.2f (%d-%1.2f)", (double)yoff + yoff_part, yoff, -yoff_part);
+				yoff_info = fmt::sprintf("%1.2f (%d-%1.2f)", (double)yoff + yoff_part, yoff, -yoff_part);
 
-			info2_.push_back(S_FMT("Offsets: %s, %s", xoff_info, yoff_info));
+			info2_.push_back(fmt::sprintf("Offsets: %s, %s", xoff_info, yoff_info));
 		}
 		else
 		{
 			// Basic offsets
-			info2_.push_back(S_FMT("Offsets: %d, %d", side->intProperty("offsetx"), side->intProperty("offsety")));
+			info2_.push_back(fmt::sprintf("Offsets: %d, %d", side->intProperty("offsetx"), side->intProperty("offsety")));
 		}
 
 		// UDMF extras
@@ -195,7 +195,7 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 				xscale = side->floatProperty("scalex_top");
 				yscale = side->floatProperty("scaley_top");
 			}
-			info2_.push_back(S_FMT("Scale: %1.2fx, %1.2fx", xscale, yscale));
+			info2_.push_back(fmt::sprintf("Scale: %1.2fx, %1.2fx", xscale, yscale));
 		}
 		else
 		{
@@ -268,9 +268,9 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 			right_height = top_plane.heightAt(right_point) - bottom_plane.heightAt(right_point);
 		}
 		if (fabs(left_height - right_height) < 0.001)
-			info2_.push_back(S_FMT("Height: %d", (int)left_height));
+			info2_.push_back(fmt::sprintf("Height: %d", (int)left_height));
 		else
-			info2_.push_back(S_FMT("Height: %d ~ %d", (int)left_height, (int)right_height));
+			info2_.push_back(fmt::sprintf("Height: %d ~ %d", (int)left_height, (int)right_height));
 
 		// Texture
 		if (item_type == MapEditor::ItemType::WallBottom)
@@ -300,17 +300,17 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 		// --- Sector info ---
 
 		// Sector index
-		info_.push_back(S_FMT("Sector #%d", item_index));
+		info_.push_back(fmt::sprintf("Sector #%d", item_index));
 
 		// Sector height
-		info_.push_back(S_FMT("Total Height: %d", cheight - fheight));
+		info_.push_back(fmt::sprintf("Total Height: %d", cheight - fheight));
 
 		// ZDoom UDMF extras
 		/*
 		if (Game::configuration().udmfNamespace() == "zdoom") {
 			// Sector colour
 			ColRGBA col = sector->getColour(0, true);
-			info.push_back(S_FMT("Colour: R%d, G%d, B%d", col.r, col.g, col.b));
+			info.push_back(fmt::sprintf("Colour: R%d, G%d, B%d", col.r, col.g, col.b));
 		}
 		*/
 
@@ -319,9 +319,9 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 
 		// Height
 		if (item_type == MapEditor::ItemType::Floor)
-			info2_.push_back(S_FMT("Floor Height: %d", fheight));
+			info2_.push_back(fmt::sprintf("Floor Height: %d", fheight));
 		else
-			info2_.push_back(S_FMT("Ceiling Height: %d", cheight));
+			info2_.push_back(fmt::sprintf("Ceiling Height: %d", cheight));
 
 		// Light
 		int light = sector->intProperty("lightlevel");
@@ -350,14 +350,14 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 
 			// Add info string
 			if (fl == 0)
-				info2_.push_back(S_FMT("Light: %d", light));
+				info2_.push_back(fmt::sprintf("Light: %d", light));
 			else if (fl > 0)
-				info2_.push_back(S_FMT("Light: %d (%d+%d)", light + fl, light, fl));
+				info2_.push_back(fmt::sprintf("Light: %d (%d+%d)", light + fl, light, fl));
 			else
-				info2_.push_back(S_FMT("Light: %d (%d-%d)", light + fl, light, -fl));
+				info2_.push_back(fmt::sprintf("Light: %d (%d-%d)", light + fl, light, -fl));
 		}
 		else
-			info2_.push_back(S_FMT("Light: %d", light));
+			info2_.push_back(fmt::sprintf("Light: %d", light));
 
 		// UDMF extras
 		if (MapEditor::editContext().mapDesc().format == MAP_UDMF)
@@ -378,7 +378,7 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 					yoff = sector->floatProperty("ypanningceiling");
 				}
 			}
-			info2_.push_back(S_FMT("Offsets: %1.2f, %1.2f", xoff, yoff));
+			info2_.push_back(fmt::sprintf("Offsets: %1.2f, %1.2f", xoff, yoff));
 
 			// Scaling
 			double xscale, yscale;
@@ -396,7 +396,7 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 					yscale = sector->floatProperty("yscaleceiling");
 				}
 			}
-			info2_.push_back(S_FMT("Scale: %1.2fx, %1.2fx", xscale, yscale));
+			info2_.push_back(fmt::sprintf("Scale: %1.2fx, %1.2fx", xscale, yscale));
 		}
 
 		// Texture
@@ -420,23 +420,23 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 		object_ = thing;
 
 		// Index
-		info_.push_back(S_FMT("Thing #%d", item_index));
+		info_.push_back(fmt::sprintf("Thing #%d", item_index));
 
 		// Position
 		if (MapEditor::editContext().mapDesc().format == MAP_HEXEN
 			|| MapEditor::editContext().mapDesc().format == MAP_UDMF)
-			info_.push_back(S_FMT(
+			info_.push_back(fmt::sprintf(
 				"Position: %d, %d, %d", (int)thing->xPos(), (int)thing->yPos(), (int)thing->floatProperty("height")));
 		else
-			info_.push_back(S_FMT("Position: %d, %d", (int)thing->xPos(), (int)thing->yPos()));
+			info_.push_back(fmt::sprintf("Position: %d, %d", (int)thing->xPos(), (int)thing->yPos()));
 
 
 		// Type
 		auto& tt = Game::configuration().thingType(thing->type());
 		if (!tt.defined())
-			info2_.push_back(S_FMT("Type: %d", thing->type()));
+			info2_.push_back(fmt::sprintf("Type: %d", thing->type()));
 		else
-			info2_.push_back(S_FMT("Type: %s", tt.name()));
+			info2_.push_back(fmt::sprintf("Type: %s", tt.name()));
 
 		// Args
 		if (MapEditor::editContext().mapDesc().format == MAP_HEXEN
@@ -464,7 +464,7 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 		// Sector
 		int sector = map->sectorAt(thing->position());
 		if (sector >= 0)
-			info2_.push_back(S_FMT("In Sector #%d", sector));
+			info2_.push_back(fmt::sprintf("In Sector #%d", sector));
 		else
 			info2_.emplace_back("No Sector");
 
@@ -474,9 +474,9 @@ void InfoOverlay3D::update(int item_index, MapEditor::ItemType item_type, SLADEM
 		if (!texture_)
 		{
 			if (use_zeth_icons && tt.zethIcon() >= 0)
-				texture_ = MapEditor::textureManager().editorImage(S_FMT("zethicons/zeth%02d", tt.zethIcon()));
+				texture_ = MapEditor::textureManager().editorImage(fmt::sprintf("zethicons/zeth%02d", tt.zethIcon()));
 			if (!texture_)
-				texture_ = MapEditor::textureManager().editorImage(S_FMT("thing/%s", tt.icon()));
+				texture_ = MapEditor::textureManager().editorImage(fmt::sprintf("thing/%s", tt.icon()));
 			thing_icon_ = true;
 		}
 		texname_ = "";

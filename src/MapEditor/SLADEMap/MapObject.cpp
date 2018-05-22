@@ -50,6 +50,30 @@ long prop_backup_time = -1;
 
 // -----------------------------------------------------------------------------
 //
+// Functions
+//
+// -----------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------
+// Formatter for fmt so that MapObject::Type can be written to a string
+// -----------------------------------------------------------------------------
+void format_arg(fmt::BasicFormatter<char>& f, const char*& format_str, const MapObject::Type& s)
+{
+	switch (s)
+	{
+	case MapObject::Type::Vertex: f.writer().write("[Vertex]"); break;
+	case MapObject::Type::Line: f.writer().write("[Line]"); break;
+	case MapObject::Type::Side: f.writer().write("[Side]"); break;
+	case MapObject::Type::Sector: f.writer().write("[Sector]"); break;
+	case MapObject::Type::Thing: f.writer().write("[Thing]"); break;
+	default: f.writer().write("[Object]"); break;
+	}
+}
+
+
+// -----------------------------------------------------------------------------
+//
 // MapObject Class Functions
 //
 // -----------------------------------------------------------------------------
@@ -279,13 +303,13 @@ void MapObject::loadFromBackup(Backup* backup)
 	// Check type match
 	if (backup->type != obj_type_)
 	{
-		LOG_MESSAGE(1, "loadFromBackup: Mobj type mismatch, %d != %d", obj_type_, backup->type);
+		Log::info(fmt::format("loadFromBackup: Mobj type mismatch, {} != {}", obj_type_, backup->type));
 		return;
 	}
 	// Check id match
 	if (backup->id != obj_id_)
 	{
-		LOG_MESSAGE(1, "loadFromBackup: Mobj id mismatch, %d != %d", obj_id_, backup->id);
+		Log::info(fmt::sprintf("loadFromBackup: Mobj id mismatch, %d != %d", obj_id_, backup->id));
 		return;
 	}
 

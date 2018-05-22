@@ -476,7 +476,7 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 	ofs += mf.pal_size * 3;
 	if (ofs >= eod)
 	{
-		LOG_MESSAGE(1, "BMF aborted: no data after palette");
+		Log::info(1, "BMF aborted: no data after palette");
 		return false;
 	}
 	mf.info_size = ofs[0];
@@ -493,7 +493,7 @@ bool SImage::loadBMF(const uint8_t* gfx_data, int size)
 	ofs += 2;
 	if (ofs >= eod)
 	{
-		LOG_MESSAGE(1, "BMF aborted: no data after char size");
+		Log::info(1, "BMF aborted: no data after char size");
 		return false;
 	}
 	// Let's create each character's data and compute the total size
@@ -875,8 +875,8 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 	// Read column offsets
 	if (hdr_size < (8 + (size_.x * 6)))
 	{
-		Global::error = S_FMT(
-			"Invalid Jaguar sprite: header too small (%d) for column offsets (%d)", hdr_size, (8 + (size_.x * 6)));
+		Global::error = fmt::format(
+			"Invalid Jaguar sprite: header too small ({}) for column offsets ({})", hdr_size, (8 + (size_.x * 6)));
 		return false;
 	}
 	vector<uint16_t> col_offsets(size_.x);
@@ -886,8 +886,8 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 	}
 	if (hdr_size < (4 + col_offsets[size_.x - 1]))
 	{
-		Global::error = S_FMT(
-			"Invalid Jaguar sprite: header too small (%d) for post offsets (%d)",
+		Global::error = fmt::format(
+			"Invalid Jaguar sprite: header too small ({}) for post offsets ({})",
 			hdr_size,
 			4 + col_offsets[size_.x - 1]);
 		return false;
@@ -906,7 +906,7 @@ bool SImage::loadJaguarSprite(const uint8_t* header, int hdr_size, const uint8_t
 			if (pixel_p + len > size)
 			{
 				Global::error =
-					S_FMT("Invalid Jaguar sprite: body too small (%d) for pixel data (%d)", size, pixel_p + len);
+					fmt::format("Invalid Jaguar sprite: body too small ({}) for pixel data ({})", size, pixel_p + len);
 				return false;
 			}
 			// Copy pixels
@@ -935,7 +935,7 @@ bool SImage::loadJaguarTexture(const uint8_t* gfx_data, int size, int i_width, i
 	// Check data
 	if (i_width * i_height == 0 || size < i_width * i_height + 320)
 	{
-		Global::error = S_FMT("Size is %d, expected %d", size, i_width * i_height + 320);
+		Global::error = fmt::format("Size is {}, expected {}", size, i_width * i_height + 320);
 		return false;
 	}
 

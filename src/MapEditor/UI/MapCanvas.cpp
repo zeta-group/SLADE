@@ -215,16 +215,16 @@ void MapCanvas::onKeyBindPress(string_view name)
 		date.SetToCurrent();
 		auto timestamp = date.FormatISOCombined('-');
 		timestamp.Replace(":", "");
-		string filename = App::path(S_FMT("sladeshot-%s.png", timestamp), App::Dir::User);
+		string filename = App::path(fmt::sprintf("sladeshot-%s.png", timestamp), App::Dir::User);
 		if (shot.saveToFile(filename))
 		{
 			// Editor message if the file is actually written, with full path
-			context_->addEditorMessage(S_FMT("Screenshot taken (%s)", filename));
+			context_->addEditorMessage(fmt::sprintf("Screenshot taken (%s)", filename));
 		}
 		else
 		{
 			// Editor message also if the file couldn't be written
-			context_->addEditorMessage(S_FMT("Screenshot failed (%s)", filename));
+			context_->addEditorMessage(fmt::sprintf("Screenshot failed (%s)", filename));
 		}
 	}
 #endif
@@ -265,14 +265,14 @@ void MapCanvas::onKeyDown(wxKeyEvent& e)
 		{
 			Polygon2D poly;
 			sf::Clock clock;
-			LOG_MESSAGE(1, "Generating polygons...");
+			Log::info(1, "Generating polygons...");
 			for (unsigned a = 0; a < context_->map().nSectors(); a++)
 			{
 				if (!poly.openSector(context_->map().sector(a)))
-					LOG_MESSAGE(1, "Splitting failed for sector %d", a);
+					Log::info(fmt::sprintf("Splitting failed for sector %d", a));
 			}
 			// int ms = clock.GetElapsedTime() * 1000;
-			// LOG_MESSAGE(1, "Polygon generation took %dms", ms);
+			// Log::info(1, "Polygon generation took %dms", ms);
 		}
 		if (e.GetKeyCode() == WXK_F7)
 		{
@@ -307,7 +307,7 @@ void MapCanvas::onKeyDown(wxKeyEvent& e)
 			if (sec2)
 				i2 = sec2->index();
 
-			context_->addEditorMessage(S_FMT("Front %d Back %d", i1, i2));
+			context_->addEditorMessage(fmt::sprintf("Front %d Back %d", i1, i2));
 		}
 		if (e.GetKeyCode() == WXK_F5 && context_->editMode() == Mode::Sectors)
 		{

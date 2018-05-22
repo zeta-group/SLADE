@@ -321,9 +321,9 @@ void LineTextureOverlay::drawTexture(float alpha, int size, TexInfo& tex, const 
 	// Determine texture name text
 	string str_texture;
 	if (tex.textures.size() == 1)
-		str_texture = S_FMT("%s (%dx%d)", tex.textures[0], tex_first->getWidth(), tex_first->getHeight());
+		str_texture = fmt::sprintf("%s (%dx%d)", tex.textures[0], tex_first->getWidth(), tex_first->getHeight());
 	else if (tex.textures.size() > 1)
-		str_texture = S_FMT("Multiple (%lu)", tex.textures.size());
+		str_texture = fmt::sprintf("Multiple (%lu)", tex.textures.size());
 	else
 		str_texture = "- (None)";
 
@@ -428,7 +428,7 @@ void LineTextureOverlay::browseTexture(TexInfo& tex, string_view position)
 
 	// Open texture browser
 	MapTextureBrowser browser(MapEditor::windowWx(), 0, texture, &(MapEditor::editContext().map()));
-	browser.SetTitle(S_FMT("Browse %s Texture", position));
+	browser.SetTitle(fmt::sprintf("Browse %s Texture", position));
 	if (browser.ShowModal() == wxID_OK)
 	{
 		// Set texture

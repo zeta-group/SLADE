@@ -159,7 +159,7 @@ string MapTexBrowserItem::itemInfo()
 
 	// Add dimensions if known
 	if (image_ || loadImage())
-		info += S_FMT("%dx%d", image_->getWidth(), image_->getHeight());
+		info += fmt::sprintf("%dx%d", image_->getWidth(), image_->getHeight());
 	else
 		info += "Unknown size";
 
@@ -174,7 +174,7 @@ string MapTexBrowserItem::itemInfo()
 		info += ", Scaled";
 
 	// Add usage count
-	info += S_FMT(", Used %d times", usage_count_);
+	info += fmt::sprintf(", Used %d times", usage_count_);
 
 	return info;
 }

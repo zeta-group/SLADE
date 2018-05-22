@@ -332,8 +332,8 @@ void MapArchClipboardItem::addLines(vector<MapLine*> lines)
 // -----------------------------------------------------------------------------
 string MapArchClipboardItem::info() const
 {
-	return S_FMT(
-		"%lu Vertices, %lu Lines, %lu Sides and %lu Sectors",
+	return fmt::format(
+		"{} Vertices, {} Lines, {} Sides and {} Sectors",
 		vertices_.size(),
 		lines_.size(),
 		sides_.size(),
@@ -386,12 +386,12 @@ vector<MapVertex*> MapArchClipboardItem::pasteToMap(SLADEMap* map, fpoint2_t pos
 
 		if (!v1)
 		{
-			LOG_MESSAGE(1, "no v1");
+			Log::info(1, "no v1");
 			continue;
 		}
 		if (!v2)
 		{
-			LOG_MESSAGE(1, "no v2");
+			Log::info(1, "no v2");
 		}
 
 		MapLine* newline = map->createLine(v1, v2, true);
@@ -490,7 +490,7 @@ void MapThingsClipboardItem::addThings(vector<MapThing*>& things)
 // -----------------------------------------------------------------------------
 string MapThingsClipboardItem::info() const
 {
-	return S_FMT("%lu Things", things_.size());
+	return fmt::format("{} Things", things_.size());
 }
 
 // -----------------------------------------------------------------------------

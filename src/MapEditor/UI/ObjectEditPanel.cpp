@@ -106,10 +106,10 @@ void ObjectEditPanel::init(ObjectEditGroup* group)
 	old_height_ = bbox.height();
 
 	// Init UI values
-	text_xoff_->SetValue(S_FMT("%d", 0));
-	text_yoff_->SetValue(S_FMT("%d", 0));
-	text_scalex_->SetValue(S_FMT("%d", 100));
-	text_scaley_->SetValue(S_FMT("%d", 100));
+	text_xoff_->SetValue(fmt::sprintf("%d", 0));
+	text_yoff_->SetValue(fmt::sprintf("%d", 0));
+	text_scalex_->SetValue(fmt::sprintf("%d", 100));
+	text_scaley_->SetValue(fmt::sprintf("%d", 100));
 	combo_rotation_->Select(0);
 }
 
@@ -124,11 +124,11 @@ void ObjectEditPanel::update(ObjectEditGroup* group, bool lock_rotation) const
 	double xscale = bbox.width() / old_width_;
 	double yscale = bbox.height() / old_height_;
 
-	text_xoff_->SetValue(S_FMT("%d", xoff));
-	text_yoff_->SetValue(S_FMT("%d", yoff));
-	text_scalex_->SetValue(S_FMT("%d", int(100 * xscale)));
-	text_scaley_->SetValue(S_FMT("%d", int(100 * yscale)));
-	combo_rotation_->SetValue(S_FMT("%1.2f", group->rotation()));
+	text_xoff_->SetValue(fmt::sprintf("%d", xoff));
+	text_yoff_->SetValue(fmt::sprintf("%d", yoff));
+	text_scalex_->SetValue(fmt::sprintf("%d", int(100 * xscale)));
+	text_scaley_->SetValue(fmt::sprintf("%d", int(100 * yscale)));
+	combo_rotation_->SetValue(fmt::sprintf("%1.2f", group->rotation()));
 }
 
 // -----------------------------------------------------------------------------

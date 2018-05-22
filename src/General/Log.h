@@ -17,7 +17,7 @@ namespace Log
 	{
 		string		message;
 		MessageType	type;
-		time_t		timestamp;
+		std::tm		timestamp;
 
 		string	formattedMessageLine() const;
 	};
@@ -59,9 +59,3 @@ namespace Log
 	inline void	console(const char* text) { message(MessageType::Console, text); }
 	inline void	console(const string& text) { message(MessageType::Console, text); }
 }
-
-// Try to avoid using these and use Log::message/error/warning with S_FMT instead
-#define LOG_MESSAGE(level, ...) Log::message(Log::MessageType::Info, level, formatString(__VA_ARGS__))
-#define LOG_WARNING(level, ...) Log::message(Log::MessageType::Warning, level, formatString(__VA_ARGS__))
-#define LOG_ERROR(level, ...) Log::message(Log::MessageType::Error, level, formatString(__VA_ARGS__))
-// move LOG_DEBUG here?

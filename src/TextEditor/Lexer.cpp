@@ -120,7 +120,7 @@ bool Lexer::doStyling(TextEditorCtrl* editor, int start, int end)
 
 	editor->StartStyling(start, 31);
 	if (debug_lexer)
-		Log::debug(S_FMT("START STYLING FROM %d TO %d (LINE %d)", start, end, line + 1));
+		Log::debug(fmt::sprintf("START STYLING FROM %d TO %d (LINE %d)", start, end, line + 1));
 
 	bool done = false;
 	while (!done)
@@ -330,13 +330,13 @@ bool Lexer::processUnknown(LexerState& state)
 		else if (checkToken(state, state.position, block_end_))
 			state.fold_increment--;
 
-		// LOG_MESSAGE(4, "unknown char '%c' (%d)", c, c);
+		// Log::info(4, "unknown char '%c' (%d)", c, c);
 		u_length++;
 		state.position++;
 		pp = false;
 	}
 
-	// LOG_MESSAGE(4, "unknown:%d", u_length);
+	// Log::info(4, "unknown:%d", u_length);
 	state.editor->SetStyling(u_length, Style::Default);
 
 	return end;
@@ -375,7 +375,7 @@ bool Lexer::processComment(LexerState& state) const
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("comment:%d", state.length));
+		Log::debug(fmt::sprintf("comment:%d", state.length));
 
 	state.editor->SetStyling(state.length, Style::Comment);
 
@@ -435,7 +435,7 @@ bool Lexer::processWord(LexerState& state)
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("word:%s", word));
+		Log::debug(fmt::sprintf("word:%s", word));
 
 	styleWord(state, word);
 
@@ -474,7 +474,7 @@ bool Lexer::processString(LexerState& state) const
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("string:%d", state.length));
+		Log::debug(fmt::sprintf("string:%d", state.length));
 
 	state.editor->SetStyling(state.length, Style::String);
 
@@ -513,7 +513,7 @@ bool Lexer::processChar(LexerState& state) const
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("char:%d", state.length));
+		Log::debug(fmt::sprintf("char:%d", state.length));
 
 	state.editor->SetStyling(state.length, Style::Char);
 
@@ -551,7 +551,7 @@ bool Lexer::processOperator(LexerState& state)
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("operator:%d", state.length));
+		Log::debug(fmt::sprintf("operator:%d", state.length));
 
 	state.editor->SetStyling(state.length, Style::Operator);
 
@@ -589,7 +589,7 @@ bool Lexer::processWhitespace(LexerState& state)
 	}
 
 	if (debug_lexer)
-		Log::debug(S_FMT("whitespace:%d", state.length));
+		Log::debug(fmt::sprintf("whitespace:%d", state.length));
 
 	state.editor->SetStyling(state.length, Style::Default);
 

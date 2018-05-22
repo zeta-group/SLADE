@@ -143,7 +143,7 @@ bool GZipArchive::open(MemChunk& mc)
 				comment_ += c;
 			++mds;
 		} while (c != 0 && size > mds);
-		LOG_MESSAGE(1, "Archive %s says:\n %s", filename(true), comment_);
+		Log::info(fmt::format("Archive {} says:\n {}", filename(true), comment_));
 	}
 
 	// Skip past CRC 16 check
@@ -159,7 +159,7 @@ bool GZipArchive::open(MemChunk& mc)
 		mds += 2;
 		if (hcrc != (fullcrc & 0x0000FFFF))
 		{
-			LOG_MESSAGE(1, "CRC-16 mismatch for GZip header");
+			Log::info(1, "CRC-16 mismatch for GZip header");
 		}
 	}
 
@@ -317,7 +317,7 @@ bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "GZipArchive::loadEntryData: Failed to open gzip file %s", filename_);
+		Log::info(fmt::format("GZipArchive::loadEntryData: Failed to open gzip file {}", filename_));
 		return false;
 	}
 

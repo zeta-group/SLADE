@@ -31,12 +31,12 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
-#include "MainEditor/MainEditor.h"
-#include "EntryType.h"
-#include "General/Console/Console.h"
 #include "Archive/ArchiveManager.h"
 #include "Archive/Formats/ZipArchive.h"
+#include "EntryType.h"
+#include "General/Console/Console.h"
 #include "MainEditor/BinaryControlLump.h"
+#include "MainEditor/MainEditor.h"
 #include "Utility/Parser.h"
 
 
@@ -84,25 +84,25 @@ void EntryType::addToList()
 // -----------------------------------------------------------------------------
 void EntryType::dump()
 {
-	LOG_MESSAGE(1, "Type %s \"%s\", format %s, extension %s", id_, name_, format_->id(), extension_);
-	LOG_MESSAGE(1, "Size limit: %d-%d", size_limit_[0], size_limit_[1]);
+	Log::info(fmt::format("Type {} \"{}\", format {}, extension {}", id_, name_, format_->id(), extension_));
+	Log::info(fmt::format("Size limit: {}-{}", size_limit_[0], size_limit_[1]));
 
 	for (const auto& a : match_archive_)
-		LOG_MESSAGE(1, "Match Archive: \"%s\"", a);
+		Log::info(fmt::format("Match Archive: \"{}\"", a));
 
 	for (const auto& a : match_extension_)
-		LOG_MESSAGE(1, "Match Extension: \"%s\"", a);
+		Log::info(fmt::format("Match Extension: \"{}\"", a));
 
 	for (const auto& a : match_name_)
-		LOG_MESSAGE(1, "Match Name: \"%s\"", a);
+		Log::info(fmt::format("Match Name: \"{}\"", a));
 
 	for (int a : match_size_)
-		LOG_MESSAGE(1, "Match Size: %d", a);
+		Log::info(fmt::format("Match Size: {}", a));
 
 	for (int a : size_multiple_)
-		LOG_MESSAGE(1, "Size Multiple: %d", a);
+		Log::info(fmt::format("Size Multiple: {}", a));
 
-	LOG_MESSAGE(1, "---");
+	Log::info(1, "---");
 }
 
 // -----------------------------------------------------------------------------
@@ -352,8 +352,8 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 			if (parent_type != EntryType::unknownType())
 				parent_type->copyToType(ntype);
 			else
-				LOG_MESSAGE(
-					1, "Warning: Entry type %s inherits from unknown type %s", ntype->id(), typenode->inherit());
+				Log::info(fmt::format(
+					"Warning: Entry type {} inherits from unknown type {}", ntype->id(), typenode->inherit()));
 		}
 
 		// Go through all parsed fields
@@ -382,7 +382,8 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 
 				// Warn if undefined format
 				if (ntype->format_ == EntryDataFormat::anyFormat())
-					LOG_MESSAGE(1, "Warning: Entry type %s requires undefined format %s", ntype->id(), format_string);
+					Log::info(
+						fmt::format("Warning: Entry type {} requires undefined format {}", ntype->id(), format_string));
 			}
 			else if (StrUtil::equalCI(fieldnode->name(), "icon")) // Icon field
 			{
@@ -469,7 +470,7 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 				if (fieldnode->nValues() >= 3)
 					ntype->colour_ = ColRGBA(fieldnode->intValue(0), fieldnode->intValue(1), fieldnode->intValue(2));
 				else
-					LOG_MESSAGE(1, "Not enough colour components defined for entry type %s", ntype->id());
+					Log::info(fmt::format("Not enough colour components defined for entry type {}", ntype->id()));
 			}
 			else
 			{
@@ -536,7 +537,7 @@ bool EntryType::loadEntryTypes()
 	// Check resource archive exists
 	if (!res_archive)
 	{
-		LOG_MESSAGE(1, "Error: No resource archive open!");
+		Log::info(1, "Error: No resource archive open!");
 		return false;
 	}
 
@@ -546,7 +547,7 @@ bool EntryType::loadEntryTypes()
 	// Check it exists
 	if (!et_dir)
 	{
-		LOG_MESSAGE(1, "Error: config/entry_types does not exist in slade.pk3");
+		Log::info(1, "Error: config/entry_types does not exist in slade.pk3");
 		return false;
 	}
 
@@ -561,7 +562,7 @@ bool EntryType::loadEntryTypes()
 
 	// Warn if no types were read (this shouldn't happen unless the resource archive is corrupted)
 	if (!etypes_read)
-		LOG_MESSAGE(1, "Warning: No built-in entry types could be loaded from slade.pk3");
+		Log::info(1, "Warning: No built-in entry types could be loaded from slade.pk3");
 
 
 	// Read Custom Types -------------------------------------------------------
@@ -744,7 +745,7 @@ CONSOLE_COMMAND(type, 0, true)
 			listing += all_types[a]->formatId();
 			listing += separator;
 		}
-		LOG_MESSAGE(1, listing);
+		Log::info(1, listing);
 	}
 	else
 	{
@@ -774,7 +775,8 @@ CONSOLE_COMMAND(type, 0, true)
 
 		if (!match)
 		{
-			LOG_MESSAGE(1, "Type %s does not exist (use \"type\" without parameter for a list)", args[0].c_str());
+			Log::info(
+				fmt::format("Type {} does not exist (use \"type\" without parameter for a list)", args[0].c_str()));
 			return;
 		}
 
@@ -783,7 +785,7 @@ CONSOLE_COMMAND(type, 0, true)
 		vector<ArchiveEntry*> meep = MainEditor::currentEntrySelection();
 		if (meep.empty())
 		{
-			LOG_MESSAGE(1, "No entry selected");
+			Log::info(1, "No entry selected");
 			return;
 		}
 
@@ -793,9 +795,9 @@ CONSOLE_COMMAND(type, 0, true)
 			// Check if format corresponds to entry
 			foo = EntryDataFormat::getFormat(desttype->formatId());
 			if (foo)
-				LOG_MESSAGE(1, "Identifying as %s", desttype->name().c_str());
+				Log::info(fmt::format("Identifying as {}", desttype->name().c_str()));
 			else
-				LOG_MESSAGE(1, "No data format for this type!");
+				Log::info("No data format for this type!");
 		}
 		else
 			force = true; // Always force the unknown type
@@ -807,16 +809,16 @@ CONSOLE_COMMAND(type, 0, true)
 			{
 				okay = foo->isThisFormat(b->data());
 				if (okay)
-					LOG_MESSAGE(1, "%s: Identification successful (%i/255)", b->name(), okay);
+					Log::info(fmt::format("{}: Identification successful ({}/255)", b->name(), okay));
 				else
-					LOG_MESSAGE(1, "%s: Identification failed", b->name());
+					Log::info(fmt::format("{}: Identification failed", b->name()));
 			}
 
 			// Change type
 			if (force || okay)
 			{
 				b->setType(desttype, okay);
-				LOG_MESSAGE(1, "%s: Type changed.", b->name());
+				Log::info(fmt::format("{}: Type changed.", b->name()));
 			}
 		}
 	}
@@ -827,8 +829,8 @@ CONSOLE_COMMAND(size, 0, true)
 	ArchiveEntry* meep = MainEditor::currentEntry();
 	if (!meep)
 	{
-		LOG_MESSAGE(1, "No entry selected");
+		Log::info(1, "No entry selected");
 		return;
 	}
-	LOG_MESSAGE(1, "%s: %i bytes", meep->name(), meep->size());
+	Log::info(fmt::format("{}: {} bytes", meep->name(), meep->size()));
 }

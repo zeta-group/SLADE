@@ -271,7 +271,7 @@ void TextureEditorPanel::updateTextureScaleLabel()
 		scaled_y /= tex_current_->scaleY();
 
 	// Update the label
-	label_scaled_size_->SetLabel(S_FMT("Scaled Size: %dx%d", scaled_x, scaled_y));
+	label_scaled_size_->SetLabel(fmt::sprintf("Scaled Size: %dx%d", scaled_x, scaled_y));
 }
 
 // -----------------------------------------------------------------------------
@@ -402,7 +402,7 @@ void TextureEditorPanel::updatePatchControls()
 			CTPatch* patch = tex_current_->patch(selection[0]);
 			if (!patch)
 			{
-				LOG_MESSAGE(1, "Error: Selected patch does not exist in texture");
+				Log::info(1, "Error: Selected patch does not exist in texture");
 				return;
 			}
 

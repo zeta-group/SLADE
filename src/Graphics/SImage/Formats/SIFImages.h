@@ -13,7 +13,7 @@ public:
 
 	~PNGChunk() = default;
 
-	string_view name() const { return name_; }
+	string_view name() const { return { name_, 4 }; }
 	uint32_t    size() const { return size_; }
 	uint32_t    crc() const { return crc_; }
 	MemChunk&   data() { return data_; }
@@ -266,7 +266,7 @@ protected:
 		bool    grAb_chunk = false;
 		data.seek(8, SEEK_SET); // Start after PNG header
 		PNGChunk chunk;
-		while (true)
+		while (data.currentPos() < data.size())
 		{
 			// Read next PNG chunk
 			chunk.read(data);
@@ -502,7 +502,7 @@ protected:
 		// Check it loaded ok
 		if (png.size() == 0)
 		{
-			LOG_MESSAGE(1, "Error reading temporary file");
+			Log::info(1, "Error reading temporary file");
 			return false;
 		}
 

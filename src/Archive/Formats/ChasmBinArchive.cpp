@@ -115,7 +115,7 @@ bool ChasmBinArchive::open(MemChunk& mc)
 
 	if (magic[0] != 'C' || magic[1] != 'S' || magic[2] != 'i' || magic[3] != 'd')
 	{
-		LOG_MESSAGE(1, "ChasmBinArchive::open: Opening failed, invalid header");
+		Log::info(1, "ChasmBinArchive::open: Opening failed, invalid header");
 		Global::error = "Invalid Chasm bin header";
 		return false;
 	}
@@ -150,7 +150,7 @@ bool ChasmBinArchive::open(MemChunk& mc)
 		// Check offset+size
 		if (offset + size > mc.size())
 		{
-			LOG_MESSAGE(1, "ChasmBinArchive::open: Bin archive is invalid or corrupt (entry goes past end of file)");
+			Log::info(1, "ChasmBinArchive::open: Bin archive is invalid or corrupt (entry goes past end of file)");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -235,7 +235,8 @@ bool ChasmBinArchive::write(MemChunk& mc, bool update)
 
 	if (num_entries > MAX_ENTRY_COUNT)
 	{
-		LOG_MESSAGE(1, "ChasmBinArchive::write: Bin archive can contain no more than %u entries", MAX_ENTRY_COUNT);
+		Log::info(
+			fmt::format("ChasmBinArchive::write: Bin archive can contain no more than {} entries", MAX_ENTRY_COUNT));
 		Global::error = "Maximum number of entries exceeded for Chasm: The Rift bin archive";
 		return false;
 	}
@@ -271,7 +272,7 @@ bool ChasmBinArchive::write(MemChunk& mc, bool update)
 
 		if (name_length > NAME_SIZE - 1)
 		{
-			LOG_MESSAGE(1, "Warning: Entry %s name is too long, it will be truncated", name);
+			Log::info(fmt::format("Warning: Entry {} name is too long, it will be truncated", name));
 			name        = name.substr(0, NAME_SIZE - 1);
 			name_length = static_cast<uint8_t>(NAME_SIZE - 1);
 		}
@@ -332,7 +333,7 @@ bool ChasmBinArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "ChasmBinArchive::loadEntryData: Unable to open archive file %s", filename_);
+		Log::info(fmt::format("ChasmBinArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

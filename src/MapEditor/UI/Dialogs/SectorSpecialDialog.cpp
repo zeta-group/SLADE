@@ -64,7 +64,7 @@ SectorSpecialPanel::SectorSpecialPanel(wxWindow* parent) : wxPanel(parent, -1)
 	lv_specials_->AppendColumn("Name");
 	auto& types = Game::configuration().allSectorTypes();
 	for (auto& type : types)
-		lv_specials_->addItem(999999, { S_FMT("%d", type.first), type.second });
+		lv_specials_->addItem(999999, { fmt::sprintf("%d", type.first), type.second });
 	lv_specials_->enableSizeUpdate(true);
 	lv_specials_->updateSize();
 

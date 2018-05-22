@@ -31,10 +31,10 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "Palette.h"
 #include "General/Misc.h"
 #include "Graphics/SImage/SIFormat.h"
 #include "Graphics/Translation.h"
+#include "Palette.h"
 #include "Utility/CIEDeltaEquations.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
@@ -160,14 +160,14 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 		if (!image.isValid())
 		{
 			Global::error = "Palette information cannot be loaded from an invalid image";
-			LOG_MESSAGE(0, Global::error);
+			Log::info(0, Global::error);
 			return false;
 		}
 		int side = image.height();
 		if (side != image.width() || side % 16)
 		{
 			Global::error = "Palette information cannot be loaded from a non-square image";
-			LOG_MESSAGE(0, Global::error);
+			Log::info(0, Global::error);
 			return false;
 		}
 
@@ -187,21 +187,20 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 
 			// Get color from image
 			ColRGBA col = image.pixelAt(x, y);
-			col.index  = a;
+			col.index   = a;
 
 			// Validate color cell
 			for (int b = x; b < (x + (cell > 3 ? cell - 1 : cell)); ++b)
 				for (int c = y; c < (y + (cell > 3 ? cell - 1 : cell)); ++c)
 					if (!col.equals(image.pixelAt(b, c)))
-						LOG_MESSAGE(
-							0,
-							"Image does not seem to be a valid palette, color discrepancy in cell %u at [%u, %u]",
+						Log::info(fmt::format(
+							"Image does not seem to be a valid palette, color discrepancy in cell {} at [{}, {}]",
 							a,
 							b,
-							c);
+							c));
 
 			// Color is validated, so add it
-			LOG_MESSAGE(3, "Colour index %d / at %d,%d / rgb %d,%d,%d", a, x, y, col.r, col.g, col.b);
+			Log::info(3, fmt::format("Colour index {} / at {},{} / rgb {},{},{}", a, x, y, col.r, col.g, col.b));
 			setColour(a, col);
 		}
 
@@ -224,14 +223,14 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			if (!tz.checkToken("JASC-PAL") || !tz.checkToken("0100"))
 			{
 				Global::error = "Invalid JASC palette (unknown header)";
-				LOG_MESSAGE(0, Global::error);
+				Log::info(0, Global::error);
 				return false;
 			}
 			int count = tz.getInteger();
 			if (count > 256 || count < 0)
 			{
 				Global::error = "Invalid JASC palette (wrong count)";
-				LOG_MESSAGE(0, Global::error);
+				Log::info(0, Global::error);
 				return false;
 			}
 		}
@@ -240,14 +239,14 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			if (!tz.checkToken("GIMP") || !tz.checkToken("Palette"))
 			{
 				Global::error = "Invalid GIMP palette (unknown header)";
-				LOG_MESSAGE(0, Global::error);
+				Log::info(0, Global::error);
 				return false;
 			}
 		}
 		// Now, parse
-		string s1, s2, s3;
+		string  s1, s2, s3;
 		ColRGBA col(0, 0, 0, 255, -1);
-		int    c = 0;
+		int     c = 0;
 		do
 		{
 			// Get the first token. If it begins with #, it's a comment in GIMP. Ignore.
@@ -281,9 +280,9 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 				tz.advToEndOfLine();
 
 			// If we haven't skipped this part from a continue, then we have a colour triplet.
-			col.r     = std::stoi(s1);
-			col.g     = std::stoi(s2);
-			col.b     = std::stoi(s3);
+			col.r     = StrUtil::toInt(s1);
+			col.g     = StrUtil::toInt(s2);
+			col.b     = StrUtil::toInt(s3);
 			col.index = c;
 			setColour(c++, col);
 		} while (c < 256 && !tz.peekToken().empty());
@@ -294,7 +293,7 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 	else
 	{
 		Global::error = "Palette could not be imported, this format is not supported yet for import.";
-		LOG_MESSAGE(0, Global::error);
+		Log::info(0, Global::error);
 	}
 
 	return false;
@@ -323,7 +322,7 @@ bool Palette::saveMem(MemChunk& mc, Format format, string_view name)
 	{
 		string csv;
 		for (unsigned a = 0; a < 256; a++)
-			csv += S_FMT("%d, %d, %d\n", colours_[a].r, colours_[a].g, colours_[a].b);
+			csv += fmt::format("{}, {}, {}\n", colours_[a].r, colours_[a].g, colours_[a].b);
 		mc.importMem((const uint8_t*)csv.data(), csv.size());
 	}
 
@@ -332,16 +331,16 @@ bool Palette::saveMem(MemChunk& mc, Format format, string_view name)
 	{
 		string jasc = "JASC-PAL\n0100\n256\n";
 		for (unsigned a = 0; a < 256; a++)
-			jasc += S_FMT("%d %d %d\n", colours_[a].r, colours_[a].g, colours_[a].b);
+			jasc += fmt::format("{} {} {}\n", colours_[a].r, colours_[a].g, colours_[a].b);
 		mc.importMem((const uint8_t*)jasc.data(), jasc.size());
 	}
 
 	// GIMP palette
 	else if (format == Format::GIMP)
 	{
-		string gimp = S_FMT("GIMP Palette\nName: %s\n#\n", name);
+		string gimp = fmt::format("GIMP Palette\nName: %s\n#\n", name);
 		for (unsigned a = 0; a < 256; a++)
-			gimp += S_FMT("%d\t%d\t%d\tIndex %u\n", colours_[a].r, colours_[a].g, colours_[a].b, a);
+			gimp += fmt::format("{}\t{}\t{}\tIndex %u\n", colours_[a].r, colours_[a].g, colours_[a].b, a);
 		mc.importMem((const uint8_t*)gimp.data(), gimp.size());
 	}
 
@@ -473,7 +472,7 @@ void Palette::setColourB(uint8_t index, uint8_t val)
 void Palette::setGradient(uint8_t startIndex, uint8_t endIndex, ColRGBA startCol, ColRGBA endCol)
 {
 	ColRGBA gradCol = ColRGBA();
-	int    range   = endIndex - startIndex;
+	int     range   = endIndex - startIndex;
 
 	float r_range = endCol.fr() - startCol.fr();
 	float g_range = endCol.fg() - startCol.fg();
@@ -582,8 +581,8 @@ short Palette::nearestColour(ColRGBA colour, ColourMatch match)
 {
 	double min_d = 999999;
 	short  index = 0;
-	ColHSL  chsl  = Misc::rgbToHsl(colour);
-	ColLAB  clab  = Misc::rgbToLab(colour);
+	ColHSL chsl  = Misc::rgbToHsl(colour);
+	ColLAB clab  = Misc::rgbToLab(colour);
 
 	// Be nice if there was an easier way to convert from int -> enum class,
 	// but then that's kind of the point of them I guess
@@ -675,7 +674,7 @@ void Palette::colourise(ColRGBA colour, int start, int end)
 	for (int i = start; i <= end; ++i)
 	{
 		ColRGBA ncol(colours_[i].r, colours_[i].g, colours_[i].b, colours_[i].a, colours_[i].blend);
-		double grey = (ncol.r * col_greyscale_r + ncol.g * col_greyscale_g + ncol.b * col_greyscale_b) / 255.0f;
+		double  grey = (ncol.r * col_greyscale_r + ncol.g * col_greyscale_g + ncol.b * col_greyscale_b) / 255.0f;
 		if (grey > 1.0)
 			grey = 1.0;
 		ncol.r = (uint8_t)(colour.r * grey);
@@ -709,7 +708,7 @@ void Palette::tint(ColRGBA colour, float amount, int start, int end)
 		// Might want to do something about the precision loss here and elsewhere:
 		// it's possible for 0xFFFFFF shifting to 0xFF0000 to become 0xFExxxx...
 		// I'll leave this working exactly the same as the SImage function for now.
-		float  round_delta = /*roundup ? 0.4999999 :*/ 0.0;
+		float   round_delta = /*roundup ? 0.4999999 :*/ 0.0;
 		ColRGBA ncol(
 			colours_[i].r * inv_amt + colour.r * amount + round_delta,
 			colours_[i].g * inv_amt + colour.g * amount + round_delta,

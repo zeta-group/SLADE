@@ -148,7 +148,7 @@ string ArchiveEntryList::getItemText(long item, long column, long index) const
 				return "INVALID DIRECTORY";
 
 			// Return the number of items in the directory
-			return S_FMT("%d entries", dir->numEntries() + dir->nChildren());
+			return fmt::sprintf("%d entries", dir->numEntries() + dir->nChildren());
 		}
 		else
 			return entry->sizeString(); // Not a folder, just return the normal size string
@@ -161,7 +161,7 @@ string ArchiveEntryList::getItemText(long item, long column, long index) const
 		if (entry->type() == EntryType::folderType())
 			return "";
 		else
-			return S_FMT("%d", entry->parentDir()->entryIndex(entry));
+			return fmt::sprintf("%d", entry->parentDir()->entryIndex(entry));
 	}
 	else
 		return "INVALID COLUMN"; // Invalid column
@@ -940,7 +940,7 @@ void ArchiveEntryList::onListItemActivated(wxListEvent& e)
 		// Check it exists (really should)
 		if (!dir)
 		{
-			LOG_MESSAGE(1, "Error: Trying to open nonexistant directory");
+			Log::info(1, "Error: Trying to open nonexistant directory");
 			return;
 		}
 

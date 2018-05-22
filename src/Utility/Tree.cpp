@@ -105,11 +105,9 @@ STreeNode* STreeNode::child(string_view name)
 	if (name.ends_with('/'))
 		name.remove_suffix(1);
 
-	// Convert name to path for processing
-	wxFileName fn({ name.data(), name.size() });
-
 	// If no directories were given
-	if (fn.GetDirCount() == 0)
+	auto first_sep = name.find_first_of("/\\");
+	if (first_sep == string_view::npos)
 	{
 		// Find child of this node
 		for (auto& child : children_)
@@ -123,16 +121,15 @@ STreeNode* STreeNode::child(string_view name)
 	}
 
 	// Directories were given, get the first directory
-	auto dir = fn.GetDirs()[0];
+	auto dir = name.substr(0, first_sep);
 
 	// See if it is a child of this node
-	auto cnode = child({ dir.data(), dir.size() });
+	auto cnode = child(dir);
 	if (cnode)
 	{
 		// It is, remove the first directory and continue searching that child
-		fn.RemoveDir(0);
-		auto full_path = fn.GetFullPath(wxPATH_UNIX);
-		return cnode->child({ full_path.data(), full_path.size() });
+		name.remove_prefix(first_sep + 1);
+		return cnode->child(name);
 	}
 
 	return nullptr; // Child doesn't exist
@@ -155,11 +152,9 @@ vector<STreeNode*> STreeNode::children(string_view name)
 	if (name.ends_with('/'))
 		name.remove_suffix(1);
 
-	// Convert name to path for processing
-	wxFileName fn({ name.data(), name.size() });
-
 	// If no directories were given
-	if (fn.GetDirCount() == 0)
+	auto first_sep = name.find_first_of("/\\");
+	if (first_sep == string_view::npos)
 	{
 		// Find child of this node
 		for (auto child : children_)
@@ -171,16 +166,15 @@ vector<STreeNode*> STreeNode::children(string_view name)
 	else
 	{
 		// Directories were given, get the first directory
-		auto dir = fn.GetDirs()[0];
+		auto dir = name.substr(0, first_sep);
 
 		// See if it is a child of this node
 		auto cnode = child({ dir.data(), dir.size() });
 		if (cnode)
 		{
 			// It is, remove the first directory and continue searching that child
-			fn.RemoveDir(0);
-			auto full_path = fn.GetFullPath(wxPATH_UNIX);
-			return cnode->children({ full_path.data(), full_path.size() });
+			name.remove_prefix(first_sep + 1);
+			return cnode->children(name);
 		}
 	}
 
@@ -207,14 +201,12 @@ STreeNode* STreeNode::addChild(string_view name)
 		return nullptr;
 
 	// If name ends with /, remove it
-	if (name.ends_with("/"))
+	if (name.ends_with('/'))
 		name.remove_suffix(1);
 
-	// Convert name to path for processing
-	wxFileName fn({ name.data(), name.size() });
-
 	// If no directories were given
-	if (fn.GetDirCount() == 0)
+	auto first_sep = name.find_first_of("/\\");
+	if (first_sep == string_view::npos)
 	{
 		// If child name duplication is disallowed,
 		// check if a child with this name exists
@@ -235,25 +227,24 @@ STreeNode* STreeNode::addChild(string_view name)
 	else
 	{
 		// Directories were given, get the first directory
-		auto dir = fn.GetDirs()[0];
+		auto dir = name.substr(0, first_sep);
 
 		// If child name duplication is disallowed,
 		// check if a child with this name exists
 		STreeNode* cnode = nullptr;
 		if (!allow_dup_child_)
-			cnode = child({ dir.data(), dir.size() });
+			cnode = child(dir);
 
 		// If it doesn't exist, create it
 		if (!cnode)
 		{
-			cnode = createChild({ dir.data(), dir.size() });
+			cnode = createChild(dir);
 			addChild(cnode);
 		}
 
 		// Continue adding child nodes
-		fn.RemoveDir(0);
-		auto full_path = fn.GetFullPath(wxPATH_UNIX);
-		return cnode->addChild({ full_path.data(), full_path.size() });
+		name.remove_prefix(first_sep + 1);
+		return cnode->addChild(name);
 	}
 }
 

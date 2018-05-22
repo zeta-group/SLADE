@@ -84,7 +84,7 @@ wxGLContext* OpenGL::getContext(wxGLCanvas* canvas)
 			init();
 		}
 		else
-			LOG_MESSAGE(1, "Can't create global GL context, wxGLCanvas is hidden");
+			Log::info(1, "Can't create global GL context, wxGLCanvas is hidden");
 	}
 
 	return context;
@@ -99,7 +99,7 @@ bool OpenGL::init()
 	if (initialised)
 		return true;
 
-	LOG_MESSAGE(1, "Initialising OpenGL...");
+	Log::info(1, "Initialising OpenGL...");
 
 	// Get OpenGL info
 	info.vendor     = wxString::From8BitData((const char*)glGetString(GL_VENDOR));
@@ -108,32 +108,32 @@ bool OpenGL::init()
 	info.extensions = wxString::From8BitData((const char*)glGetString(GL_EXTENSIONS));
 
 	// Get OpenGL version
-	version = std::stod(StrUtil::truncate(info.version, 3));
-	LOG_MESSAGE(1, "OpenGL Version: %1.1f", version);
+	version = StrUtil::toDouble(StrUtil::truncate(info.version, 3));
+	Log::info(fmt::sprintf("OpenGL Version: %1.1f", version));
 
 	// Get max texture size
 	GLint val = 0;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &val);
 	max_tex_size = val;
-	LOG_MESSAGE(1, "Max Texture Size: %dx%d", max_tex_size, max_tex_size);
+	Log::info(fmt::sprintf("Max Texture Size: %dx%d", max_tex_size, max_tex_size));
 
 	// Initialise GLEW
 	glewInit();
 
 	// Test extensions
-	LOG_MESSAGE(1, "Checking extensions...");
+	Log::info(1, "Checking extensions...");
 	if (GLEW_ARB_vertex_buffer_object)
-		LOG_MESSAGE(1, "Vertex Buffer Objects supported");
+		Log::info(1, "Vertex Buffer Objects supported");
 	else
-		LOG_MESSAGE(1, "Vertex Buffer Objects not supported");
+		Log::info(1, "Vertex Buffer Objects not supported");
 	if (GLEW_ARB_point_sprite)
-		LOG_MESSAGE(1, "Point Sprites supported");
+		Log::info(1, "Point Sprites supported");
 	else
-		LOG_MESSAGE(1, "Point Sprites not supported");
+		Log::info(1, "Point Sprites not supported");
 	if (GLEW_ARB_framebuffer_object)
-		LOG_MESSAGE(1, "Framebuffer Objects supported");
+		Log::info(1, "Framebuffer Objects supported");
 	else
-		LOG_MESSAGE(1, "Framebuffer Objects not supported");
+		Log::info(1, "Framebuffer Objects not supported");
 
 	initialised = true;
 	return true;
@@ -198,7 +198,7 @@ float OpenGL::maxPointSize()
 		GLfloat sizes[2];
 		glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, sizes);
 		max_point_size = sizes[1];
-		// LOG_MESSAGE(1, "Max GL point size %1.2f", max_point_size);
+		// Log::info(1, "Max GL point size %1.2f", max_point_size);
 	}
 
 	return max_point_size;

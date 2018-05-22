@@ -77,7 +77,7 @@ void BrowserItem::draw(
 	Drawing::Font font,
 	NameType      nametype,
 	ViewType      viewtype,
-	ColRGBA        colour,
+	ColRGBA       colour,
 	bool          text_shadow)
 {
 	// Determine item name string (for normal viewtype)
@@ -85,7 +85,7 @@ void BrowserItem::draw(
 	if (nametype == NameType::Normal)
 		draw_name = name_;
 	else if (nametype == NameType::Index)
-		draw_name = S_FMT("%d", index_);
+		draw_name = fmt::sprintf("%d", index_);
 
 	// Truncate name if needed
 	if (parent_->truncateNames() && draw_name.size() > 8)
@@ -98,15 +98,16 @@ void BrowserItem::draw(
 	if (viewtype == ViewType::Normal)
 	{
 		if (text_shadow)
-			Drawing::drawText(draw_name, x + (size * 0.5 + 1), y + size + 5, ColRGBA::BLACK, font, Drawing::Align::Center);
+			Drawing::drawText(
+				draw_name, x + (size * 0.5 + 1), y + size + 5, ColRGBA::BLACK, font, Drawing::Align::Center);
 		Drawing::drawText(draw_name, x + (size * 0.5), y + size + 4, colour, font, Drawing::Align::Center);
 	}
 	else if (viewtype == ViewType::Tiles)
 	{
 		// Create text box if needed
 		if (!text_box_)
-			text_box_ =
-				std::make_unique<TextBox>(S_FMT("%d\n%s", index_, name_), font, UI::scalePx(144), UI::scalePx(16));
+			text_box_ = std::make_unique<TextBox>(
+				fmt::sprintf("%d\n%s", index_, name_), font, UI::scalePx(144), UI::scalePx(16));
 
 		int top = y;
 		top += ((size - text_box_->getHeight()) * 0.5);

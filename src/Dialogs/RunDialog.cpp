@@ -343,7 +343,7 @@ string RunDialog::selectedCommandLine(Archive* archive, string_view map_name, st
 		if (exe_path.empty())
 			return "";
 
-		string path = S_FMT("\"%s\"", exe_path);
+		string path = fmt::format("\"{}\"", exe_path);
 
 		unsigned cfg = choice_config_->GetSelection();
 		if (cfg < exe->configs.size())
@@ -354,20 +354,20 @@ string RunDialog::selectedCommandLine(Archive* archive, string_view map_name, st
 
 		// IWAD
 		Archive* bra = App::archiveManager().baseResourceArchive();
-		StrUtil::replaceIP(path, "%i", S_FMT("\"%s\"", bra ? bra->filename() : ""));
+		StrUtil::replaceIP(path, "%i", fmt::format("\"{}\"", bra ? bra->filename() : ""));
 
 		// Resources
 		StrUtil::replaceIP(path, "%r", selectedResourceList());
 
 		// Archive (+ temp map if specified)
 		if (map_file.empty() && archive)
-			StrUtil::replaceIP(path, "%a", S_FMT("\"%s\"", archive->filename()));
+			StrUtil::replaceIP(path, "%a", fmt::format("\"{}\"", archive->filename()));
 		else
 		{
 			if (archive)
-				StrUtil::replaceIP(path, "%a", S_FMT(R"("%s" "%s")", archive->filename(), map_file));
+				StrUtil::replaceIP(path, "%a", fmt::format(R"("{}" "{}")", archive->filename(), map_file));
 			else
-				StrUtil::replaceIP(path, "%a", S_FMT("\"%s\"", map_file));
+				StrUtil::replaceIP(path, "%a", fmt::format("\"{}\"", map_file));
 		}
 
 		// Running an archive yields no map name, so don't try to warp
@@ -394,7 +394,7 @@ string RunDialog::selectedCommandLine(Archive* archive, string_view map_name, st
 
 				// ExMx
 				else if (map_name.length() == 4 && mn[0] == 'e' && mn[2] == 'm')
-					StrUtil::replaceIP(path, "%mw", S_FMT("%c %c", mn[1], mn[3]));
+					StrUtil::replaceIP(path, "%mw", fmt::format("{} {}", mn[1], mn[3]));
 			}
 		}
 
@@ -405,7 +405,7 @@ string RunDialog::selectedCommandLine(Archive* archive, string_view map_name, st
 			path += text_extra_params_->GetValue();
 		}
 
-		LOG_MESSAGE(2, "Run command: %s", path);
+		Log::info(2, fmt::format("Run command: {}", path));
 		return path;
 	}
 
@@ -506,13 +506,13 @@ void RunDialog::onBtnAddConfig(wxCommandEvent& e)
 	if (choice_config_->GetSelection() >= 0)
 		init_params = exe->configs[choice_config_->GetSelection()].second;
 
-	RunConfigDialog dlg(this, S_FMT("Add Run Config for %s", exe->name), "", init_params);
+	RunConfigDialog dlg(this, fmt::format("Add Run Config for {}", exe->name), "", init_params);
 	if (dlg.ShowModal() == wxID_OK)
 	{
 		string name = dlg.name();
 
 		if (name.empty())
-			name = S_FMT("Config %d", choice_config_->GetCount() + 1);
+			name = fmt::format("Config {}", choice_config_->GetCount() + 1);
 
 		Executables::addGameExeConfig(choice_game_exes_->GetSelection(), name, dlg.params());
 		choice_config_->AppendString(name);

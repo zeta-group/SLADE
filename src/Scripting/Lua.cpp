@@ -164,7 +164,7 @@ template<class T> bool runEditorScript(const string& script, T param)
 	if (!load_result.valid())
 	{
 		processError(load_result);
-		Log::error(S_FMT(
+		Log::error(fmt::sprintf(
 			"%s Error running Lua script: %d: %s", script_error.type, script_error.line_no, script_error.message));
 		return false;
 	}
@@ -175,7 +175,7 @@ template<class T> bool runEditorScript(const string& script, T param)
 	if (!exec_result.valid())
 	{
 		processError(exec_result);
-		Log::error(S_FMT(
+		Log::error(fmt::sprintf(
 			"%s Error running Lua script: %d: %s", script_error.type, script_error.line_no, script_error.message));
 		return false;
 	}
@@ -234,7 +234,7 @@ void Lua::showErrorDialog(wxWindow* parent, const string& title, const string& m
 
 	ExtMessageDialog dlg(parent ? parent : current_window, title);
 	dlg.setMessage(message);
-	dlg.setExt(S_FMT(
+	dlg.setExt(fmt::sprintf(
 		"%s Error\nLine %d: %s\n\nScript Output:\n%s",
 		Lua::error().type,
 		Lua::error().line_no,
@@ -259,7 +259,7 @@ bool Lua::run(const string& program)
 	if (!result.valid())
 	{
 		processError(result);
-		Log::error(S_FMT(
+		Log::error(fmt::sprintf(
 			"%s Error running Lua script: %d: %s", script_error.type, script_error.line_no, script_error.message));
 		return false;
 	}
@@ -282,7 +282,7 @@ bool Lua::runFile(const string& filename)
 	if (!result.valid())
 	{
 		processError(result);
-		Log::error(S_FMT(
+		Log::error(fmt::sprintf(
 			"%s Error running Lua script: %d: %s", script_error.type, script_error.line_no, script_error.message));
 		return false;
 	}
@@ -363,16 +363,16 @@ CONSOLE_COMMAND(script_file, 1, true)
 {
 	if (!wxFile::Exists(args[0]))
 	{
-		LOG_MESSAGE(1, "File \"%s\" does not exist", args[0]);
+		Log::info(fmt::sprintf("File \"%s\" does not exist", args[0]));
 		return;
 	}
 
 	if (!Lua::runFile(args[0]))
-		LOG_MESSAGE(1, "Error loading lua script file \"%s\"", args[0]);
+		Log::info(fmt::sprintf("Error loading lua script file \"%s\"", args[0]));
 }
 
 CONSOLE_COMMAND(lua_mem, 0, false)
 {
 	auto mem = Lua::state().memory_used();
-	Log::console(S_FMT("Lua state using %s memory", Misc::sizeAsString(mem)));
+	Log::console(fmt::sprintf("Lua state using %s memory", Misc::sizeAsString(mem)));
 }

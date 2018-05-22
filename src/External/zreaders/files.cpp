@@ -61,7 +61,7 @@ FileReader::FileReader (const char *filename)
 	if (!Open(filename))
 	{
 		Status = -1;
-		Message = S_FMT("Could not open %s", filename);
+		Message = fmt::sprintf("Could not open %s", filename);
 	}
 }
 
@@ -216,7 +216,7 @@ FileReaderZ::FileReaderZ (FileReader &file, int windowbits)
 
 	if (Status != Z_OK)
 	{
-		Message = S_FMT("FileReaderZ: inflateInit failed: %s\n", Stream.msg);
+		Message = fmt::sprintf("FileReaderZ: inflateInit failed: %s\n", Stream.msg);
 	}
 }
 
@@ -241,13 +241,13 @@ long FileReaderZ::Read (void *buffer, long len)
 
 	if (Status != Z_OK && Status != Z_STREAM_END)
 	{
-		Message = S_FMT("Corrupt zlib stream: %s", Stream.msg);
+		Message = fmt::sprintf("Corrupt zlib stream: %s", Stream.msg);
 	}
 
 	// Is this really a problem?
 	if (Stream.avail_out != 0)
 	{
-		Message = S_FMT ("Ran out of data in zlib stream: %s", Stream.msg);
+		Message = fmt::sprintf("Ran out of data in zlib stream: %s", Stream.msg);
 	}
 
 	return len - Stream.avail_out;
@@ -287,7 +287,7 @@ FileReaderBZ2::FileReaderBZ2 (FileReader &file)
 
 	if (Status != BZ_OK)
 	{
-		Message = S_FMT("FileReaderBZ2: bzDecompressInit failed: %d\n", Status);
+		Message = fmt::sprintf("FileReaderBZ2: bzDecompressInit failed: %d\n", Status);
 	}
 }
 
@@ -312,12 +312,12 @@ long FileReaderBZ2::Read (void *buffer, long len)
 
 	if (Status != BZ_OK && Status != BZ_STREAM_END)
 	{
-		Message = S_FMT("Corrupt bzip2 stream");
+		Message = fmt::sprintf("Corrupt bzip2 stream");
 	}
 
 	if (Stream.avail_out != 0)
 	{
-		Message = S_FMT("Ran out of data in bzip2 stream");
+		Message = fmt::sprintf("Ran out of data in bzip2 stream");
 	}
 
 	return len - Stream.avail_out;
@@ -345,7 +345,7 @@ void FileReaderBZ2::FillBuffer ()
 
 extern "C" void bz_internal_error (int errcode)
 {
-	LOG_MESSAGE(1, "libbzip2: internal error number %d\n", errcode);
+	Log::info(fmt::sprintf("libbzip2: internal error number %d\n", errcode));
 }
 
 //==========================================================================
@@ -374,11 +374,11 @@ FileReaderLZMA::FileReaderLZMA (FileReader &file, size_t uncompressed_size, bool
 	// Read zip LZMA properties header
 	if (File.Read(header, sizeof(header)) < (long)sizeof(header))
 	{
-		Message = S_FMT("FileReaderLZMA: File too shart\n");
+		Message = fmt::sprintf("FileReaderLZMA: File too shart\n");
 	}
 	if (header[2] + header[3] * 256 != LZMA_PROPS_SIZE)
 	{
-		Message = S_FMT("FileReaderLZMA: LZMA props size is %d (expected %d)\n",
+		Message = fmt::sprintf("FileReaderLZMA: LZMA props size is %d (expected %d)\n",
 			header[2] + header[3] * 256, LZMA_PROPS_SIZE);
 	}
 
@@ -389,7 +389,7 @@ FileReaderLZMA::FileReaderLZMA (FileReader &file, size_t uncompressed_size, bool
 
 	if (Status != SZ_OK)
 	{
-		Message = S_FMT("FileReaderLZMA: LzmaDec_Allocate failed: %d\n", Status);
+		Message = fmt::sprintf("FileReaderLZMA: LzmaDec_Allocate failed: %d\n", Status);
 	}
 
 	LzmaDec_Init(&Stream);
@@ -418,13 +418,13 @@ long FileReaderLZMA::Read (void *buffer, long len)
 		len = (long)(len - out_processed);
 		if (Status != SZ_OK)
 		{
-			Message = S_FMT("Corrupt LZMA stream");
+			Message = fmt::sprintf("Corrupt LZMA stream");
 		}
 		if (in_processed == 0 && out_processed == 0)
 		{
 			if (status != LZMA_STATUS_FINISHED_WITH_MARK)
 			{
-				Message = S_FMT("Corrupt LZMA stream");
+				Message = fmt::sprintf("Corrupt LZMA stream");
 			}
 		}
 		if (InSize == 0 && !SawEOF)
@@ -435,12 +435,12 @@ long FileReaderLZMA::Read (void *buffer, long len)
 
 	if (Status != Z_OK && Status != Z_STREAM_END)
 	{
-		Message = S_FMT("Corrupt LZMA stream");
+		Message = fmt::sprintf("Corrupt LZMA stream");
 	}
 
 	if (len != 0)
 	{
-		Message = S_FMT("Ran out of data in LZMA stream");
+		Message = fmt::sprintf("Ran out of data in LZMA stream");
 	}
 
 	return (long)(next_out - (Byte *)buffer);

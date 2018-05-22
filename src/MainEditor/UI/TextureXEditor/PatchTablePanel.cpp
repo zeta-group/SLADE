@@ -101,11 +101,11 @@ string PatchTableListView::getItemText(long item, long column, long index) const
 	auto& patch = patch_table_->patch(index);
 
 	if (column == 0) // Index column
-		return S_FMT("%04d", index);
+		return fmt::sprintf("%04d", index);
 	else if (column == 1) // Name column
 		return patch.name;
 	else if (column == 2) // Usage count column
-		return S_FMT("%lu", patch.used_in.size());
+		return fmt::sprintf("%lu", patch.used_in.size());
 	else if (column == 3) // Archive column
 	{
 		// Get patch entry
@@ -350,14 +350,14 @@ void PatchTablePanel::onBtnPatchFromFile(wxCommandEvent& e)
 			// If it's not a valid image type, ignore this file
 			if (!entry->type()->extraProps().propertyExists("image"))
 			{
-				LOG_MESSAGE(1, "%s is not a valid image file", file);
+				Log::info(fmt::sprintf("%s is not a valid image file", file));
 				continue;
 			}
 
 			// Ask for name for patch
 			wxFileName fn(file);
 			string     name = fn.GetName().Upper().Truncate(8).ToStdString();
-			name = wxGetTextFromUser(S_FMT("Enter a patch name for %s:", fn.GetFullName()), "New Patch", name);
+			name = wxGetTextFromUser(fmt::sprintf("Enter a patch name for %s:", fn.GetFullName()), "New Patch", name);
 			if (name.size() > 8)
 				name = name.substr(0, 8);
 
@@ -397,7 +397,7 @@ void PatchTablePanel::onBtnRemovePatch(wxCommandEvent& e)
 		{
 			// In use, ask if it's ok to remove the patch
 			int answer = wxMessageBox(
-				S_FMT(
+				fmt::sprintf(
 					"The patch \"%s\" is currently used by %lu texture(s), are you sure you wish to remove it?",
 					patch.name,
 					patch.used_in.size()),
@@ -476,7 +476,7 @@ void PatchTablePanel::updateDisplay()
 		theMainWindow->paletteChooser()->setGlobalFromArchive(entry->parent());
 		patch_canvas_->setPalette(theMainWindow->paletteChooser()->selectedPalette());
 		label_dimensions_->SetLabel(
-			S_FMT("Size: %d x %d", patch_canvas_->image()->width(), patch_canvas_->image()->height()));
+			fmt::sprintf("Size: %d x %d", patch_canvas_->image()->width(), patch_canvas_->image()->height()));
 	}
 	else
 	{
@@ -506,7 +506,7 @@ void PatchTablePanel::updateDisplay()
 				// First add the count to the previous texture if needed
 				if (count)
 				{
-					alltextures += S_FMT(" (%i)", count + 1);
+					alltextures += fmt::sprintf(" (%i)", count + 1);
 					count = 0;
 				}
 
@@ -515,7 +515,7 @@ void PatchTablePanel::updateDisplay()
 					alltextures += ';';
 
 				// Then print the new texture's name
-				alltextures += S_FMT(" %s", patch.used_in[a]);
+				alltextures += fmt::sprintf(" %s", patch.used_in[a]);
 
 				// And set it for comparison with the next one
 				previous = current;
@@ -523,10 +523,10 @@ void PatchTablePanel::updateDisplay()
 		}
 		// If count is still non-zero, it's because the patch was repeated in the last texture
 		if (count)
-			alltextures += S_FMT(" (%i)", count + 1);
+			alltextures += fmt::sprintf(" (%i)", count + 1);
 
 		// Finally display the listing
-		label_textures_->SetLabel(S_FMT("In Textures:%s", alltextures));
+		label_textures_->SetLabel(fmt::sprintf("In Textures:%s", alltextures));
 	}
 	else
 		label_textures_->SetLabel("In Textures: -");

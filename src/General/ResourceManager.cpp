@@ -405,7 +405,7 @@ void ResourceManager::listAllPatches()
 	EntryResourceMap::iterator i = patches_.begin();
 	while (i != patches_.end())
 	{
-		LOG_MESSAGE(1, "%s (%d)", i->first, i->second.length());
+		Log::info(fmt::format("{} ({})", i->first, i->second.length()));
 		++i;
 	}
 }
@@ -663,5 +663,5 @@ CONSOLE_COMMAND(test_res_speed, 0, false)
 	}
 
 	float avg = float(times[0] + times[1] + times[2] + times[3] + times[4]) / 5.0f;
-	Log::console(S_FMT("Test took %dms avg", (int)avg));
+	Log::console(fmt::format("Test took {}ms avg", (int)avg));
 }

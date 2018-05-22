@@ -53,7 +53,7 @@ public:
 		if (!this)
 			return Debuggable("<vertex NULL>");
 
-		return Debuggable(S_FMT("<vertex %u>", index_));
+		return Debuggable(fmt::format("<vertex {}>", index_));
 	}
 
 private:

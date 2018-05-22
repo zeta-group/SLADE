@@ -100,7 +100,7 @@ string TextureXListView::getItemText(long item, long column, long index) const
 	if (column == 0) // Name column
 		return tex->name();
 	else if (column == 1) // Size column
-		return S_FMT("%dx%d", tex->width(), tex->height());
+		return fmt::sprintf("%dx%d", tex->width(), tex->height());
 	else if (column == 2) // Type column
 		return tex->type();
 	else
@@ -773,7 +773,7 @@ void TextureXPanel::newTextureFromFile()
 			// If it's not a valid image type, ignore this file
 			if (!entry->type()->extraProps().propertyExists("image"))
 			{
-				LOG_MESSAGE(1, "%s is not a valid image file", file_view);
+				Log::info(fmt::sprintf("%s is not a valid image file", file_view));
 				continue;
 			}
 
@@ -781,7 +781,7 @@ void TextureXPanel::newTextureFromFile()
 			StrUtil::Path fn(file_view);
 			string        name = fn.fileName(false).substr(0, 8).to_string();
 			StrUtil::upperIP(name);
-			name = wxGetTextFromUser(S_FMT("Enter a texture name for %s:", fn.fullPath()), "New Texture", name);
+			name = wxGetTextFromUser(fmt::sprintf("Enter a texture name for %s:", fn.fullPath()), "New Texture", name);
 			StrUtil::truncateIP(name, 8);
 
 			// Add patch to archive
@@ -967,7 +967,7 @@ void TextureXPanel::sort()
 	for (long index : selection)
 	{
 		// We want to be sure that each key is unique, so we add the position to the name string
-		string name = S_FMT("%-8s%8d", texturex_.getTexture(index)->name(), index);
+		string name = fmt::sprintf("%-8s%8d", texturex_.getTexture(index)->name(), index);
 		// x keeps the current position, while y keeps the original position
 		tmap[name]       = index;
 		origindex[index] = index;
@@ -990,7 +990,7 @@ void TextureXPanel::sort()
 			texturex_.swapTextures(index, itr->second);
 			undo_manager_->recordUndoStep(new TextureSwapUS(texturex_, index, itr->second));
 			// Update the position of the displaced texture in the tmap
-			string name = S_FMT("%-8s%8d", texturex_.getTexture(itr->second)->name(), tmp);
+			string name = fmt::sprintf("%-8s%8d", texturex_.getTexture(itr->second)->name(), tmp);
 			tmap[name]  = itr->second;
 		}
 		++itr;
@@ -1264,7 +1264,7 @@ bool TextureXPanel::exportAsPNG(CTexture* texture, string_view filename, bool fo
 	SImage image;
 	if (!texture->toImage(image, nullptr, texture_editor_->palette(), force_rgba))
 	{
-		LOG_MESSAGE(1, "Error converting %s: %s", texture->name(), Global::error);
+		Log::info(fmt::sprintf("Error converting %s: %s", texture->name(), Global::error));
 		return false;
 	}
 
@@ -1273,7 +1273,7 @@ bool TextureXPanel::exportAsPNG(CTexture* texture, string_view filename, bool fo
 	SIFormat* fmt_png = SIFormat::getFormat("png");
 	if (!fmt_png->saveImage(image, png, texture_editor_->palette()))
 	{
-		LOG_MESSAGE(1, "Error converting %s", texture->name());
+		Log::info(fmt::sprintf("Error converting %s", texture->name()));
 		return false;
 	}
 
@@ -1321,7 +1321,7 @@ void TextureXPanel::extractTexture()
 			// If a filename was selected, export it
 			if (!exportAsPNG(selection[0], info.filenames[0], force_rgba))
 			{
-				wxMessageBox(S_FMT("Error: %s", Global::error), "Error", wxOK | wxICON_ERROR);
+				wxMessageBox(fmt::sprintf("Error: %s", Global::error), "Error", wxOK | wxICON_ERROR);
 				return;
 			}
 		}

@@ -65,12 +65,12 @@ bool ThingBrowserItem::loadImage()
 	if (!tex && use_zeth_icons && type_.zethIcon() >= 0)
 	{
 		// Sprite not found, try the Zeth icon
-		tex = MapEditor::textureManager().editorImage(S_FMT("zethicons/zeth%02d", type_.zethIcon()));
+		tex = MapEditor::textureManager().editorImage(fmt::sprintf("zethicons/zeth%02d", type_.zethIcon()));
 	}
 	if (!tex)
 	{
 		// Sprite not found, try an icon
-		tex = MapEditor::textureManager().editorImage(S_FMT("thing/%s", type_.icon()));
+		tex = MapEditor::textureManager().editorImage(fmt::sprintf("thing/%s", type_.icon()));
 	}
 	if (!tex)
 	{
@@ -161,7 +161,7 @@ int ThingTypeBrowser::getSelectedType()
 	BrowserItem* selected = getSelectedItem();
 	if (selected)
 	{
-		LOG_MESSAGE(1, "Selected item %d", selected->index());
+		Log::info(fmt::sprintf("Selected item %d", selected->index()));
 		return selected->index();
 	}
 	else

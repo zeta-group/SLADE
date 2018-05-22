@@ -80,7 +80,7 @@ void ActionSpecial::reset()
 	// Reset args
 	for (unsigned a = 0; a < 5; a++)
 	{
-		args_[a].name = S_FMT("Arg%d", a + 1);
+		args_[a].name = fmt::format("Arg{}", a + 1);
 		args_[a].desc = "";
 		args_[a].type = Arg::Number;
 		args_[a].custom_flags.clear();
@@ -145,7 +145,7 @@ void ActionSpecial::parse(ParseTreeNode* node, Arg::SpecialMap* shared_args)
 string ActionSpecial::stringDesc() const
 {
 	// Init string
-	string ret = S_FMT(R"("%s" in group "%s")", name_, group_);
+	string ret = fmt::format(R"("{}" in group "{}")", name_, group_);
 
 	// Add tagged info
 	if (tagged_ != TagType::None)

@@ -414,7 +414,7 @@ void MapEditorConfigDialog::populateMapList()
 		// Create list item
 		wxListItem li;
 		li.SetId(index);
-		li.SetText(S_FMT("(%s) %s", fmt, map.name));
+		li.SetText(fmt::format("({}) {}", fmt, map.name));
 		if (Game::mapFormatSupported(map.format, game, port))
 			li.SetImage(0);
 		else

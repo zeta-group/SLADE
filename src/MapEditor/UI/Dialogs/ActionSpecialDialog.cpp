@@ -69,7 +69,7 @@ ActionSpecialTreeView::ActionSpecialTreeView(wxWindow* parent) : wxDataViewTreeC
 		if (!i.second.defined())
 			continue;
 
-		string label = S_FMT("%d: %s", i.second.number(), i.second.name());
+		string label = fmt::sprintf("%d: %s", i.second.number(), i.second.name());
 		AppendItem(getGroup(i.second.group()), label);
 		textsize.IncTo(dc.GetTextExtent(label));
 	}
@@ -276,7 +276,7 @@ public:
 		if (val < 0)
 			text_control_->ChangeValue("");
 		else
-			text_control_->ChangeValue(S_FMT("%ld", val));
+			text_control_->ChangeValue(fmt::sprintf("%ld", val));
 	}
 
 protected:
@@ -325,7 +325,7 @@ public:
 
 		for (const auto& custom_value : arg.custom_values)
 		{
-			choice_control_->Append(S_FMT("%d: %s", custom_value.value, custom_value.name));
+			choice_control_->Append(fmt::sprintf("%d: %s", custom_value.value, custom_value.name));
 		}
 
 		GetSizer()->Add(choice_control_, wxSizerFlags().Expand());
@@ -371,7 +371,7 @@ public:
 				return;
 			}
 		}
-		choice_control_->ChangeValue(S_FMT("%ld", val));
+		choice_control_->ChangeValue(fmt::sprintf("%ld", val));
 	}
 
 protected:
@@ -450,7 +450,7 @@ public:
 					new wxRadioButton(
 						this,
 						-1,
-						S_FMT("%d: %s", arg.custom_flags[i].value, arg.custom_flags[i].name),
+						fmt::sprintf("%d: %s", arg.custom_flags[i].value, arg.custom_flags[i].name),
 						wxDefaultPosition,
 						wxDefaultSize,
 						wxRB_GROUP),
@@ -465,7 +465,9 @@ public:
 					{
 						addControl(
 							new wxRadioButton(
-								this, -1, S_FMT("%d: %s", arg.custom_flags[ii].value, arg.custom_flags[ii].name)),
+								this,
+								-1,
+								fmt::sprintf("%d: %s", arg.custom_flags[ii].value, arg.custom_flags[ii].name)),
 							ii,
 							group);
 						flag_done[ii] = true;
@@ -474,8 +476,8 @@ public:
 			}
 			else // not in a group
 			{
-				control =
-					new wxCheckBox(this, -1, S_FMT("%d: %s", arg.custom_flags[i].value, arg.custom_flags[i].name));
+				control = new wxCheckBox(
+					this, -1, fmt::sprintf("%d: %s", arg.custom_flags[i].value, arg.custom_flags[i].name));
 				addControl(control, i, 0);
 			}
 		}
@@ -635,7 +637,7 @@ protected:
 		else
 		{
 			slider_control_->SetValue(value);
-			speed_label_->SetLabel(S_FMT(
+			speed_label_->SetLabel(fmt::sprintf(
 				"%s (%.1f units per tic, %.1f units per sec)",
 				arg_.speedLabel(value),
 				value / 8.0,
@@ -701,7 +703,7 @@ void ArgsPanel::setup(const Game::ArgSpec& args, bool udmf)
 			old_values[a] = -1;
 
 		control_args_[a] = nullptr;
-		label_args_[a]->SetLabelText(S_FMT("Arg %d:", a + 1));
+		label_args_[a]->SetLabelText(fmt::sprintf("Arg %d:", a + 1));
 		label_args_desc_[a]->Show(false);
 	}
 
@@ -730,7 +732,7 @@ void ArgsPanel::setup(const Game::ArgSpec& args, bool udmf)
 		}
 
 		// Arg name
-		label_args_[a]->SetLabelText(S_FMT("%s:", arg.name));
+		label_args_[a]->SetLabelText(fmt::sprintf("%s:", arg.name));
 		fg_sizer_->Add(label_args_[a], wxSizerFlags().Align(wxALIGN_TOP | wxALIGN_RIGHT).Border(wxALL, 4));
 
 		// Arg value
@@ -996,7 +998,7 @@ void ActionSpecialPanel::setSpecial(int special)
 	// Regular action special
 	showGeneralised(false);
 	tree_specials_->showSpecial(special, false);
-	text_special_->SetValue(S_FMT("%d", special));
+	text_special_->SetValue(fmt::sprintf("%d", special));
 
 	// Setup args if any
 	if (panel_args_)
@@ -1281,7 +1283,7 @@ void ActionSpecialPanel::onSpecialSelectionChanged(wxDataViewEvent& e)
 	}
 
 	// Set special # text box
-	text_special_->SetValue(S_FMT("%d", selectedSpecial()));
+	text_special_->SetValue(fmt::sprintf("%d", selectedSpecial()));
 
 	if (panel_args_)
 	{

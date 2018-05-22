@@ -70,7 +70,7 @@ string UndoListView::getItemText(long item, long column, long index) const
 		if (column == 0)
 		{
 			string name = manager_->undoLevel(item)->name();
-			return S_FMT("%d. %s", item + 1, name);
+			return fmt::sprintf("%d. %s", item + 1, name);
 		}
 		else
 		{

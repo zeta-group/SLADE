@@ -242,7 +242,7 @@ void EntryPanel::updateStatus()
 	// Basic info
 	if (entry_)
 	{
-		string text = S_FMT(
+		string text = fmt::sprintf(
 			"%d: %s, %d bytes, %s",
 			entry_->parentDir()->entryIndex(entry_),
 			entry_->name(),

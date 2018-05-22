@@ -213,7 +213,7 @@ bool DirArchive::save(string_view filename)
 	DirArchiveTraverser traverser(files, dirs);
 	wxDir               dir(this->filename_);
 	dir.Traverse(traverser, "", wxDIR_FILES | wxDIR_DIRS);
-	LOG_MESSAGE(2, "GetAllFiles took %lums", App::runTimer() - time);
+	Log::info(2, fmt::format("GetAllFiles took {}ums", App::runTimer() - time));
 
 	// Check for any files to remove
 	time = App::runTimer();
@@ -221,7 +221,7 @@ bool DirArchive::save(string_view filename)
 	{
 		if (wxFileExists(removed_file))
 		{
-			LOG_MESSAGE(2, "Removing file %s", removed_file);
+			Log::info(2, fmt::format("Removing file {}", removed_file));
 			wxRemoveFile(removed_file);
 		}
 	}
@@ -243,9 +243,9 @@ bool DirArchive::save(string_view filename)
 		// Dir on disk isn't part of the archive in memory
 		// (Note that this will fail if there are any untracked files in the directory)
 		if (!found && wxRmdir(dirs[a]))
-			LOG_MESSAGE(2, "Removing directory %s", dirs[a]);
+			Log::info(2, fmt::format("Removing directory {}", dirs[a]));
 	}
-	LOG_MESSAGE(2, "Remove check took %lums", App::runTimer() - time);
+	Log::info(2, fmt::format("Remove check took {}ms", App::runTimer() - time));
 
 	// Go through entries
 	vector<string> files_written;
@@ -273,7 +273,7 @@ bool DirArchive::save(string_view filename)
 		// Write entry to file
 		if (!entries[a]->exportFile(path))
 		{
-			LOG_MESSAGE(1, "Unable to save entry %s: %s", entries[a]->name(), Global::error);
+			Log::info(fmt::format("Unable to save entry {}: {}", entries[a]->name(), Global::error));
 		}
 		else
 			files_written.push_back(path);
@@ -332,7 +332,7 @@ bool DirArchive::removeDir(string_view path, ArchiveTreeNode* base)
 	// Add to removed files list
 	for (auto& entry : entries)
 	{
-		LOG_MESSAGE(2, entry->exProp("filePath").stringValueRef());
+		Log::info(2, entry->exProp("filePath").stringValueRef());
 		removed_files_.push_back(entry->exProp("filePath").stringValueRef());
 	}
 
@@ -350,7 +350,7 @@ bool DirArchive::renameDir(ArchiveTreeNode* dir, string_view new_name)
 	if (separator_ != '/')
 		std::replace(path.begin(), path.end(), '/', separator_);
 	renamed_dirs_.emplace_back(StrUtil::join(path, dir->name()), StrUtil::join(path, new_name));
-	LOG_MESSAGE(2, "RENAME %s to %s", renamed_dirs_.back().first, renamed_dirs_.back().second);
+	Log::info(2, fmt::format("RENAME {} to {}", renamed_dirs_.back().first, renamed_dirs_.back().second));
 
 	return Archive::renameDir(dir, new_name);
 }
@@ -397,7 +397,7 @@ bool DirArchive::renameEntry(ArchiveEntry* entry, string_view name)
 	// Check rename won't result in duplicated name
 	if (entry->parentDir()->entry(name.data()))
 	{
-		Global::error = S_FMT("An entry named %s already exists", name);
+		Global::error = fmt::format("An entry named {} already exists", name);
 		return false;
 	}
 

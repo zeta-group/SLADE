@@ -155,7 +155,7 @@ void Configuration::readActionSpecials(ParseTreeNode* node, Arg::SpecialMap& sha
 		groupname.insert(0, group->name().data(), group->name().size());
 		group = (ParseTreeNode*)group->parent();
 	}
-	if (groupname.back() == '/')
+	if (StrUtil::endsWith(groupname, '/'))
 		groupname.pop_back(); // Remove last '/'
 
 	// --- Set up group default properties ---
@@ -182,7 +182,7 @@ void Configuration::readActionSpecials(ParseTreeNode* node, Arg::SpecialMap& sha
 		else if (StrUtil::equalCI(child->type(), "special"))
 		{
 			// Get special id as integer
-			auto special = std::stoi(name);
+			auto special = StrUtil::toInt(name);
 
 			// Apply group defaults
 			action_specials_[special] = as_defaults;
@@ -218,7 +218,7 @@ void Configuration::readThingTypes(ParseTreeNode* node, const ThingType& group_d
 		groupname.insert(0, group->name().data(), group->name().size());
 		group = (ParseTreeNode*)group->parent();
 	}
-	if (groupname.back() == '/')
+	if (StrUtil::endsWith(groupname, '/'))
 		groupname.pop_back(); // Remove last '/'
 
 
@@ -242,7 +242,7 @@ void Configuration::readThingTypes(ParseTreeNode* node, const ThingType& group_d
 		else if (StrUtil::equalCI(child->type(), "thing"))
 		{
 			// Get thing type as integer
-			auto type = std::stoi(child->name().to_string());
+			auto type = StrUtil::toInt(child->name().to_string());
 
 			// Reset the thing type (in case it's being redefined for whatever reason)
 			thing_types_[type].reset();
@@ -340,7 +340,7 @@ void Configuration::readGameSection(ParseTreeNode* node_game, bool port_section)
 					map_formats_[MAP_UDMF] = true;
 				}
 				else
-					LOG_MESSAGE(1, "Warning: Unknown/unsupported map format \"%s\"", node->stringValue(v));
+					Log::info(fmt::format("Warning: Unknown/unsupported map format \"{}\"", node->stringValue(v)));
 			}
 		}
 
@@ -458,7 +458,7 @@ void Configuration::readGameSection(ParseTreeNode* node_game, bool port_section)
 				}
 
 				else
-					LOG_MESSAGE(1, "Unknown defaults block \"%s\"", block->name());
+					Log::info(fmt::format("Unknown defaults block \"{}\"", block->name()));
 			}
 		}
 
@@ -554,7 +554,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 		}
 		if (!node_game)
 		{
-			LOG_MESSAGE(1, "No game section found, something is pretty wrong.");
+			Log::info(1, "No game section found, something is pretty wrong.");
 			return false;
 		}
 		readGameSection(node_game, false);
@@ -694,7 +694,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 				else
 				{
 					// Short definition
-					flag_val  = std::stol(value->name().to_string());
+					flag_val  = StrUtil::toInt(value->name().to_string());
 					flag_name = value->stringValue();
 				}
 
@@ -752,7 +752,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 				else
 				{
 					// Short definition
-					flag_val  = std::stol(value->name().to_string());
+					flag_val  = StrUtil::toInt(value->name().to_string());
 					flag_name = value->stringValue();
 				}
 
@@ -786,7 +786,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 					continue;
 
 				// Set type name
-				sector_types_[std::stoi(value->name().to_string())] = value->stringValue();
+				sector_types_[StrUtil::toInt(value->name().to_string())] = value->stringValue();
 			}
 		}
 
@@ -835,7 +835,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 
 		// Unknown/unexpected section
 		else
-			LOG_MESSAGE(1, "Warning: Unexpected game configuration section \"%s\", skipping", node->name());
+			Log::info(fmt::format("Warning: Unexpected game configuration section \"{}\", skipping", node->name()));
 	}
 
 	return true;
@@ -861,14 +861,14 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 				StrUtil::processIncludes(filename, full_config);
 			else
 			{
-				LOG_MESSAGE(1, "Error: Game configuration file \"%s\" not found", filename);
+				Log::info(fmt::format("Error: Game configuration file \"{}\" not found", filename));
 				return false;
 			}
 		}
 		else
 		{
 			// Config is in program resource
-			string        epath   = S_FMT("config/games/%s.cfg", game_config.filename);
+			string        epath   = fmt::format("config/games/{}.cfg", game_config.filename);
 			Archive*      archive = App::archiveManager().programResourceArchive();
 			ArchiveEntry* entry   = archive->entryAtPath(epath);
 			if (entry)
@@ -893,14 +893,14 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 					StrUtil::processIncludes(filename, full_config);
 				else
 				{
-					LOG_MESSAGE(1, "Error: Port configuration file \"%s\" not found", filename);
+					Log::info(fmt::format("Error: Port configuration file \"{}\" not found", filename));
 					return false;
 				}
 			}
 			else
 			{
 				// Config is in program resource
-				string        epath   = S_FMT("config/ports/%s.cfg", conf.filename);
+				string        epath   = fmt::format("config/ports/{}.cfg", conf.filename);
 				Archive*      archive = App::archiveManager().programResourceArchive();
 				ArchiveEntry* entry   = archive->entryAtPath(epath);
 				if (entry)
@@ -924,11 +924,11 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 		S_SET_VIEW(current_port_, port);
 		S_SET_VIEW(game_configuration.value, game);
 		S_SET_VIEW(port_configuration.value, port);
-		LOG_MESSAGE(1, "Read game configuration \"%s\" + \"%s\"", current_game_, current_port_);
+		Log::info(fmt::format("Read game configuration \"{}\" + \"{}\"", current_game_, current_port_));
 	}
 	else
 	{
-		LOG_MESSAGE(1, "Error reading game configuration, not loaded");
+		Log::info(1, "Error reading game configuration, not loaded");
 		ok = false;
 	}
 
@@ -941,12 +941,12 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 		// Log message
 		Archive* parent = cfg_entry->parent();
 		if (parent)
-			LOG_MESSAGE(1, "Reading SLADECFG in %s", parent->filename());
+			Log::info(fmt::format("Reading SLADECFG in {}", parent->filename()));
 
 		// Read embedded config
 		string config{ (const char*)cfg_entry->dataRaw(), cfg_entry->size() };
 		if (!readConfiguration(config, cfg_entry->name(), format, true, false))
-			LOG_MESSAGE(1, "Error reading embedded game configuration, not loaded");
+			Log::info(1, "Error reading embedded game configuration, not loaded");
 	}
 
 	return ok;
@@ -1059,7 +1059,7 @@ bool Configuration::thingFlagSet(const string& flag, MapThing* thing, int map_fo
 		if (tf.udmf == flag)
 			return !!(flags & tf.flag);
 	}
-	LOG_MESSAGE(2, "Flag %s does not exist in this configuration", flag);
+	Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
 	return false;
 }
 
@@ -1216,7 +1216,7 @@ void Configuration::setThingFlag(const string& flag, MapThing* thing, int map_fo
 
 	if (flag_val == 0)
 	{
-		LOG_MESSAGE(2, "Flag %s does not exist in this configuration", flag);
+		Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
 		return;
 	}
 
@@ -1393,7 +1393,7 @@ void Configuration::linkDoomEdNums()
 			// Editor number found, copy the definition to thing types map
 			thing_types_[ednum].define(ednum, parsed.name(), parsed.group());
 			thing_types_[ednum].copy(parsed);
-			Log::info(2, S_FMT("Linked parsed class %s to DoomEdNum %d", parsed.className(), ednum));
+			Log::info(2, fmt::format("Linked parsed class {} to DoomEdNum {}", parsed.className(), ednum));
 		}
 	}
 }
@@ -1443,7 +1443,7 @@ bool Configuration::lineFlagSet(const string& flag, MapLine* line, int map_forma
 		if (i.udmf == flag)
 			return !!(flags & i.flag);
 	}
-	LOG_MESSAGE(2, "Flag %s does not exist in this configuration", flag);
+	Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
 	return false;
 }
 
@@ -1563,7 +1563,7 @@ void Configuration::setLineFlag(const string& flag, MapLine* line, int map_forma
 
 	if (flag_val == 0)
 	{
-		LOG_MESSAGE(2, "Flag %s does not exist in this configuration", flag);
+		Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
 		return;
 	}
 
@@ -1889,7 +1889,7 @@ string Configuration::sectorTypeName(int type)
 		// Just return flags in this case
 		string name = gen_flags[0];
 		for (unsigned a = 1; a < gen_flags.size(); a++)
-			name += S_FMT(" + %s", gen_flags[a]);
+			name += fmt::format(" + {}", gen_flags[a]);
 
 		return name;
 	}
@@ -1901,7 +1901,7 @@ string Configuration::sectorTypeName(int type)
 
 	// Add generalised flags to type name
 	for (const auto& gen_flag : gen_flags)
-		name += S_FMT(" + %s", gen_flag);
+		name += fmt::format(" + {}", gen_flag);
 
 	return name;
 }
@@ -2160,7 +2160,7 @@ void Configuration::applyDefaults(MapObject* object, bool udmf)
 			object->setFloatProperty(prop_names[a], prop_vals[a].floatValue());
 		else if (prop_vals[a].type() == Property::Type::String)
 			object->setStringProperty(prop_names[a], prop_vals[a].stringValue());
-		LOG_MESSAGE(3, "Applied default property %s = %s", prop_names[a], prop_vals[a].stringValue());
+		Log::info(3, fmt::format("Applied default property {} = {}", prop_names[a], prop_vals[a].stringValue()));
 	}
 }
 
@@ -2227,7 +2227,7 @@ void Configuration::dumpActionSpecials()
 {
 	for (auto& i : action_specials_)
 		// if (i.second.defined())
-		LOG_MESSAGE(1, "Action special %d = %s", i.first, i.second.stringDesc());
+		Log::info(fmt::format("Action special {} = {}", i.first, i.second.stringDesc()));
 }
 
 // -----------------------------------------------------------------------------
@@ -2237,7 +2237,7 @@ void Configuration::dumpThingTypes()
 {
 	for (auto& i : thing_types_)
 		if (i.second.defined())
-			LOG_MESSAGE(1, "Thing type %d = %s", i.first, i.second.stringDesc());
+			Log::info(fmt::format("Thing type {} = {}", i.first, i.second.stringDesc()));
 }
 
 // -----------------------------------------------------------------------------
@@ -2245,7 +2245,7 @@ void Configuration::dumpThingTypes()
 // -----------------------------------------------------------------------------
 void Configuration::dumpValidMapNames()
 {
-	LOG_MESSAGE(1, "Valid Map Names:");
+	Log::info(1, "Valid Map Names:");
 	for (auto& map : maps_)
 		Log::info(map.mapname);
 }
@@ -2316,5 +2316,5 @@ CONSOLE_COMMAND(dumpthingtypes, 0, false)
 CONSOLE_COMMAND(dumpspecialpresets, 0, false)
 {
 	for (auto& preset : Game::configuration().specialPresets())
-		Log::console(S_FMT("%s/%s", preset.group, preset.name));
+		Log::console(fmt::format("{}/{}", preset.group, preset.name));
 }

@@ -79,7 +79,7 @@ bool Property::boolValue(bool warn_wrong_type) const
 
 	// Write warning to log if needed
 	if (warn_wrong_type && type_ != Type::Bool)
-		LOG_MESSAGE(1, "Warning: Requested Boolean value of a %s Property", typeString());
+		Log::warning(fmt::sprintf("Warning: Requested Boolean value of a %s Property", typeString()));
 
 	// Return value (convert if needed)
 	if (type_ == Type::Bool)
@@ -125,7 +125,7 @@ int Property::intValue(bool warn_wrong_type) const
 
 	// Write warning to log if needed
 	if (warn_wrong_type && type_ != Type::Int)
-		LOG_MESSAGE(1, "Warning: Requested Integer value of a %s Property", typeString());
+		Log::warning(fmt::sprintf("Warning: Requested Integer value of a %s Property", typeString()));
 
 	// Return value (convert if needed)
 	if (type_ == Type::Int)
@@ -137,7 +137,7 @@ int Property::intValue(bool warn_wrong_type) const
 	else if (type_ == Type::Float)
 		return (int)get<double>(value_);
 	else if (type_ == Type::String)
-		return std::stoi(get<string>(value_));
+		return StrUtil::toInt(get<string>(value_));
 
 	// Return default integer value
 	return 0;
@@ -160,7 +160,7 @@ double Property::floatValue(bool warn_wrong_type) const
 
 	// Write warning to log if needed
 	if (warn_wrong_type && type_ != Type::Float)
-		LOG_MESSAGE(1, "Warning: Requested Float value of a %s Property", typeString());
+		Log::warning(fmt::sprintf("Warning: Requested Float value of a %s Property", typeString()));
 
 	// Return value (convert if needed)
 	if (type_ == Type::Float)
@@ -172,7 +172,7 @@ double Property::floatValue(bool warn_wrong_type) const
 	else if (type_ == Type::UInt)
 		return (double)get<unsigned>(value_);
 	else if (type_ == Type::String)
-		return std::stod(get<string>(value_));
+		return StrUtil::toDouble(get<string>(value_));
 
 	// Return default float value
 	return 0.0f;
@@ -195,15 +195,15 @@ string Property::stringValue(bool warn_wrong_type) const
 
 	// Write warning to log if needed
 	if (warn_wrong_type && type_ != Type::String)
-		LOG_MESSAGE(1, "Warning: Requested String value of a %s Property", typeString());
+		Log::warning(fmt::sprintf("Warning: Requested String value of a %s Property", typeString()));
 
 	// Return value (convert if needed)
 	if (type_ == Type::String)
 		return get<string>(value_);
 	else if (type_ == Type::Int)
-		return S_FMT("%d", get<int>(value_));
+		return fmt::sprintf("%d", get<int>(value_));
 	else if (type_ == Type::UInt)
-		return S_FMT("%d", get<unsigned>(value_));
+		return fmt::sprintf("%d", get<unsigned>(value_));
 	else if (type_ == Type::Bool)
 	{
 		if (get<bool>(value_))
@@ -212,7 +212,7 @@ string Property::stringValue(bool warn_wrong_type) const
 			return "false";
 	}
 	else if (type_ == Type::Float)
-		return S_FMT("%f", get<double>(value_));
+		return fmt::sprintf("%f", get<double>(value_));
 
 	// Return default string value
 	return {};
@@ -251,7 +251,7 @@ unsigned Property::unsignedValue(bool warn_wrong_type) const
 
 	// Write warning to log if needed
 	if (warn_wrong_type && type_ != Type::Int)
-		LOG_MESSAGE(1, "Warning: Requested Integer value of a %s Property", typeString());
+		Log::warning(fmt::sprintf("Warning: Requested Integer value of a %s Property", typeString()));
 
 	// Return value (convert if needed)
 	if (type_ == Type::Int)
@@ -261,7 +261,7 @@ unsigned Property::unsignedValue(bool warn_wrong_type) const
 	else if (type_ == Type::Float)
 		return (int)get<double>(value_);
 	else if (type_ == Type::String)
-		return std::stoi(get<string>(value_));
+		return StrUtil::toInt(get<string>(value_));
 	else if (type_ == Type::UInt)
 		return get<unsigned>(value_);
 

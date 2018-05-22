@@ -127,7 +127,7 @@ public:
 		if (!this)
 			return "<line NULL>";
 
-		return Debuggable(S_FMT("<line %u>", index_));
+		return Debuggable(fmt::format("<line {}>", index_));
 	}
 
 private:

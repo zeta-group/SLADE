@@ -190,6 +190,9 @@
     <Filter Include="External\CPP17">
       <UniqueIdentifier>{4080a5eb-9d87-4be8-89b1-16acf988e397}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External\Fmt">
+      <UniqueIdentifier>{7ad03ff0-b532-4010-a247-cba4529c8019}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\External\mus2mid\mus2mid.cpp">
@@ -1512,6 +1515,18 @@
     <ClCompile Include="..\..\src\Dialogs\GfxTintDialog.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\External\fmt\format.cc">
+      <Filter>External\Fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\External\fmt\ostream.cc">
+      <Filter>External\Fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\External\fmt\posix.cc">
+      <Filter>External\Fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\External\fmt\printf.cc">
+      <Filter>External\Fmt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2644,6 +2659,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Dialogs\GfxTintDialog.h">
       <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\container.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\format.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\ostream.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\posix.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\printf.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\string.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\time.h">
+      <Filter>External\Fmt</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -77,7 +77,7 @@ public:
 		if (!this)
 			return Debuggable("<thing NULL>");
 
-		return Debuggable(S_FMT("<thing %u>", index_));
+		return Debuggable(fmt::format("<thing {}>", index_));
 	}
 
 private:

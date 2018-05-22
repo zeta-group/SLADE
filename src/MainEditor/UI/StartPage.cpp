@@ -33,11 +33,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "StartPage.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "General/SAction.h"
 #include "General/Web.h"
+#include "StartPage.h"
 #include "UI/WxUtils.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
@@ -92,8 +92,9 @@ void SStartPage::init()
 #ifdef USE_WEBVIEW_STARTPAGE
 	html_startpage_->Bind(wxEVT_WEBVIEW_NAVIGATING, &SStartPage::onHTMLLinkClicked, this);
 
-	html_startpage_->Bind(
-		wxEVT_WEBVIEW_ERROR, [&](wxWebViewEvent& e) { Log::error(S_FMT("wxWebView Error: %s", e.GetString())); });
+	html_startpage_->Bind(wxEVT_WEBVIEW_ERROR, [&](wxWebViewEvent& e) {
+		Log::error(fmt::sprintf("wxWebView Error: %s", e.GetString()));
+	});
 
 	if (App::platform() == App::Platform::Windows)
 	{
@@ -168,7 +169,7 @@ void SStartPage::load(bool new_tip)
 	// Can't do anything without html entry
 	if (!entry_base_html_)
 	{
-		LOG_MESSAGE(1, "No start page resource found");
+		Log::info(1, "No start page resource found");
 		html_startpage_->SetPage(
 			"<html><head><title>SLADE</title></head><body><center><h1>"
 			"Something is wrong with slade.pk3 :(</h1><center></body></html>",
@@ -225,7 +226,7 @@ void SStartPage::load(bool new_tip)
 				icon = "folder";
 
 			// Add recent file row
-			recent += S_FMT(
+			recent += fmt::sprintf(
 				"<div class=\"link\">"
 				"<img src=\"%s.png\" class=\"link\" />"
 				"<a class=\"link\" href=\"recent://%d\">%s</a>"
@@ -314,7 +315,7 @@ void SStartPage::load(bool new_tip)
 
 		last_tip_index_ = tipindex;
 		tip = tips_[tipindex];
-		Log::debug(S_FMT("Tip index %d/%d", last_tip_index_, (int)tips_.size()));
+		Log::debug(fmt::sprintf("Tip index %d/%d", last_tip_index_, (int)tips_.size()));
 	}
 
 	// Generate recent files string
@@ -329,7 +330,7 @@ void SStartPage::load(bool new_tip)
 			recent += "<br/>\n";
 
 		// Add recent file link
-		recent += S_FMT("<a href=\"recent://%d\">%s</a>", a, App::archiveManager().recentFile(a));
+		recent += fmt::sprintf("<a href=\"recent://%d\">%s</a>", a, App::archiveManager().recentFile(a));
 	}
 
 	// Insert tip and recent files into html
@@ -390,7 +391,7 @@ void SStartPage::onHTMLLinkClicked(wxEvent& e)
 		href.Replace("file://", "");
 #endif
 
-	// LOG_MESSAGE(2, "URL %s", href);
+	// Log::info(2, "URL %s", href);
 
 	if (href.EndsWith("/"))
 		href.RemoveLast(1);

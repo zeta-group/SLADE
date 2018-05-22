@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "General/Console/Console.h"
 #include "MathStuff.h"
+#include "TextEditor/TextStyle.h"
 
 
 // -----------------------------------------------------------------------------
@@ -480,9 +481,9 @@ CONSOLE_COMMAND(angle2d, 6, false)
 {
 	double vals[6];
 	for (unsigned a = 0; a < args.size(); a++)
-		vals[a] = stod(args[a]);
+		vals[a] = StrUtil::toDouble(args[a]);
 
 	double ang =
 		MathStuff::angle2DRad(fpoint2_t(vals[0], vals[1]), fpoint2_t(vals[2], vals[3]), fpoint2_t(vals[4], vals[5]));
-	LOG_MESSAGE(1, "Angle = %1.4f", ang);
+	Log::info(fmt::sprintf("Angle = %1.4f", ang));
 }

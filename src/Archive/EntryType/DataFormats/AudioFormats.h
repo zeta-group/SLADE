@@ -193,7 +193,7 @@ public:
 			temp[17] = 0;
 			if (temp[9] == 'M')
 				temp[9] = 'm';
-			if (!S_FMT("%s", temp).compare("Extended module: "))
+			if (!strcmp(temp, "Extended module: "))
 			{
 				if (mc[37] == 0x1a)
 				{
@@ -826,11 +826,11 @@ public:
 			{
 				size_t size = READ_B32(mc, 4) + 8;
 				if (debugaiff)
-					LOG_MESSAGE(1, "size %d", size);
+					Log::info(fmt::format("size {}", size));
 				if (size > mc.size())
 				{
 					if (debugaiff)
-						LOG_MESSAGE(1, "%d <= %d fails", size, mc.size());
+						Log::info(fmt::format("{} <= {} fails", size, mc.size()));
 					return EDF_FALSE;
 				}
 				size_t s          = 12;
@@ -839,7 +839,7 @@ public:
 				while (s < size && !(comm_found && ssnd_found))
 				{
 					if (debugaiff)
-						LOG_MESSAGE(1, "%d/%d", s, size);
+						Log::info(fmt::format("{}/{}", s, size));
 					if (mc[s + 0] == 'C' && mc[s + 1] == 'O' && mc[s + 2] == 'M' && mc[s + 3] == 'M')
 						comm_found = true;
 					else if (mc[s + 0] == 'S' && mc[s + 1] == 'S' && mc[s + 2] == 'N' && mc[s + 3] == 'D')
@@ -848,13 +848,13 @@ public:
 					if (s % 2)
 						++s;
 					if (debugaiff)
-						LOG_MESSAGE(1, "looking now at offset %d", s);
+						Log::info(fmt::format("looking now at offset {}", s));
 				}
 				if (comm_found && ssnd_found)
 					return EDF_TRUE;
 				if (debugaiff)
-					LOG_MESSAGE(
-						1, "COMM was %sfound and SSND was %sfound", comm_found ? "" : "not ", ssnd_found ? "" : "not ");
+					Log::info(fmt::format(
+						"COMM was {}found and SSND was {}found", comm_found ? "" : "not ", ssnd_found ? "" : "not "));
 			}
 		}
 		return EDF_FALSE;

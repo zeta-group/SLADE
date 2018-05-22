@@ -30,8 +30,8 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "TarArchive.h"
 #include "General/UI.h"
+#include "TarArchive.h"
 #include "Utility/StringUtils.h"
 
 
@@ -97,7 +97,7 @@ bool TarArchive::open(MemChunk& mc)
 
 		if (!checksum(&header))
 		{
-			LOG_MESSAGE(1, "Invalid checksum for block at 0x%x", mc.currentPos() - 512);
+			Log::info(fmt::format("Invalid checksum for block at {0:#x}", mc.currentPos() - 512));
 			continue;
 		}
 
@@ -220,8 +220,8 @@ bool TarArchive::write(MemChunk& mc, bool update)
 		name.erase(0, 1); // Remove leading /
 		if (name.size() > 99)
 		{
-			LOG_MESSAGE(
-				1, "Warning: Entry %s path is too long (> 99 characters), putting it in the root directory", name);
+			Log::info(fmt::format(
+				"Warning: Entry {} path is too long (> 99 characters), putting it in the root directory", name));
 			wxFileName fn(name);
 			name = fn.GetFullName();
 			StrUtil::truncateIP(name, 99);
@@ -282,7 +282,7 @@ bool TarArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		LOG_MESSAGE(1, "TarArchive::loadEntryData: Unable to open archive file %s", filename_);
+		Log::info(fmt::format("TarArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

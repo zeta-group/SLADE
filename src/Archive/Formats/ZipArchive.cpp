@@ -31,10 +31,10 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
-#include "ZipArchive.h"
-#include "WadArchive.h"
 #include "General/UI.h"
 #include "Utility/StringUtils.h"
+#include "WadArchive.h"
+#include "ZipArchive.h"
 #include <fstream>
 
 
@@ -147,8 +147,8 @@ bool ZipArchive::open(string_view filename)
 			}
 			else
 			{
-				Global::error =
-					S_FMT("Entry too large: %s is %u mb", entry->GetName(wxPATH_UNIX), entry->GetSize() / (1 << 20));
+				Global::error = fmt::format(
+					"Entry too large: {} is {} mb", entry->GetName(wxPATH_UNIX), entry->GetSize() / (1 << 20));
 				setMuted(false);
 				return false;
 			}
@@ -330,8 +330,7 @@ bool ZipArchive::loadEntryData(ArchiveEntry* entry)
 	// Check that the entry belongs to this archive
 	if (entry->parent() != this)
 	{
-		LOG_MESSAGE(
-			1, "ZipArchive::loadEntryData: Entry %s attempting to load data from wrong parent!", entry->name());
+		Log::info(fmt::format("ZipArchive::loadEntryData: Entry {} attempting to load data from wrong parent!", entry->name()));
 		return false;
 	}
 
@@ -349,7 +348,7 @@ bool ZipArchive::loadEntryData(ArchiveEntry* entry)
 		zip_index = entry->exProp("ZipIndex");
 	else
 	{
-		LOG_MESSAGE(1, "ZipArchive::loadEntryData: Entry %s has no zip entry index!", entry->name());
+		Log::info(fmt::format("ZipArchive::loadEntryData: Entry {} has no zip entry index!", entry->name()));
 		return false;
 	}
 
@@ -357,7 +356,7 @@ bool ZipArchive::loadEntryData(ArchiveEntry* entry)
 	wxFFileInputStream in(filename_);
 	if (!in.IsOk())
 	{
-		LOG_MESSAGE(1, "ZipArchive::loadEntryData: Unable to open zip file \"%s\"!", filename_);
+		Log::info(fmt::format("ZipArchive::loadEntryData: Unable to open zip file \"{}\"!", filename_));
 		return false;
 	}
 
@@ -365,7 +364,7 @@ bool ZipArchive::loadEntryData(ArchiveEntry* entry)
 	wxZipInputStream zip(in);
 	if (!zip.IsOk())
 	{
-		LOG_MESSAGE(1, "ZipArchive::loadEntryData: Invalid zip file \"%s\"!", filename_);
+		Log::info(fmt::format("ZipArchive::loadEntryData: Invalid zip file \"{}\"!", filename_));
 		return false;
 	}
 
@@ -383,7 +382,7 @@ bool ZipArchive::loadEntryData(ArchiveEntry* entry)
 	// Abort if entry doesn't exist in zip (some kind of error)
 	if (!zentry)
 	{
-		LOG_MESSAGE(1, "Error: ZipEntry for entry \"%s\" does not exist in zip", entry->name());
+		Log::info(fmt::format("Error: ZipEntry for entry \"{}\" does not exist in zip", entry->name()));
 		return false;
 	}
 
@@ -611,7 +610,7 @@ void ZipArchive::generateTempFileName(string_view filename)
 		int n = 1;
 		while (true)
 		{
-			temp_file_ = App::path(S_FMT("%s.%d", tfn.GetFullName(), n), App::Dir::Temp);
+			temp_file_ = App::path(fmt::format("{}.{}", tfn.GetFullName(), n), App::Dir::Temp);
 			if (!wxFileExists(temp_file_))
 				break;
 

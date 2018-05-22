@@ -76,7 +76,7 @@ STopWindow::STopWindow(const wxString& title, string_view id, int x, int y, int 
 
 	// Init toolbar menu action(s)
 	action_toolbar_menu_ =
-		new SAction(S_FMT("%s_toolbar_menu", id), "Toolbars", "", "", "", SAction::Type::Check, -1, 10);
+		new SAction(fmt::sprintf("%s_toolbar_menu", id), "Toolbars", "", "", "", SAction::Type::Check, -1, 10);
 	SAction::add(action_toolbar_menu_);
 
 	// Bind events
