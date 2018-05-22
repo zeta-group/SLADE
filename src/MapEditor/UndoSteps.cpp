@@ -233,11 +233,11 @@ MultiMapObjectPropertyChangeUS::MultiMapObjectPropertyChangeUS()
 
 	if (Log::verbosity() >= 2)
 	{
-		fmt::MemoryWriter msg;
-		msg.write("Modified ids: ");
+		fmt::memory_buffer msg;
+		format_to(msg, "Modified ids: ");
 		for (auto& backup : backups_)
-			msg.write("{}, ", backup->id);
-		Log::info(msg.c_str());
+			format_to(msg, "{}, ", backup->id);
+		Log::info(fmt::to_string(msg));
 	}
 }
 

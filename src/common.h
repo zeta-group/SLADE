@@ -158,8 +158,7 @@ using string_view = stx::string_view;
 using nonstd::variant;
 
 // String formatting
-#include "External/fmt/format.h"
-#include "External/fmt/printf.h"
-#include "External/fmt/string.h"
+#include "External/fmt/fmt/format.h"
+#include "External/fmt/fmt/printf.h"
 
 #endif // COMMON_H

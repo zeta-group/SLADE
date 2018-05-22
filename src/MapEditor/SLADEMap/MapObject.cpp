@@ -58,18 +58,25 @@ long prop_backup_time = -1;
 // -----------------------------------------------------------------------------
 // Formatter for fmt so that MapObject::Type can be written to a string
 // -----------------------------------------------------------------------------
-void format_arg(fmt::BasicFormatter<char>& f, const char*& format_str, const MapObject::Type& s)
+namespace fmt
 {
-	switch (s)
+template<> struct formatter<MapObject::Type>
+{
+	template<typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
+	template<typename FormatContext> auto          format(const MapObject::Type& type, FormatContext& ctx)
 	{
-	case MapObject::Type::Vertex: f.writer().write("[Vertex]"); break;
-	case MapObject::Type::Line: f.writer().write("[Line]"); break;
-	case MapObject::Type::Side: f.writer().write("[Side]"); break;
-	case MapObject::Type::Sector: f.writer().write("[Sector]"); break;
-	case MapObject::Type::Thing: f.writer().write("[Thing]"); break;
-	default: f.writer().write("[Object]"); break;
+		switch (type)
+		{
+		case MapObject::Type::Vertex: return format_to(ctx.begin(), "[Vertex]");
+		case MapObject::Type::Line: return format_to(ctx.begin(), "[Line]");
+		case MapObject::Type::Side: return format_to(ctx.begin(), "[Side]");
+		case MapObject::Type::Sector: return format_to(ctx.begin(), "[Sector]");
+		case MapObject::Type::Thing: return format_to(ctx.begin(), "[Thing]");
+		default: return format_to(ctx.begin(), "[Object]");
+		}
 	}
-}
+};
+} // namespace fmt
 
 
 // -----------------------------------------------------------------------------

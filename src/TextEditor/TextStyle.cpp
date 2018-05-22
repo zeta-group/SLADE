@@ -214,65 +214,65 @@ bool TextStyle::copyStyle(TextStyle* copy)
 // -----------------------------------------------------------------------------
 string TextStyle::getDefinition(unsigned tabs) const
 {
-	fmt::StringWriter ret;
+	fmt::memory_buffer ret;
 
 	// Write font
 	if (!font_.empty())
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("font = \"{}\";\n", font_);
+			format_to(ret, "\t");
+		format_to(ret, "font = \"{}\";\n", font_);
 	}
 
 	// Write size
 	if (size_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("size = {};\n", size_);
+			format_to(ret, "\t");
+		format_to(ret, "size = {};\n", size_);
 	}
 
 	// Write foreground
 	if (fg_defined_)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("foreground = {}, {}, {};\n", foreground_.r, foreground_.g, foreground_.b);
+			format_to(ret, "\t");
+		format_to(ret, "foreground = {}, {}, {};\n", foreground_.r, foreground_.g, foreground_.b);
 	}
 
 	// Write background
 	if (bg_defined_)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("background = {}, {}, {};\n", background_.r, background_.g, background_.b);
+			format_to(ret, "\t");
+		format_to(ret, "background = {}, {}, {};\n", background_.r, background_.g, background_.b);
 	}
 
 	// Write bold
 	if (bold_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("bold = {};\n", bold_);
+			format_to(ret, "\t");
+		format_to(ret, "bold = {};\n", bold_);
 	}
 
 	// Write italic
 	if (italic_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("italic = {};\n", italic_);
+			format_to(ret, "\t");
+		format_to(ret, "italic = {};\n", italic_);
 	}
 
 	// Write underlined
 	if (underlined_ >= 0)
 	{
 		for (unsigned t = 0; t < tabs; t++)
-			ret.write("\t");
-		ret.write("underlined = {};\n", underlined_);
+			format_to(ret, "\t");
+		format_to(ret, "underlined = {};\n", underlined_);
 	}
 
-	return ret.str();
+	return to_string(ret);
 }
 
 

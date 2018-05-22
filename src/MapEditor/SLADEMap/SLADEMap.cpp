@@ -2366,15 +2366,15 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	if (!textmap)
 		return false;
 
-	fmt::MemoryWriter udmf_text;
+	fmt::memory_buffer udmf_text;
 
 	// Write map namespace
-	udmf_text.write("// Written by SLADE3\n");
-	udmf_text.write(fmt::sprintf("namespace=\"%s\";\n", udmf_namespace_));
+	format_to(udmf_text, "// Written by SLADE3\n");
+	format_to(udmf_text, fmt::sprintf("namespace=\"%s\";\n", udmf_namespace_));
 
 	// Write map-scope props
-	udmf_text.write(udmf_props_.toString(true));
-	udmf_text.write("\n");
+	format_to(udmf_text, udmf_props_.toString(true));
+	format_to(udmf_text, "\n");
 
 	// sf::Clock clock;
 
@@ -2384,13 +2384,13 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	// Write things
 	for (unsigned a = 0; a < things_.size(); a++)
 	{
-		udmf_text.write("thing//#{}\n{{\n", a);
+		format_to(udmf_text, "thing//#{}\n{{\n", a);
 
 		// Basic properties
-		udmf_text.write(
+		format_to(udmf_text, 
 			"x={:1.3f};\ny={:1.3f};\ntype={};\n", things_[a]->position_.x, things_[a]->position_.y, things_[a]->type_);
 		if (things_[a]->angle_ != 0)
-			udmf_text.write("angle={};\n", things_[a]->angle_);
+			format_to(udmf_text, "angle={};\n", things_[a]->angle_);
 
 		// Remove internal 'flags' property if it exists
 		things_[a]->props().removeProperty("flags");
@@ -2399,11 +2399,10 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 		if (!things_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(things_[a]);
-			udmf_text.write(things_[a]->properties_.toString(true));
+			format_to(udmf_text, things_[a]->properties_.toString(true));
 		}
 
-		udmf_text.write("}}\n\n");
-		udmf_text.write(udmf_text.c_str());
+		format_to(udmf_text, "}}\n\n");
 	}
 	// Log::info(1, "Writing things took %dms", clock.getElapsedTime().asMilliseconds());
 
@@ -2411,17 +2410,17 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	// clock.restart();
 	for (unsigned a = 0; a < lines_.size(); a++)
 	{
-		udmf_text.write("linedef//#{}\n{{\n", a);
+		format_to(udmf_text, "linedef//#{}\n{{\n", a);
 
 		// Basic properties
-		udmf_text.write(
+		format_to(udmf_text, 
 			"v1={};\nv2={};\nsidefront={};\n", lines_[a]->v1Index(), lines_[a]->v2Index(), lines_[a]->s1Index());
 		if (lines_[a]->s2())
-			udmf_text.write("sideback={};\n", lines_[a]->s2Index());
+			format_to(udmf_text, "sideback={};\n", lines_[a]->s2Index());
 		if (lines_[a]->special_ != 0)
-			udmf_text.write("special={};\n", lines_[a]->special_);
+			format_to(udmf_text, "special={};\n", lines_[a]->special_);
 		if (lines_[a]->id_ != 0)
-			udmf_text.write("id={};\n", lines_[a]->id_);
+			format_to(udmf_text, "id={};\n", lines_[a]->id_);
 
 		// Remove internal 'flags' property if it exists
 		lines_[a]->props().removeProperty("flags");
@@ -2430,11 +2429,10 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 		if (!lines_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(lines_[a]);
-			udmf_text.write(lines_[a]->properties_.toString(true));
+			format_to(udmf_text, lines_[a]->properties_.toString(true));
 		}
 
-		udmf_text.write("}}\n\n");
-		udmf_text.write(udmf_text.c_str());
+		format_to(udmf_text, "}}\n\n");
 	}
 	// Log::info(1, "Writing lines took %dms", clock.getElapsedTime().asMilliseconds());
 
@@ -2442,30 +2440,29 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	// clock.restart();
 	for (unsigned a = 0; a < sides_.size(); a++)
 	{
-		udmf_text.write("sidedef//#{}\n{{\n", a);
+		format_to(udmf_text, "sidedef//#{}\n{{\n", a);
 
 		// Basic properties
-		udmf_text.write("sector={};\n", sides_[a]->sector_->index_);
+		format_to(udmf_text, "sector={};\n", sides_[a]->sector_->index_);
 		if (sides_[a]->tex_upper_ != "-")
-			udmf_text.write("texturetop=\"{}\";\n", sides_[a]->tex_upper_);
+			format_to(udmf_text, "texturetop=\"{}\";\n", sides_[a]->tex_upper_);
 		if (sides_[a]->tex_middle_ != "-")
-			udmf_text.write("texturemiddle=\"{}\";\n", sides_[a]->tex_middle_);
+			format_to(udmf_text, "texturemiddle=\"{}\";\n", sides_[a]->tex_middle_);
 		if (sides_[a]->tex_lower_ != "-")
-			udmf_text.write("texturebottom=\"{}\";\n", sides_[a]->tex_lower_);
+			format_to(udmf_text, "texturebottom=\"{}\";\n", sides_[a]->tex_lower_);
 		if (sides_[a]->offset_.x != 0)
-			udmf_text.write("offsetx={};\n", sides_[a]->offset_.x);
+			format_to(udmf_text, "offsetx={};\n", sides_[a]->offset_.x);
 		if (sides_[a]->offset_.y != 0)
-			udmf_text.write("offsety={};\n", sides_[a]->offset_.y);
+			format_to(udmf_text, "offsety={};\n", sides_[a]->offset_.y);
 
 		// Other properties
 		if (!sides_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(sides_[a]);
-			udmf_text.write(sides_[a]->properties_.toString(true));
+			format_to(udmf_text, sides_[a]->properties_.toString(true));
 		}
 
-		udmf_text.write("}}\n\n");
-		udmf_text.write(udmf_text.c_str());
+		format_to(udmf_text, "}}\n\n");
 	}
 	// Log::info(1, "Writing sides took %dms", clock.getElapsedTime().asMilliseconds());
 
@@ -2473,20 +2470,19 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	// clock.restart();
 	for (unsigned a = 0; a < vertices_.size(); a++)
 	{
-		udmf_text.write("vertex//#{}\n{{\n", a);
+		format_to(udmf_text, "vertex//#{}\n{{\n", a);
 
 		// Basic properties
-		udmf_text.write("x={:1.3f};\ny={:1.3f};\n", vertices_[a]->position_.x, vertices_[a]->position_.y);
+		format_to(udmf_text, "x={:1.3f};\ny={:1.3f};\n", vertices_[a]->position_.x, vertices_[a]->position_.y);
 
 		// Other properties
 		if (!vertices_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(vertices_[a]);
-			udmf_text.write(vertices_[a]->properties_.toString(true));
+			format_to(udmf_text, vertices_[a]->properties_.toString(true));
 		}
 
-		udmf_text.write("}}\n\n");
-		udmf_text.write(udmf_text.c_str());
+		format_to(udmf_text, "}}\n\n");
 	}
 	// Log::info(1, "Writing vertices took %dms", clock.getElapsedTime().asMilliseconds());
 
@@ -2494,33 +2490,32 @@ bool SLADEMap::writeUDMFMap(ArchiveEntry* textmap)
 	// clock.restart();
 	for (unsigned a = 0; a < sectors_.size(); a++)
 	{
-		udmf_text.write("sector//#{}\n{{\n", a);
+		format_to(udmf_text, "sector//#{}\n{{\n", a);
 
 		// Basic properties
-		udmf_text.write(
+		format_to(udmf_text, 
 			"texturefloor=\"{}\";\ntextureceiling=\"{}\";\n",
 			sectors_[a]->floor_.texture,
 			sectors_[a]->ceiling_.texture);
 		if (sectors_[a]->floor_.height != 0)
-			udmf_text.write("heightfloor={};\n", sectors_[a]->floor_.height);
+			format_to(udmf_text, "heightfloor={};\n", sectors_[a]->floor_.height);
 		if (sectors_[a]->ceiling_.height != 0)
-			udmf_text.write("heightceiling={};\n", sectors_[a]->ceiling_.height);
+			format_to(udmf_text, "heightceiling={};\n", sectors_[a]->ceiling_.height);
 		if (sectors_[a]->light_ != 160)
-			udmf_text.write("lightlevel={};\n", sectors_[a]->light_);
+			format_to(udmf_text, "lightlevel={};\n", sectors_[a]->light_);
 		if (sectors_[a]->special_ != 0)
-			udmf_text.write("special={};\n", sectors_[a]->special_);
+			format_to(udmf_text, "special={};\n", sectors_[a]->special_);
 		if (sectors_[a]->id_ != 0)
-			udmf_text.write("id={};\n", sectors_[a]->id_);
+			format_to(udmf_text, "id={};\n", sectors_[a]->id_);
 
 		// Other properties
 		if (!sectors_[a]->properties_.isEmpty())
 		{
 			Game::configuration().cleanObjectUDMFProps(sectors_[a]);
-			udmf_text.write(sectors_[a]->properties_.toString(true));
+			format_to(udmf_text, sectors_[a]->properties_.toString(true));
 		}
 
-		udmf_text.write("}}\n\n");
-		udmf_text.write(udmf_text.c_str());
+		format_to(udmf_text, "}}\n\n");
 	}
 	// Log::info(1, "Writing sectors took %dms", clock.getElapsedTime().asMilliseconds());
 

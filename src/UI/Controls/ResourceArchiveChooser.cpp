@@ -111,10 +111,10 @@ string ResourceArchiveChooser::selectedResourceList()
 {
 	auto selected = selectedResourceArchives();
 
-	fmt::StringWriter ret;
+	fmt::memory_buffer ret;
 	for (auto& archive : selected)
-		ret.write("\"{}\" ", archive->filename());
-	return ret.str();
+		format_to(ret, "\"{}\" ", archive->filename());
+	return to_string(ret);
 }
 
 

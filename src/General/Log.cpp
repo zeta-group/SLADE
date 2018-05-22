@@ -31,7 +31,7 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "App.h"
-#include "External/fmt/time.h"
+#include "External/fmt/fmt/time.h"
 #include <fstream>
 
 
@@ -51,21 +51,26 @@ CVAR(Int, log_verbosity, 1, CVAR_SAVE)
 // -----------------------------------------------------------------------------
 // Formatter for fmt so that Log::MessageType can be written to a string
 // -----------------------------------------------------------------------------
-namespace Log
+namespace fmt
 {
-void format_arg(fmt::BasicFormatter<char>& f, const char*& format_str, const Log::MessageType& s)
+template<> struct formatter<Log::MessageType>
 {
-	switch (s)
+	template<typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
+	template<typename FormatContext> auto          format(const Log::MessageType& type, FormatContext& ctx)
 	{
-	case Log::MessageType::Info: f.writer().write(" [Info]"); break;
-	case Log::MessageType::Warning: f.writer().write(" [Warn]"); break;
-	case Log::MessageType::Error: f.writer().write("[Error]"); break;
-	case Log::MessageType::Debug: f.writer().write("[Debug]"); break;
-	case Log::MessageType::Script: f.writer().write("[Script]"); break;
-	default: f.writer().write("  [Log]"); break;
+		switch (type)
+		{
+		case Log::MessageType::Info: return format_to(ctx.begin(), " [Info]");
+		case Log::MessageType::Warning: return format_to(ctx.begin(), " [Warn]");
+		case Log::MessageType::Error: return format_to(ctx.begin(), "[Error]");
+		case Log::MessageType::Debug: return format_to(ctx.begin(), "[Debug]");
+		case Log::MessageType::Script: return format_to(ctx.begin(), "[Script]");
+		default: return format_to(ctx.begin(), "  [Log]");
+		}
 	}
-}
-}
+};
+} // namespace fmt
+
 
 // -----------------------------------------------------------------------------
 //

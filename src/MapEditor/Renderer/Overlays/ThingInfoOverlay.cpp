@@ -72,7 +72,7 @@ void ThingInfoOverlay::update(MapThing* thing)
 	if (!thing)
 		return;
 
-	fmt::StringWriter info_text;
+	fmt::memory_buffer info_text;
 	sprite_        = "";
 	translation_   = "";
 	palette_       = "";
@@ -83,16 +83,16 @@ void ThingInfoOverlay::update(MapThing* thing)
 	auto&  tt   = Game::configuration().thingType(thing->type());
 	string type = fmt::sprintf("{} (Type {})", tt.name(), thing->type());
 	if (Global::debug)
-		info_text.write("Thing #{} ({}): {}\n", thing->index(), thing->objId(), type);
+		format_to(info_text, "Thing #{} ({}): {}\n", thing->index(), thing->objId(), type);
 	else
-		info_text.write("Thing #{}: {}\n", thing->index(), type);
+		format_to(info_text, "Thing #{}: {}\n", thing->index(), type);
 
 	// Position
 	if (map_format != MAP_DOOM)
-		info_text.write(
+		format_to(info_text, 
 			"Position: {}, {}, {}\n", (int)thing->xPos(), (int)thing->yPos(), (int)(thing->floatProperty("height")));
 	else
-		info_text.write("Position: {}, {}\n", (int)thing->xPos(), (int)thing->yPos());
+		format_to(info_text, "Position: {}, {}\n", (int)thing->xPos(), (int)thing->yPos());
 
 	// Direction
 	int    angle = thing->intProperty("angle");
@@ -113,14 +113,14 @@ void ThingInfoOverlay::update(MapThing* thing)
 		dir = "South";
 	else if (angle == 315)
 		dir = "Southeast";
-	info_text.write("Direction: {}\n", dir);
+	format_to(info_text, "Direction: {}\n", dir);
 
 	// Special and Args (if in hexen format or udmf with thing args)
 	if (map_format == MAP_HEXEN
 		|| (map_format == MAP_UDMF && Game::configuration().getUDMFProperty("arg0", MapObject::Type::Thing)))
 	{
 		int as_id = thing->intProperty("special");
-		info_text.write("Special: {} ({})\n", as_id, Game::configuration().actionSpecialName(as_id));
+		format_to(info_text, "Special: {} ({})\n", as_id, Game::configuration().actionSpecialName(as_id));
 		int args[5];
 		args[0] = thing->intProperty("arg0");
 		args[1] = thing->intProperty("arg1");
@@ -137,18 +137,18 @@ void ThingInfoOverlay::update(MapThing* thing)
 			argstr = Game::configuration().actionSpecial(as_id).argSpec().stringDesc(args, argxstr);
 
 		if (!argstr.empty())
-			info_text.write("{}\n", argstr);
+			format_to(info_text, "{}\n", argstr);
 		else
-			info_text.write("No Args\n");
+			format_to(info_text, "No Args\n");
 	}
 
 	// Flags
 	if (map_format != MAP_UDMF)
-		info_text.write("Flags: {}\n", Game::configuration().thingFlagsString(thing->intProperty("flags")));
+		format_to(info_text, "Flags: {}\n", Game::configuration().thingFlagsString(thing->intProperty("flags")));
 
 	// TID (if in doom64/hexen/udmf format)
 	if (map_format != MAP_DOOM)
-		info_text.write("TID: {}", thing->intProperty("id"));
+		format_to(info_text, "TID: {}", thing->intProperty("id"));
 
 	// Set sprite and translation
 	sprite_      = tt.sprite();
@@ -158,10 +158,10 @@ void ThingInfoOverlay::update(MapThing* thing)
 	zeth_        = tt.zethIcon();
 
 	// Setup text box
-	if (info_text.buffer()[info_text.size() - 1] == '\n')
+	if (info_text.data()[info_text.size() - 1] == '\n')
 		text_box_.setText({ info_text.data(), info_text.size() - 1 });
 	else
-		text_box_.setText(info_text.c_str());
+		text_box_.setText({ info_text.data(), info_text.size() });
 }
 
 // -----------------------------------------------------------------------------

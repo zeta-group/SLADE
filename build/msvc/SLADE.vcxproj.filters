@@ -1518,13 +1518,7 @@
     <ClCompile Include="..\..\src\External\fmt\format.cc">
       <Filter>External\Fmt</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\External\fmt\ostream.cc">
-      <Filter>External\Fmt</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\External\fmt\posix.cc">
-      <Filter>External\Fmt</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\External\fmt\printf.cc">
       <Filter>External\Fmt</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2660,25 +2654,28 @@
     <ClInclude Include="..\..\src\Dialogs\GfxTintDialog.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\container.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\core.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\format.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\format.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\ostream.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\format-inl.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\posix.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\ostream.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\printf.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\posix.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\string.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\printf.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\External\fmt\time.h">
+    <ClInclude Include="..\..\src\External\fmt\fmt\ranges.h">
+      <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\External\fmt\fmt\time.h">
       <Filter>External\Fmt</Filter>
     </ClInclude>
   </ItemGroup>
