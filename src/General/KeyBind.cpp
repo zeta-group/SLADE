@@ -782,13 +782,12 @@ bool KeyBind::readBinds(Tokenizer& tz)
 				break;
 
 			// Parse key string
-			// string key, mods;
 			auto        sep = keystr.find_first_of('|');
 			string_view key{ keystr }, mods;
 			if (sep != string::npos)
 			{
 				mods = key.substr(0, sep);
-				key  = key.substr(sep);
+				key  = key.substr(sep + 1);
 			}
 
 			// Add the key
