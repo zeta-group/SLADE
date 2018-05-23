@@ -1531,7 +1531,7 @@ bool Archive::loadFormats(MemChunk& mc)
 	{
 		ArchiveFormat fmt{ fmt_node->name().to_string() };
 
-		for (auto prop_node : formats_node->allChildren())
+		for (auto prop_node : fmt_node->allChildren())
 		{
 			auto prop = (ParseTreeNode*)prop_node;
 
