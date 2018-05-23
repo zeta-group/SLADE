@@ -124,12 +124,12 @@ bool GZipArchive::open(MemChunk& mc)
 	{
 		// Build name from filename
 		name = filename(false);
-		wxFileName fn(name);
-		if (!fn.GetExt().CmpNoCase("tgz"))
-			fn.SetExt("tar");
-		else if (!fn.GetExt().CmpNoCase("gz"))
-			fn.ClearExt();
-		name = fn.GetFullName();
+		StrUtil::Path fn(name);
+		if (StrUtil::equalCI(fn.extension(), "tgz"))
+			fn.setExtension("tar");
+		else if (StrUtil::equalCI(fn.extension(), "gz"))
+			fn.setExtension({});
+		S_SET_VIEW(name, fn.fileName());
 	}
 
 	// Skip past comment

@@ -115,14 +115,11 @@ bool TarArchive::open(MemChunk& mc)
 
 		if ((int)header.typeflag == AREGTYPE || (int)header.typeflag == REGTYPE)
 		{
-			// Normal entry
-			wxFileName fn(name);
-
 			// Create directory if needed
-			ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+			ArchiveTreeNode* dir = createDir(StrUtil::Path::pathOf(name));
 
 			// Create entry
-			ArchiveEntry* entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), size);
+			ArchiveEntry* entry     = new ArchiveEntry(StrUtil::Path::fileNameOf(name), size);
 			entry->exProp("Offset") = (int)mc.currentPos();
 			entry->setLoaded(false);
 			entry->setState(0);
@@ -222,8 +219,7 @@ bool TarArchive::write(MemChunk& mc, bool update)
 		{
 			Log::info(fmt::format(
 				"Warning: Entry {} path is too long (> 99 characters), putting it in the root directory", name));
-			wxFileName fn(name);
-			name = fn.GetFullName();
+			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			StrUtil::truncateIP(name, 99);
 		}
 		memcpy(header.name, name.c_str(), name.size());

@@ -1468,11 +1468,11 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	// Run PNGCrush
 	if (!pngpathc.empty() && wxFileExists(pngpathc))
 	{
-		wxFileName fn(pngpathc);
-		fn.SetExt("opt");
-		string pngfile = fn.GetFullPath();
-		fn.SetExt("png");
-		string optfile = fn.GetFullPath();
+		StrUtil::Path fn(pngpathc);
+		fn.setExtension("opt");
+		string pngfile = fn.fullPath();
+		fn.setExtension("png");
+		string optfile = fn.fullPath();
 		entry->exportFile(pngfile);
 
 		string command = path_pngcrush.value + " -brute \"" + pngfile + "\" \"" + optfile + "\"";
@@ -1520,11 +1520,11 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	// Run PNGOut
 	if (!pngpatho.empty() && wxFileExists(pngpatho))
 	{
-		wxFileName fn(pngpatho);
-		fn.SetExt("opt");
-		string pngfile = fn.GetFullPath();
-		fn.SetExt("png");
-		string optfile = fn.GetFullPath();
+		StrUtil::Path fn(pngpatho);
+		fn.setExtension("opt");
+		string pngfile = fn.fullPath();
+		fn.setExtension("png");
+		string optfile = fn.fullPath();
 		entry->exportFile(pngfile);
 
 		string command = path_pngout.value + " /y \"" + pngfile + "\" \"" + optfile + "\"";
@@ -1573,9 +1573,9 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	// Run deflopt
 	if (!pngpathd.empty() && wxFileExists(pngpathd))
 	{
-		wxFileName fn(pngpathd);
-		fn.SetExt("png");
-		string pngfile = fn.GetFullPath();
+		StrUtil::Path fn(pngpathd);
+		fn.setExtension("png");
+		string pngfile = fn.fullPath();
 		entry->exportFile(pngfile);
 
 		string command = path_deflopt.value + " /sf \"" + pngfile + "\"";

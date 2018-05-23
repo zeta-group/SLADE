@@ -110,13 +110,12 @@ bool DiskArchive::open(MemChunk& mc)
 		string name{ dent.name, 64 };
 		std::replace(name.begin(), name.end(), '\\', '/');
 		StrUtil::replaceIP(name, "GAME:/", "");
-		wxFileName fn(name);
 
 		// Create directory if needed
-		ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+		ArchiveTreeNode* dir = createDir(StrUtil::Path::pathOf(name));
 
 		// Create entry
-		ArchiveEntry* entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), dent.length);
+		ArchiveEntry* entry     = new ArchiveEntry(StrUtil::Path::fileNameOf(name), dent.length);
 		entry->exProp("Offset") = (int)dent.offset;
 		entry->setLoaded(false);
 		entry->setState(0);
@@ -224,10 +223,9 @@ bool DiskArchive::write(MemChunk& mc, bool update)
 		// The leading "GAME:\" part of the name means there is only 58 usable characters for path
 		if (name.size() > 58)
 		{
-			Log::info(fmt::format(
-				"Warning: Entry {} path is too long (> 58 characters), putting it in the root directory", name));
-			wxFileName fn(name);
-			name = fn.GetFullName();
+			Log::warning(
+				fmt::format("Entry {} path is too long (> 58 characters), putting it in the root directory", name));
+			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			if (name.size() > 57)
 				name.resize(57);
 			// Add leading "\"

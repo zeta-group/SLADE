@@ -165,9 +165,9 @@ public:
 
 	bool exportEntry() override
 	{
-		wxFileName fn(App::path(entry_->name(), App::Dir::Temp));
+		StrUtil::Path fn(App::path(entry_->name(), App::Dir::Temp));
 
-		fn.SetExt("png");
+		fn.setExtension("png");
 
 		// Create image from entry
 		SImage image;
@@ -192,7 +192,7 @@ public:
 		}
 
 		// Export file and start monitoring if successful
-		filename_ = fn.GetFullPath();
+		filename_ = fn.fullPath();
 		if (png.exportFile(filename_))
 		{
 			file_modified_ = wxFileModificationTime(filename_);
@@ -231,8 +231,8 @@ public:
 
 	bool exportEntry() override
 	{
-		wxFileName fn(App::path(entry_->name(), App::Dir::Temp));
-		fn.SetExt("mid");
+		StrUtil::Path fn(App::path(entry_->name(), App::Dir::Temp));
+		fn.setExtension("mid");
 
 		// Convert to MIDI data
 		MemChunk convdata;
@@ -258,7 +258,7 @@ public:
 		}
 
 		// Export file and start monitoring if successful
-		filename_ = fn.GetFullPath();
+		filename_ = fn.fullPath();
 		if (convdata.exportFile(filename_))
 		{
 			file_modified_ = wxFileModificationTime(filename_);
@@ -315,8 +315,8 @@ public:
 
 	bool exportEntry() override
 	{
-		wxFileName fn(App::path(entry_->name(), App::Dir::Temp));
-		fn.SetExt("mid");
+		StrUtil::Path fn(App::path(entry_->name(), App::Dir::Temp));
+		fn.setExtension("mid");
 
 		// Convert to WAV data
 		MemChunk convdata;
@@ -356,7 +356,7 @@ public:
 		}
 
 		// Export file and start monitoring if successful
-		filename_ = fn.GetFullPath();
+		filename_ = fn.fullPath();
 		if (convdata.exportFile(filename_))
 		{
 			file_modified_ = wxFileModificationTime(filename_);

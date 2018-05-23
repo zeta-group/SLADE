@@ -36,6 +36,7 @@
 #include "WadArchive.h"
 #include "ZipArchive.h"
 #include <fstream>
+#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -113,18 +114,17 @@ bool ZipArchive::open(string_view filename)
 
 		if (!entry->IsDir())
 		{
-			// Get the entry name as a wxFileName (so we can break it up)
-			wxFileName fn(entry->GetName(wxPATH_UNIX), wxPATH_UNIX);
+			auto name = entry->GetName(wxPATH_UNIX).ToStdString();
 
 			// Create entry
-			ArchiveEntry* new_entry = new ArchiveEntry(fn.GetFullName().ToStdString(), entry->GetSize());
+			ArchiveEntry* new_entry = new ArchiveEntry(StrUtil::Path::fileNameOf(name), entry->GetSize());
 
 			// Setup entry info
 			new_entry->setLoaded(false);
 			new_entry->exProp("ZipIndex") = entry_index;
 
 			// Add entry and directory to directory tree
-			ArchiveTreeNode* ndir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+			ArchiveTreeNode* ndir = createDir(StrUtil::Path::pathOf(name));
 			ndir->addEntry(new_entry);
 
 			// Read the data, if possible
@@ -156,8 +156,7 @@ bool ZipArchive::open(string_view filename)
 		else
 		{
 			// Zip entry is a directory, add it to the directory tree
-			wxFileName fn(entry->GetName(wxPATH_UNIX), wxPATH_UNIX);
-			createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+			createDir(StrUtil::Path::pathOf(WxUtils::stringToView(entry->GetName(wxPATH_UNIX))));
 		}
 
 		// Go to next entry in the zip file
@@ -601,8 +600,8 @@ vector<ArchiveEntry*> ZipArchive::findAll(SearchOptions& options)
 // -----------------------------------------------------------------------------
 void ZipArchive::generateTempFileName(string_view filename)
 {
-	wxFileName tfn(filename.to_string());
-	temp_file_ = App::path(tfn.GetFullName().ToStdString(), App::Dir::Temp);
+	auto tfn   = StrUtil::Path::fileNameOf(filename);
+	temp_file_ = App::path(tfn, App::Dir::Temp);
 	if (wxFileExists(temp_file_))
 	{
 		// Make sure we don't overwrite an existing temp file
@@ -610,7 +609,7 @@ void ZipArchive::generateTempFileName(string_view filename)
 		int n = 1;
 		while (true)
 		{
-			temp_file_ = App::path(fmt::format("{}.{}", tfn.GetFullName(), n), App::Dir::Temp);
+			temp_file_ = App::path(fmt::format("{}.{}", tfn, n), App::Dir::Temp);
 			if (!wxFileExists(temp_file_))
 				break;
 

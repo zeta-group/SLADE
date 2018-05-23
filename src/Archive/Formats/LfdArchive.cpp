@@ -147,9 +147,9 @@ bool LfdArchive::open(MemChunk& mc)
 		}
 
 		// Create & setup lump
-		wxFileName fn(name);
-		fn.SetExt(type);
-		ArchiveEntry* nlump = new ArchiveEntry(fn.GetFullName().ToStdString(), length);
+		StrUtil::Path fn(name);
+		fn.setExtension(type);
+		ArchiveEntry* nlump = new ArchiveEntry(fn.fileName(), length);
 		nlump->setLoaded(false);
 		nlump->exProp("Offset") = (int)offset;
 		nlump->setState(0);

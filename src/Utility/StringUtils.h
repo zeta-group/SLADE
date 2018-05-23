@@ -95,6 +95,10 @@ string              truncate(string_view str, unsigned length);
 void                truncateIP(string& str, unsigned length);
 string              removeLast(string_view str, unsigned n);
 void                removeLastIP(string& str, unsigned n);
+string              removePrefix(string_view str, char prefix); // TODO: string_view prefix
+void                removePrefixIP(string& str, char prefix);
+string              removeSuffix(string_view str, char suffix); // TODO: string_view suffix
+void                removeSuffixIP(string& str, char suffix);
 
 // Misc
 void processIncludes(string filename, string& out);
@@ -128,6 +132,7 @@ public:
 	string_view         fileName(bool include_extension = true) const;
 	string_view         extension() const;
 	vector<string_view> pathParts() const;
+	bool                hasExtension() const;
 
 	void set(string_view full_path);
 	void setPath(string_view path);

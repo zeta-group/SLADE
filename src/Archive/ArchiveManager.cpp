@@ -70,7 +70,7 @@ bool ArchiveManager::validResDir(string_view dir) const
 	// Assortment of resources that the program expects to find.
 	// If at least one is missing, then probably more are missing
 	// too, so the res folder cannot be used.
-	static wxString paths[] = {
+	static string paths[] = {
 		"animated.lmp",
 		"config/executables.cfg",
 		"config/nodebuilders.cfg",
@@ -91,8 +91,7 @@ bool ArchiveManager::validResDir(string_view dir) const
 
 	for (const auto& path : paths)
 	{
-		wxFileName fn(WxUtils::stringFromView(dir) + "/" + path);
-		if (!wxFileExists(fn.GetFullPath()))
+		if (!wxFileExists(fmt::format("{}/{}", dir, path)))
 		{
 			Log::info(fmt::format(
 				"Resource %s was not found in dir %s!\n"

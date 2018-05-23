@@ -33,6 +33,7 @@
 #include "General/UI.h"
 #include "Utility/StringUtils.h"
 #include "WolfArchive.h"
+#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -52,12 +53,12 @@ namespace
 // through all of the directory's files until we find the first one whose name
 // matches.
 // -----------------------------------------------------------------------------
-string findFileCasing(wxFileName filename)
+string findFileCasing(const StrUtil::Path& filename)
 {
 #ifdef _WIN32
-	return filename.GetFullPath().ToStdString();
+	return filename.fileName().to_string();
 #else
-	string path = filename.GetPath();
+	string path = filename.path().to_string();
 	wxDir  dir(path);
 	if (!dir.IsOpened())
 	{
@@ -65,12 +66,12 @@ string findFileCasing(wxFileName filename)
 		return "";
 	}
 
-	string found;
+	wxString found;
 	bool   cont = dir.GetFirst(&found);
 	while (cont)
 	{
-		if (StrUtil::equalCI(found, filename.GetFullName()))
-			return (dir.GetNameWithSep() + found);
+		if (StrUtil::equalCI(WxUtils::stringToView(found), filename.fileName()))
+			return (dir.GetNameWithSep() + found).ToStdString();
 		cont = dir.GetNext(&found);
 	}
 
@@ -374,47 +375,45 @@ void WolfArchive::setEntryOffset(ArchiveEntry* entry, uint32_t offset)
 bool WolfArchive::open(string_view filename)
 {
 	// Find wolf archive type
-	wxFileName fn1(filename.to_string());
+	StrUtil::Path fn1(filename);
+	string        fn1_name = StrUtil::upper(fn1.fileName(false));
 	bool       opened;
-	if (fn1.GetName().MakeUpper() == "MAPHEAD" || fn1.GetName().MakeUpper() == "GAMEMAPS"
-		|| fn1.GetName().MakeUpper() == "MAPTEMP")
+	if (fn1_name == "MAPHEAD" || fn1_name == "GAMEMAPS" || fn1_name == "MAPTEMP")
 	{
 		// MAPHEAD can be paried with either a GAMEMAPS (Carmack,RLEW) or MAPTEMP (RLEW)
-		wxFileName fn2(fn1);
-		if (fn1.GetName().MakeUpper() == "MAPHEAD")
+		StrUtil::Path fn2(fn1);
+		if (fn1_name == "MAPHEAD")
 		{
-			fn2.SetName("GAMEMAPS");
-			if (!wxFile::Exists(fn2.GetFullPath()))
-				fn2.SetName("MAPTEMP");
+			fn2.setFileName("GAMEMAPS");
+			if (!wxFile::Exists(fn2.fullPath()))
+				fn2.setFileName("MAPTEMP");
 		}
 		else
 		{
-			fn1.SetName("MAPHEAD");
+			fn1.setFileName("MAPHEAD");
 		}
 		MemChunk data, head;
 		head.importFile(findFileCasing(fn1));
 		data.importFile(findFileCasing(fn2));
 		opened = openMaps(head, data);
 	}
-	else if (fn1.GetName().MakeUpper() == "AUDIOHED" || fn1.GetName().MakeUpper() == "AUDIOT")
+	else if (fn1_name == "AUDIOHED" || fn1_name == "AUDIOT")
 	{
-		wxFileName fn2(fn1);
-		fn1.SetName("AUDIOHED");
-		fn2.SetName("AUDIOT");
+		StrUtil::Path fn2(fn1);
+		fn1.setFileName("AUDIOHED");
+		fn2.setFileName("AUDIOT");
 		MemChunk data, head;
 		head.importFile(findFileCasing(fn1));
 		data.importFile(findFileCasing(fn2));
 		opened = openAudio(head, data);
 	}
-	else if (
-		fn1.GetName().MakeUpper() == "VGAHEAD" || fn1.GetName().MakeUpper() == "VGAGRAPH"
-		|| fn1.GetName().MakeUpper() == "VGADICT")
+	else if (fn1_name == "VGAHEAD" || fn1_name == "VGAGRAPH" || fn1_name == "VGADICT")
 	{
-		wxFileName fn2(fn1);
-		wxFileName fn3(fn1);
-		fn1.SetName("VGAHEAD");
-		fn2.SetName("VGAGRAPH");
-		fn3.SetName("VGADICT");
+		StrUtil::Path fn2(fn1);
+		StrUtil::Path fn3(fn1);
+		fn1.setFileName("VGAHEAD");
+		fn2.setFileName("VGAGRAPH");
+		fn3.setFileName("VGADICT");
 		MemChunk data, head, dict;
 		head.importFile(findFileCasing(fn1));
 		data.importFile(findFileCasing(fn2));
@@ -1159,36 +1158,34 @@ bool WolfArchive::isWolfArchive(MemChunk& mc)
 bool WolfArchive::isWolfArchive(string_view filename)
 {
 	// Find wolf archive type
-	wxFileName fn1(filename.to_string());
-	if (fn1.GetName().MakeUpper() == "MAPHEAD" || fn1.GetName().MakeUpper() == "GAMEMAPS"
-		|| fn1.GetName().MakeUpper() == "MAPTEMP")
+	StrUtil::Path fn1(filename);
+	string        fn1_name = StrUtil::upper(fn1.fileName(false));
+	if (fn1_name == "MAPHEAD" || fn1_name == "GAMEMAPS" || fn1_name == "MAPTEMP")
 	{
-		wxFileName fn2(fn1);
-		fn1.SetName("MAPHEAD");
-		fn2.SetName("GAMEMAPS");
+		StrUtil::Path fn2(fn1);
+		fn1.setFileName("MAPHEAD");
+		fn2.setFileName("GAMEMAPS");
 		if (!(wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2))))
 		{
-			fn2.SetName("MAPTEMP");
+			fn2.setFileName("MAPTEMP");
 			return (wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2)));
 		}
 		return true;
 	}
-	else if (fn1.GetName().MakeUpper() == "AUDIOHED" || fn1.GetName().MakeUpper() == "AUDIOT")
+	else if (fn1_name == "AUDIOHED" || fn1_name == "AUDIOT")
 	{
-		wxFileName fn2(fn1);
-		fn1.SetName("AUDIOHED");
-		fn2.SetName("AUDIOT");
+		StrUtil::Path fn2(fn1);
+		fn1.setFileName("AUDIOHED");
+		fn2.setFileName("AUDIOT");
 		return (wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2)));
 	}
-	else if (
-		fn1.GetName().MakeUpper() == "VGAHEAD" || fn1.GetName().MakeUpper() == "VGAGRAPH"
-		|| fn1.GetName().MakeUpper() == "VGADICT")
+	else if (fn1_name == "VGAHEAD" || fn1_name == "VGAGRAPH" || fn1_name == "VGADICT")
 	{
-		wxFileName fn2(fn1);
-		wxFileName fn3(fn1);
-		fn1.SetName("VGAHEAD");
-		fn2.SetName("VGAGRAPH");
-		fn3.SetName("VGADICT");
+		StrUtil::Path fn2(fn1);
+		StrUtil::Path fn3(fn1);
+		fn1.setFileName("VGAHEAD");
+		fn2.setFileName("VGAGRAPH");
+		fn3.setFileName("VGADICT");
 		return (
 			wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2))
 			&& wxFile::Exists(findFileCasing(fn3)));

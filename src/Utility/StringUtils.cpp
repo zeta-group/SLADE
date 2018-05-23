@@ -498,6 +498,32 @@ void StrUtil::removeLastIP(string& str, unsigned n)
 		str.resize(str.size() - n);
 }
 
+string StrUtil::removePrefix(string_view str, char prefix)
+{
+	if (!str.empty() && str[0] == prefix)
+		str.remove_prefix(1);
+	return { str.data(), str.size() };
+}
+
+void StrUtil::removePrefixIP(string& str, char prefix)
+{
+	if (!str.empty() && str[0] == prefix)
+		str.erase(0, 1);
+}
+
+string StrUtil::removeSuffix(string_view str, char suffix)
+{
+	if (!str.empty() && str.back() == suffix)
+		str.remove_suffix(1);
+	return { str.data(), str.size() };
+}
+
+void StrUtil::removeSuffixIP(string& str, char suffix)
+{
+	if (!str.empty() && str.back() == suffix)
+		str.pop_back();
+}
+
 StrUtil::Path::Path(string_view full_path) : full_path_{ full_path.data(), full_path.size() }
 {
 	// Enforce / as separators
@@ -541,6 +567,11 @@ vector<string_view> StrUtil::Path::pathParts() const
 		return {};
 
 	return splitToViews({ full_path_.data(), filename_start_ - 1 }, '/');
+}
+
+bool StrUtil::Path::hasExtension() const
+{
+	return filename_start_ != string::npos && filename_end_ < full_path_.size();
 }
 
 void StrUtil::Path::set(string_view full_path)
@@ -680,8 +711,8 @@ void StrUtil::processIncludes(string filename, string& out)
 		return;
 
 	// Get file path
-	wxFileName fn(filename);
-	string     path = fn.GetPath(true).ToStdString();
+	Path fn(filename);
+	auto path = fn.path(true);
 
 	// Go through line-by-line
 	string    line = file.GetNextLine().ToStdString();
@@ -697,7 +728,7 @@ void StrUtil::processIncludes(string filename, string& out)
 			tz.adv(); // Skip #include
 
 			// Process the file
-			processIncludes(path + tz.next().text, out);
+			processIncludes(fmt::format("{}{}", path, tz.next().text), out);
 		}
 		else
 			out.append(line + "\n");

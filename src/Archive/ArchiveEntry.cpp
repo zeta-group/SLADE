@@ -601,17 +601,17 @@ void ArchiveEntry::setExtensionByType()
 		return;
 
 	// Convert name to wxFileName for processing
-	wxFileName fn(name_);
+	StrUtil::Path fn(name_);
 
 	// Set new extension
-	fn.SetExt(type_->extension());
+	fn.setExtension(type_->extension());
 
 	// Rename
 	Archive* parent_archive = parent();
 	if (parent_archive)
-		parent_archive->renameEntry(this, fn.GetFullName().ToStdString());
+		parent_archive->renameEntry(this, fn.fileName());
 	else
-		rename(fn.GetFullName().ToStdString());
+		rename(fn.fileName());
 }
 
 // -----------------------------------------------------------------------------

@@ -110,14 +110,11 @@ bool PakArchive::open(MemChunk& mc)
 			return false;
 		}
 
-		// Parse name
-		wxFileName fn(wxString::FromAscii(name, 56));
-
 		// Create directory if needed
-		ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+		ArchiveTreeNode* dir = createDir(StrUtil::Path::pathOf({ name, 56 }));
 
 		// Create entry
-		ArchiveEntry* entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), size);
+		ArchiveEntry* entry     = new ArchiveEntry(StrUtil::Path::fileNameOf({ name, 56 }), size);
 		entry->exProp("Offset") = (int)offset;
 		entry->setLoaded(false);
 		entry->setState(0);
@@ -226,10 +223,9 @@ bool PakArchive::write(MemChunk& mc, bool update)
 		name.erase(0, 1); // Remove leading /
 		if (name.size() > 56)
 		{
-			Log::info(fmt::format(
-				"Warning: Entry {} path is too long (> 56 characters), putting it in the root directory", name));
-			wxFileName fn(name);
-			name = fn.GetFullName();
+			Log::warning(fmt::format(
+				"Entry {} path is too long (> 56 characters), putting it in the root directory", name));
+			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			StrUtil::truncateIP(name, 56);
 		}
 

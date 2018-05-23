@@ -688,8 +688,7 @@ bool ArchivePanel::newEntry(int type)
 	// Remove any path from the name, if any (for now)
 	else
 	{
-		wxFileName fn(name);
-		name = fn.GetFullName();
+		S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 	}
 
 	// Get the entry index of the last selected list item
@@ -1102,8 +1101,7 @@ bool ArchivePanel::renameEntry(bool each) const
 			continue;
 
 		// Discard any given path (for now)
-		wxFileName fn(new_name);
-		new_name = fn.GetFullName();
+		S_SET_VIEW(new_name, StrUtil::Path::fileNameOf(new_name));
 
 		// Rename the directory if the new entered name is different from the original
 		if (new_name != old_name)

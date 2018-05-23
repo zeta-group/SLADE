@@ -266,8 +266,7 @@ bool MIDIPlayer::openData(MemChunk& mc)
 
 	if (usetimidity)
 	{
-		wxFileName path(App::path("slade-timidity.mid", App::Dir::Temp));
-		file_ = path.GetFullPath();
+		file_ = App::path("slade-timidity.mid", App::Dir::Temp);
 		mc.exportFile(file_);
 		return true;
 	}

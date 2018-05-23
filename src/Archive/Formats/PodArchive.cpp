@@ -101,16 +101,13 @@ bool PodArchive::open(MemChunk& mc)
 	UI::setSplashProgressMessage("Reading pod archive data");
 	for (unsigned a = 0; a < num_files; a++)
 	{
-		// Get the entry name as a wxFileName (so we can break it up)
-		wxFileName fn(files[a].name);
-
 		// Create entry
-		ArchiveEntry* new_entry     = new ArchiveEntry(fn.GetFullName().ToStdString(), files[a].size);
+		ArchiveEntry* new_entry     = new ArchiveEntry(StrUtil::Path::fileNameOf(files[a].name), files[a].size);
 		new_entry->exProp("Offset") = files[a].offset;
 		new_entry->setLoaded(false);
 
 		// Add entry and directory to directory tree
-		string           path = fn.GetPath(false).ToStdString();
+		auto             path = StrUtil::Path::pathOf(files[a].name, false);
 		ArchiveTreeNode* ndir = createDir(path);
 		ndir->addEntry(new_entry);
 

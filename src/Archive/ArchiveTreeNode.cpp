@@ -518,15 +518,15 @@ bool ArchiveTreeNode::exportTo(string_view path)
 	for (auto& entry : entries_)
 	{
 		// Setup entry filename
-		wxFileName fn({ entry->name().data(), entry->name().size() });
-		fn.SetPath(wxpath);
+		StrUtil::Path fn(entry->name());
+		fn.setPath(path);
 
 		// Add file extension if it doesn't exist
-		if (!fn.HasExt())
-			fn.SetExt(entry->type()->extension());
+		if (!fn.hasExtension())
+			fn.setExtension(entry->type()->extension());
 
 		// Do export
-		entry->exportFile(fn.GetFullPath().ToStdString());
+		entry->exportFile(fn.fullPath());
 	}
 
 	// Export subdirectories

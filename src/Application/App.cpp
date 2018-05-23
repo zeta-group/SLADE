@@ -145,7 +145,7 @@ bool initDirectories()
 #endif // defined(__UNIX__) && defined(INSTALL_PREFIX)
 
 	// Setup app dir
-	dir_app = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
+	dir_app = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath().ToStdString();
 
 	// Check for portable install
 	if (wxFileExists(path("portable", Dir::Executable)))
@@ -158,9 +158,9 @@ bool initDirectories()
 	else
 	{
 		// Setup standard user/data dirs
-		dir_user = wxStandardPaths::Get().GetUserDataDir();
-		dir_data = wxStandardPaths::Get().GetDataDir();
-		dir_res  = wxStandardPaths::Get().GetResourcesDir();
+		dir_user = wxStandardPaths::Get().GetUserDataDir().ToStdString();
+		dir_data = wxStandardPaths::Get().GetDataDir().ToStdString();
+		dir_res  = wxStandardPaths::Get().GetResourcesDir().ToStdString();
 	}
 
 	// Create user dir if necessary
@@ -622,16 +622,16 @@ void App::exit(bool save_config)
 // App::Dir::Executable: Directory of the SLADE executable
 // App::Dir::Temp: Temporary files directory
 // -----------------------------------------------------------------------------
-string App::path(string filename, Dir dir)
+string App::path(string_view filename, Dir dir)
 {
 	if (dir == Dir::Data)
-		return dir_data + dir_separator + filename;
+		return fmt::format("{}{}{}", dir_data, dir_separator, filename);
 	if (dir == Dir::User)
-		return dir_user + dir_separator + filename;
+		return fmt::format("{}{}{}", dir_user, dir_separator, filename);
 	if (dir == Dir::Executable)
-		return dir_app + dir_separator + filename;
+		return fmt::format("{}{}{}", dir_app, dir_separator, filename);
 	if (dir == Dir::Resources)
-		return dir_res + dir_separator + filename;
+		return fmt::format("{}{}{}", dir_res, dir_separator, filename);
 	if (dir == Dir::Temp)
 	{
 		// Get temp path
@@ -654,10 +654,10 @@ string App::path(string filename, Dir dir)
 			}
 		}
 
-		return dir_temp + dir_separator + filename;
+		return fmt::format("{}{}{}", dir_temp, dir_separator, filename);
 	}
 
-	return filename;
+	return filename.to_string();
 }
 
 App::Platform App::platform()

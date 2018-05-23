@@ -96,17 +96,17 @@ bool DirArchive::open(string_view filename)
 			name.erase(0, 1);
 
 		// Create entry
-		wxFileName    fn(name);
-		ArchiveEntry* new_entry = new ArchiveEntry(fn.GetFullName().ToStdString());
+		ArchiveEntry* new_entry = new ArchiveEntry(StrUtil::Path::fileNameOf(name));
 
 		// Setup entry info
 		new_entry->setLoaded(false);
 		new_entry->exProp("filePath") = files[a];
 
 		// Add entry and directory to directory tree
-		ArchiveTreeNode* ndir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+		auto             path = StrUtil::Path::pathOf(name);
+		ArchiveTreeNode* ndir = createDir(path);
 		ndir->addEntry(new_entry);
-		ndir->dirEntry()->exProp("filePath") = filename.to_string() + fn.GetPath(true, wxPATH_UNIX).ToStdString();
+		ndir->dirEntry()->exProp("filePath") = fmt::format("{}{}", filename, path);
 
 		// Read entry data
 		new_entry->importFile(files[a]);
@@ -646,15 +646,14 @@ void DirArchive::updateChangedEntries(vector<DirEntryChange>& changes)
 			std::replace(name.begin(), name.end(), '\\', '/');
 
 			// Create entry
-			wxFileName    fn(name);
-			ArchiveEntry* new_entry = new ArchiveEntry(fn.GetFullName().ToStdString());
+			ArchiveEntry* new_entry = new ArchiveEntry(StrUtil::Path::fileNameOf(name));
 
 			// Setup entry info
 			new_entry->setLoaded(false);
 			new_entry->exProp("filePath") = change.file_path;
 
 			// Add entry and directory to directory tree
-			ArchiveTreeNode* ndir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+			ArchiveTreeNode* ndir = createDir(StrUtil::Path::pathOf(name));
 			ndir->addEntry(new_entry);
 
 			// Read entry data

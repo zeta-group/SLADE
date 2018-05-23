@@ -508,7 +508,7 @@ void ArchiveManagerPanel::updateOpenListItem(int index) const
 	if (!archive)
 		return;
 
-	// Get path as wxFileName for processing
+	// Get path as StrUtil::Path for processing
 	StrUtil::Path fn(archive->filename());
 
 	// Set item name
@@ -532,7 +532,7 @@ void ArchiveManagerPanel::updateOpenListItem(int index) const
 // -----------------------------------------------------------------------------
 void ArchiveManagerPanel::updateRecentListItem(int index) const
 {
-	// Get path as wxFileName for processing
+	// Get path as StrUtil::Path for processing
 	string        path = App::archiveManager().recentFile(index);
 	StrUtil::Path fn(path);
 

@@ -33,6 +33,7 @@
 #include "ADatArchive.h"
 #include "General/UI.h"
 #include "Utility/Compression.h"
+#include "Utility/StringUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -123,14 +124,11 @@ bool ADatArchive::open(MemChunk& mc)
 			return false;
 		}
 
-		// Parse name
-		wxFileName fn(wxString::FromAscii(name, 128));
-
 		// Create directory if needed
-		ArchiveTreeNode* dir = createDir(fn.GetPath(true, wxPATH_UNIX).ToStdString());
+		ArchiveTreeNode* dir = createDir(StrUtil::Path::pathOf({ name, 128 }));
 
 		// Create entry
-		ArchiveEntry* entry       = new ArchiveEntry(fn.GetFullName().ToStdString(), compsize);
+		ArchiveEntry* entry       = new ArchiveEntry(StrUtil::Path::fileNameOf({ name, 128 }), compsize);
 		entry->exProp("Offset")   = (int)offset;
 		entry->exProp("FullSize") = (int)decsize;
 		entry->setLoaded(false);
@@ -248,13 +246,12 @@ bool ADatArchive::write(MemChunk& mc, bool update)
 
 		// Check entry name
 		string name = entry->path(true);
-		name.erase(0, 1); // Remove leading /
+		StrUtil::removePrefixIP(name, '/'); // Remove leading /
 		if (name.size() > 128)
 		{
 			Log::info(fmt::format(
 				"Warning: Entry {} path is too long (> 128 characters), putting it in the root directory", name));
-			wxFileName fn(name);
-			name = fn.GetFullName();
+			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			if (name.size() > 128)
 				name = name.substr(0, 128);
 		}

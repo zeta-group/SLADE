@@ -61,17 +61,16 @@ bool BZip2Archive::open(MemChunk& mc)
 		return false;
 
 	// Build name from filename
-	string     name = filename(false);
-	wxFileName fn(name);
-	if (!fn.GetExt().CmpNoCase("tbz") || !fn.GetExt().CmpNoCase("tb2") || !fn.GetExt().CmpNoCase("tbz2"))
-		fn.SetExt("tar");
-	else if (!fn.GetExt().CmpNoCase("bz2"))
-		fn.ClearExt();
-	name = fn.GetFullName();
+	StrUtil::Path fn(filename(false));
+	if (StrUtil::equalCI(fn.extension(), "tbz") || StrUtil::equalCI(fn.extension(), "tb2")
+		|| StrUtil::equalCI(fn.extension(), "tbz2"))
+		fn.setExtension("tar");
+	else if (StrUtil::equalCI(fn.extension(), "bz2"))
+		fn.setExtension({});
 
 	// Let's create the entry
 	setMuted(true);
-	ArchiveEntry* entry = new ArchiveEntry(name, size);
+	ArchiveEntry* entry = new ArchiveEntry(fn.fileName(), size);
 	MemChunk      xdata;
 	if (Compression::BZip2Decompress(mc, xdata))
 	{
