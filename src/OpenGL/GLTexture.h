@@ -75,7 +75,7 @@ private:
 	Filter         filter_      = Filter::Nearest;
 	bool           loaded_      = false;
 	bool           allow_split_ = false;
-	bool           tiling_      = false;
+	bool           tiling_      = true;
 	Vec2<double>   scale_       = { 1., 1. };
 
 	// Some generic/global textures

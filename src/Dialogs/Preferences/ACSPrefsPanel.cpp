@@ -103,7 +103,7 @@ void ACSPrefsPanel::applyPreferences()
 	auto   lib_paths = list_inc_paths_->GetStrings();
 	for (const auto& lib_path : lib_paths)
 		paths_string += lib_path + ";";
-	if (paths_string.back() == ';')
+	if (!paths_string.empty())
 		paths_string.pop_back();
 
 	path_acc_libs          = paths_string;

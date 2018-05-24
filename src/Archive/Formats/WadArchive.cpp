@@ -30,11 +30,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "WadArchive.h"
 #include "General/Misc.h"
 #include "General/UI.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
+#include "WadArchive.h"
 
 bool JaguarDecode(MemChunk& mc);
 
@@ -231,7 +231,7 @@ void WadArchive::updateNamespaces()
 		else if (StrUtil::endsWith(u_name, "_END"))
 		{
 			// Get namespace 'name'
-			string ns_name = name.substr(0, name.size() - 6);
+			string ns_name = name.substr(0, name.size() - 4);
 			StrUtil::lowerIP(ns_name);
 
 			// Convert some special cases (because technically P_START->PP_END is a valid namespace)
@@ -507,8 +507,7 @@ bool WadArchive::open(MemChunk& mc)
 					&& (unsigned)(int)(entry->exProp("FullSize")) > entry->size())
 					edata.reSize((int)(entry->exProp("FullSize")), true);
 				if (!JaguarDecode(edata))
-					Log::warning(
-						fmt::format(
+					Log::warning(fmt::format(
 						"{}: {} (following {}), did not decode properly",
 						a,
 						entry->name(),

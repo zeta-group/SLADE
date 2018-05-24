@@ -104,24 +104,27 @@ bool StrUtil::equalCI(string_view left, string_view right)
 			return false;
 
 	return true;
-	// return _stricmp(left.data(), right.data()) == 0;
 }
 
-bool StrUtil::equalCI(string_view left, const char* right)
-{
-	auto a  = 0u;
-	auto sz = left.size();
-	while (a < sz && right[a] != 0)
-	{
-		if (tolower(left[a]) != tolower(right[a]))
-			return false;
-		++a;
-	}
-
-	return true;
-
-	// return _stricmp(left.data(), right) == 0;
-}
+// This one is a bit tricky - the string_view == string_view one above should be sufficient
+//bool StrUtil::equalCI(string_view left, const char* right)
+//{
+//	if (!right)
+//		return false;
+//	if (left.empty())
+//		return right[0] == 0;
+//
+//	auto a = 0u;
+//	auto sz = left.size();
+//	while (a < sz && right[a] != 0)
+//	{
+//		if (tolower(left[a]) != tolower(right[a]))
+//			return false;
+//		++a;
+//	}
+//
+//	return true;
+//}
 
 bool StrUtil::startsWith(string_view str, string_view check)
 {
@@ -801,8 +804,8 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 
 			// Okay, we've exhausted all possibilities
 			if (!done)
-				Log::error(fmt::sprintf(
-					"Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
+				Log::error(
+					fmt::sprintf("Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
 		}
 		else
 			out.append(line + "\n");

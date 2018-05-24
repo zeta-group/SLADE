@@ -580,7 +580,7 @@ void ArchiveOperations::removeUnusedTextures(Archive* archive)
 		bool br_tex = false;
 		for (const auto& base_resource_texture : base_resource_textures)
 		{
-			if (StrUtil::equalCI(base_resource_texture, unused_tex[a]))
+			if (unused_tex[a].CmpNoCase(base_resource_texture) == 0)
 			{
 				Log::info(3, "Texture " + base_resource_texture + " is in base resource");
 				br_tex = true;

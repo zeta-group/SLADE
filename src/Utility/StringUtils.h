@@ -36,7 +36,7 @@ bool isInteger(string_view str, bool allow_hex = true);
 bool isHex(string_view str);
 bool isFloat(string_view str);
 bool equalCI(string_view left, string_view right);
-bool equalCI(string_view left, const char* right);
+//bool equalCI(string_view left, const char* right);
 bool startsWith(string_view str, string_view check);
 bool startsWith(string_view str, char check);
 bool startsWithCI(string_view str, string_view check);

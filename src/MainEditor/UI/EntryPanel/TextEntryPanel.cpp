@@ -164,7 +164,7 @@ bool TextEntryPanel::loadEntry(ArchiveEntry* entry)
 	{
 		for (auto a = 0u; a < choice_text_language_->GetCount(); ++a)
 		{
-			if (StrUtil::equalCI(tl->name(), choice_text_language_->GetString(a)))
+			if (choice_text_language_->GetString(a).CmpNoCase(tl->name()) == 0)
 			{
 				choice_text_language_->Select(a);
 				break;

@@ -74,6 +74,13 @@ public:
 		return *this;
 	}
 
+	bool operator==(bool right) const { return boolValue() == right; }
+	bool operator==(int right) const { return intValue() == right; }
+	bool operator==(float right) const { return floatValue() == right; }
+	bool operator==(double right) const { return floatValue() == right; }
+	bool operator==(string_view right) const { return stringValue() == right; }
+	bool operator==(const char* right) const { return stringValue() == right; }
+
 	bool          boolValue(bool warn_wrong_type = false) const;
 	int           intValue(bool warn_wrong_type = false) const;
 	double        floatValue(bool warn_wrong_type = false) const;
