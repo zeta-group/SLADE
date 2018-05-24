@@ -363,12 +363,12 @@ CONSOLE_COMMAND(script_file, 1, true)
 {
 	if (!wxFile::Exists(args[0]))
 	{
-		Log::info(fmt::sprintf("File \"%s\" does not exist", args[0]));
+		Log::error(fmt::sprintf("File \"%s\" does not exist", args[0]));
 		return;
 	}
 
 	if (!Lua::runFile(args[0]))
-		Log::info(fmt::sprintf("Error loading lua script file \"%s\"", args[0]));
+		Log::error(fmt::sprintf("Error loading lua script file \"%s\"", args[0]));
 }
 
 CONSOLE_COMMAND(lua_mem, 0, false)

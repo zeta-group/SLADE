@@ -340,7 +340,7 @@ void Configuration::readGameSection(ParseTreeNode* node_game, bool port_section)
 					map_formats_[MAP_UDMF] = true;
 				}
 				else
-					Log::info(fmt::format("Warning: Unknown/unsupported map format \"{}\"", node->stringValue(v)));
+					Log::warning(fmt::format("Unknown/unsupported map format \"{}\"", node->stringValue(v)));
 			}
 		}
 
@@ -458,7 +458,7 @@ void Configuration::readGameSection(ParseTreeNode* node_game, bool port_section)
 				}
 
 				else
-					Log::info(fmt::format("Unknown defaults block \"{}\"", block->name()));
+					Log::warning(fmt::format("Unknown defaults block \"{}\"", block->name()));
 			}
 		}
 
@@ -554,7 +554,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 		}
 		if (!node_game)
 		{
-			Log::info(1, "No game section found, something is pretty wrong.");
+			Log::error(1, "No game section found, something is pretty wrong.");
 			return false;
 		}
 		readGameSection(node_game, false);
@@ -835,7 +835,7 @@ bool Configuration::readConfiguration(string_view cfg, string_view source, uint8
 
 		// Unknown/unexpected section
 		else
-			Log::info(fmt::format("Warning: Unexpected game configuration section \"{}\", skipping", node->name()));
+			Log::warning(fmt::format("Unexpected game configuration section \"{}\", skipping", node->name()));
 	}
 
 	return true;
@@ -861,7 +861,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 				StrUtil::processIncludes(filename, full_config);
 			else
 			{
-				Log::info(fmt::format("Error: Game configuration file \"{}\" not found", filename));
+				Log::error(fmt::format("Game configuration file \"{}\" not found", filename));
 				return false;
 			}
 		}
@@ -893,7 +893,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 					StrUtil::processIncludes(filename, full_config);
 				else
 				{
-					Log::info(fmt::format("Error: Port configuration file \"{}\" not found", filename));
+					Log::error(fmt::format("Port configuration file \"{}\" not found", filename));
 					return false;
 				}
 			}
@@ -928,7 +928,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 	}
 	else
 	{
-		Log::info(1, "Error reading game configuration, not loaded");
+		Log::error(1, "Error reading game configuration, not loaded");
 		ok = false;
 	}
 
@@ -946,7 +946,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 		// Read embedded config
 		string config{ (const char*)cfg_entry->dataRaw(), cfg_entry->size() };
 		if (!readConfiguration(config, cfg_entry->name(), format, true, false))
-			Log::info(1, "Error reading embedded game configuration, not loaded");
+			Log::error(1, "Error reading embedded game configuration, not loaded");
 	}
 
 	return ok;
@@ -1059,7 +1059,7 @@ bool Configuration::thingFlagSet(const string& flag, MapThing* thing, int map_fo
 		if (tf.udmf == flag)
 			return !!(flags & tf.flag);
 	}
-	Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
+	Log::warning(2, fmt::format("Flag {} does not exist in this configuration", flag));
 	return false;
 }
 
@@ -1216,7 +1216,7 @@ void Configuration::setThingFlag(const string& flag, MapThing* thing, int map_fo
 
 	if (flag_val == 0)
 	{
-		Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
+		Log::warning(2, fmt::format("Flag {} does not exist in this configuration", flag));
 		return;
 	}
 
@@ -1443,7 +1443,7 @@ bool Configuration::lineFlagSet(const string& flag, MapLine* line, int map_forma
 		if (i.udmf == flag)
 			return !!(flags & i.flag);
 	}
-	Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
+	Log::warning(2, fmt::format("Flag {} does not exist in this configuration", flag));
 	return false;
 }
 
@@ -1563,7 +1563,7 @@ void Configuration::setLineFlag(const string& flag, MapLine* line, int map_forma
 
 	if (flag_val == 0)
 	{
-		Log::info(2, fmt::format("Flag {} does not exist in this configuration", flag));
+		Log::warning(2, fmt::format("Flag {} does not exist in this configuration", flag));
 		return;
 	}
 

@@ -127,7 +127,7 @@ void Log::init()
 	sf::err().rdbuf(log_file.rdbuf());
 
 	// Write logfile header
-	auto t = std::time(nullptr);
+	auto t  = std::time(nullptr);
 	auto tm = std::localtime(&t);
 	info("SLADE - It's a Doom Editor");
 	info(fmt::format("Version {}", Global::version));
@@ -180,15 +180,25 @@ void Log::setVerbosity(int verbosity)
 // -----------------------------------------------------------------------------
 // Logs a message [text] of [type]
 // -----------------------------------------------------------------------------
-void Log::message(MessageType type, const char* text)
+void Log::message(MessageType type, string_view text)
 {
 	// Add log message
 	auto t = std::time(nullptr);
-	log.push_back({ text, type, *std::localtime(&t) });
+	log.emplace_back(text, type, *std::localtime(&t));
 
 	// Write to log file
 	if (log_file.is_open() && type != MessageType::Console)
 		sf::err() << log.back().formattedMessageLine() << "\n";
+}
+
+void Log::message(MessageType type, int level, string_view text, fmt::format_args args)
+{
+	message(type, level, fmt::vformat({ text.data(), text.size() }, args));
+}
+
+void Log::message(MessageType type, string_view text, fmt::format_args args)
+{
+	message(type, fmt::vformat({ text.data(), text.size() }, args));
 }
 
 // -----------------------------------------------------------------------------
@@ -206,7 +216,7 @@ vector<Log::Message*> Log::since(time_t time, MessageType type)
 // -----------------------------------------------------------------------------
 // Logs a debug message [text] at verbosity [level] only if debug mode is on
 // -----------------------------------------------------------------------------
-void Log::debug(int level, const char* text)
+void Log::debug(int level, string_view text)
 {
 	if (Global::debug)
 		message(MessageType::Debug, level, text);
@@ -215,23 +225,35 @@ void Log::debug(int level, const char* text)
 // -----------------------------------------------------------------------------
 // Logs a debug message [text] only if debug mode is on
 // -----------------------------------------------------------------------------
-void Log::debug(const char* text)
+void Log::debug(string_view text)
 {
 	if (Global::debug)
 		message(MessageType::Debug, text);
 }
 
+void Log::debug(int level, string_view text, fmt::format_args args)
+{
+	if (Global::debug)
+		message(MessageType::Debug, level, text, args);
+}
+
+void Log::debug(string_view text, fmt::format_args args)
+{
+	if (Global::debug)
+		message(MessageType::Debug, text, args);
+}
+
 // -----------------------------------------------------------------------------
 // Logs a message [text] of [type] at verbosity [level]
 // -----------------------------------------------------------------------------
-void Log::message(MessageType type, int level, const char* text)
+void Log::message(MessageType type, int level, string_view text)
 {
 	if (level > log_verbosity)
 		return;
 
 	// Add log message
 	auto t = std::time(nullptr);
-	log.push_back({ text, type, *std::localtime(&t) });
+	log.emplace_back(text, type, *std::localtime(&t));
 
 	// Write to log file
 	if (log_file.is_open() && type != MessageType::Console)

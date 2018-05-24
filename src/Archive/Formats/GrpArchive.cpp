@@ -102,7 +102,7 @@ bool GrpArchive::open(MemChunk& mc)
 	// Check the header
 	if (strncmp(ken_magic, "KenSilverman", 12) != 0)
 	{
-		Log::info(fmt::format("GrpArchive::openFile: File {} has invalid header", filename_));
+		Log::error(fmt::format("GrpArchive::openFile: File {} has invalid header", filename_));
 		Global::error = "Invalid grp header";
 		return false;
 	}
@@ -139,7 +139,7 @@ bool GrpArchive::open(MemChunk& mc)
 		// the grpfile is invalid
 		if (offset + size > mc.size())
 		{
-			Log::info(1, "GrpArchive::open: grp archive is invalid or corrupt");
+			Log::error(1, "GrpArchive::open: grp archive is invalid or corrupt");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -271,7 +271,7 @@ bool GrpArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("GrpArchive::loadEntryData: Failed to open grpfile {}", filename_));
+		Log::error(fmt::format("GrpArchive::loadEntryData: Failed to open grpfile {}", filename_));
 		return false;
 	}
 

@@ -785,7 +785,7 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 				done = true;
 			}
 			else
-				Log::info(2, fmt::sprintf("Couldn't find entry to #include: %s", name));
+				Log::warning(2, fmt::sprintf("Couldn't find entry to #include: %s", name));
 
 			// Look in resource pack
 			if (use_res && !done && App::archiveManager().programResourceArchive())
@@ -801,8 +801,8 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 
 			// Okay, we've exhausted all possibilities
 			if (!done)
-				Log::info(fmt::sprintf(
-					"Error: Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
+				Log::error(fmt::sprintf(
+					"Attempting to #include nonexistant entry \"%s\" from entry %s", name, entry->name()));
 		}
 		else
 			out.append(line + "\n");

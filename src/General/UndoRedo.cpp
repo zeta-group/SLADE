@@ -275,7 +275,7 @@ string UndoManager::undo()
 	current_undo_manager = this;
 	UndoLevel* level     = undo_levels_[current_level_index_];
 	if (!level->doUndo())
-		Log::info(3, fmt::format("Undo operation \"{}\" failed", level->name()));
+		Log::error(3, fmt::format("Undo operation \"{}\" failed", level->name()));
 	undo_running_        = false;
 	current_undo_manager = nullptr;
 	current_level_index_--;

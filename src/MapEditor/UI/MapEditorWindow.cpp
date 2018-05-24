@@ -620,7 +620,7 @@ bool MapEditorWindow::openMap(const Archive::MapDesc& map)
 		if (map.head
 			&& !MapEditor::backupManager().writeBackup(
 				   map_data_, map.head->topParent()->filename(false), map.head->nameNoExt()))
-			Log::info(1, "Warning: Failed to backup map data");
+			Log::warning(1, "Failed to backup map data");
 	}
 
 	return ok;
@@ -756,14 +756,14 @@ void MapEditorWindow::buildNodes(Archive* wad)
 			focus->SetFocusFromKbd();
 		Log::info(1, "Nodebuilder output:");
 		for (const auto& line : out)
-			Log::info(line);
+			Log::info(WxUtils::stringToView(line));
 
 		// Re-load wad
 		wad->close();
 		wad->open(filename);
 	}
 	else if (nb_warned)
-		Log::info(1, "Nodebuilder path not set up, no nodes were built");
+		Log::warning(1, "Nodebuilder path not set up, no nodes were built");
 }
 
 // -----------------------------------------------------------------------------
@@ -887,7 +887,7 @@ bool MapEditorWindow::saveMap()
 	// Create backup
 	if (!MapEditor::backupManager().writeBackup(
 			map_data_, map.head->topParent()->filename(false), map.head->nameNoExt()))
-		Log::info(1, "Warning: Failed to backup map data");
+		Log::warning(1, "Failed to backup map data");
 
 	// Add new map entries
 	for (unsigned a = 1; a < wad->numEntries(); a++)

@@ -72,7 +72,7 @@ bool PakArchive::open(MemChunk& mc)
 	// Check it
 	if (pack[0] != 'P' || pack[1] != 'A' || pack[2] != 'C' || pack[3] != 'K')
 	{
-		Log::info(1, "PakArchive::open: Opening failed, invalid header");
+		Log::error(1, "PakArchive::open: Opening failed, invalid header");
 		Global::error = "Invalid pak header";
 		return false;
 	}
@@ -104,7 +104,7 @@ bool PakArchive::open(MemChunk& mc)
 		// Check offset+size
 		if ((unsigned)(offset + size) > mc.size())
 		{
-			Log::info(1, "PakArchive::open: Pak archive is invalid or corrupt (entry goes past end of file)");
+			Log::error(1, "PakArchive::open: Pak archive is invalid or corrupt (entry goes past end of file)");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -285,7 +285,7 @@ bool PakArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("PakArchive::loadEntryData: Unable to open archive file {}", filename_));
+		Log::error(fmt::format("PakArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

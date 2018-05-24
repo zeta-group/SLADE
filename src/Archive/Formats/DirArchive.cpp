@@ -273,7 +273,7 @@ bool DirArchive::save(string_view filename)
 		// Write entry to file
 		if (!entries[a]->exportFile(path))
 		{
-			Log::info(fmt::format("Unable to save entry {}: {}", entries[a]->name(), Global::error));
+			Log::warning(fmt::format("Unable to save entry {}: {}", entries[a]->name(), Global::error));
 		}
 		else
 			files_written.push_back(path);

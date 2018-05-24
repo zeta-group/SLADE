@@ -31,19 +31,19 @@ public:
 	GfxCanvas(wxWindow* parent, int id);
 	~GfxCanvas() = default;
 
-	SImage*       image() { return &image_; }
-	void          setViewType(View type) { view_type_ = type; }
-	View          viewType() const { return view_type_; }
-	void          setScale(double scale) { scale_ = scale; }
-	bool          allowDrag() const { return allow_drag_; }
-	void          allowDrag(bool allow) { allow_drag_ = allow; }
-	bool          allowScroll() const { return allow_scroll_; }
-	void          allowScroll(bool allow) { allow_scroll_ = allow; }
-	void          setPaintColour(const ColRGBA& col) { paint_colour_.set(col); }
-	void          setEditingMode(EditMode mode) { editing_mode_ = mode; }
-	void          setTranslation(Translation* tr) { translation_ = tr; }
-	void          setBrush(SBrush* br) { brush_ = br; }
-	SBrush*       brush() const { return brush_; }
+	SImage*        image() { return &image_; }
+	void           setViewType(View type) { view_type_ = type; }
+	View           viewType() const { return view_type_; }
+	void           setScale(double scale) { scale_ = scale; }
+	bool           allowDrag() const { return allow_drag_; }
+	void           allowDrag(bool allow) { allow_drag_ = allow; }
+	bool           allowScroll() const { return allow_scroll_; }
+	void           allowScroll(bool allow) { allow_scroll_ = allow; }
+	void           setPaintColour(const ColRGBA& col) { paint_colour_.set(col); }
+	void           setEditingMode(EditMode mode) { editing_mode_ = mode; }
+	void           setTranslation(Translation* tr) { translation_ = tr; }
+	void           setBrush(SBrush* br) { brush_ = br; }
+	SBrush*        brush() const { return brush_; }
 	const ColRGBA& paintColour() const { return paint_colour_; }
 
 	void draw() override;
@@ -78,14 +78,14 @@ private:
 	point2_t     drag_origin_ = POINT_OUTSIDE;
 	point2_t     mouse_prev_;
 	EditMode     editing_mode_ = EditMode::View;
-	ColRGBA       paint_colour_ = ColRGBA::BLACK;     // the colour to apply to pixels in editing mode 1
-	Translation* translation_  = nullptr;       // the translation to apply to pixels in editing mode 3
-	bool         drawing_      = false;         // true if a drawing operation is ongoing
-	bool*        drawing_mask_ = nullptr;       // keeps track of which pixels were already modified in this pass
-	SBrush*      brush_        = nullptr;       // the brush used to paint the image
-	point2_t     cursor_pos_   = POINT_OUTSIDE; // position of cursor, relative to image
-	point2_t     prev_pos_     = POINT_OUTSIDE; // previous position of cursor
-	GLTexture    tex_brush_;                    // preview the effect of the brush
+	ColRGBA      paint_colour_ = ColRGBA::BLACK; // the colour to apply to pixels in editing mode 1
+	Translation* translation_  = nullptr;        // the translation to apply to pixels in editing mode 3
+	bool         drawing_      = false;          // true if a drawing operation is ongoing
+	bool*        drawing_mask_ = nullptr;        // keeps track of which pixels were already modified in this pass
+	SBrush*      brush_        = nullptr;        // the brush used to paint the image
+	point2_t     cursor_pos_   = POINT_OUTSIDE;  // position of cursor, relative to image
+	point2_t     prev_pos_     = POINT_OUTSIDE;  // previous position of cursor
+	GLTexture    tex_brush_;                     // preview the effect of the brush
 
 	// Events
 	void onMouseLeftDown(wxMouseEvent& e);

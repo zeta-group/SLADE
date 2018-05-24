@@ -64,7 +64,7 @@ bool MapInfo::readMapInfo(Archive* archive)
 
 		// TODO: EMapInfo
 		else if (entry->type()->id() == "emapinfo")
-			Log::info("EMAPINFO not implemented");
+			Log::warning("EMAPINFO not implemented");
 
 		// MapInfo
 		else if (entry->type()->id() == "mapinfo")
@@ -75,7 +75,7 @@ bool MapInfo::readMapInfo(Archive* archive)
 			if (format == Format::ZDoomNew)
 				parseZMapInfo(entry);
 			else
-				Log::info("MAPINFO not implemented");
+				Log::warning("MAPINFO not implemented");
 		}
 	}
 

@@ -88,7 +88,7 @@ wxMenu* menu_archive = nullptr;
 wxMenu* menu_entry   = nullptr;
 
 const auto ERROR_UNWRITABLE_IMAGE_FORMAT =
-	"Error: Could not write image data to entry %s, unsupported format for writing";
+	"Could not write image data to entry %s, unsupported format for writing";
 } // namespace
 CVAR(Int, autosave_entry_changes, 2, CVAR_SAVE) // 0=no, 1=yes, 2=ask
 CVAR(Bool, confirm_entry_delete, true, CVAR_SAVE)
@@ -1691,7 +1691,7 @@ bool ArchivePanel::importEntry()
 				}
 				// Warn if the offsets couldn't be written
 				if (ok && si.format() && !si.format()->writeOffset(si, entry, offset))
-					Log::info(fmt::sprintf(
+					Log::warning(fmt::sprintf(
 						"Old offset information [%d, %d] couldn't be "
 						"preserved in the new image format for image %s.",
 						offset.x,
@@ -2053,7 +2053,7 @@ bool ArchivePanel::gfxColourise()
 
 				// Write modified image data
 				if (!temp.format()->saveImage(temp, mc, pal))
-					Log::info(fmt::sprintf(ERROR_UNWRITABLE_IMAGE_FORMAT, entry->name()));
+					Log::error(fmt::sprintf(ERROR_UNWRITABLE_IMAGE_FORMAT, entry->name()));
 				else
 					entry->importMemChunk(mc);
 			}
@@ -2108,7 +2108,7 @@ bool ArchivePanel::gfxTint()
 
 				// Write modified image data
 				if (!temp.format()->saveImage(temp, mc, pal))
-					Log::info(fmt::sprintf(ERROR_UNWRITABLE_IMAGE_FORMAT, entry->name()));
+					Log::error(fmt::sprintf(ERROR_UNWRITABLE_IMAGE_FORMAT, entry->name()));
 				else
 					entry->importMemChunk(mc);
 			}
@@ -2450,7 +2450,7 @@ bool ArchivePanel::wavDSndConvert() const
 			// Attempt conversion
 			if (!Conversions::wavToDoomSnd(selection[a]->data(), dsnd))
 			{
-				Log::info(fmt::sprintf("Error: Unable to convert entry %s: %s", selection[a]->name(), Global::error));
+				Log::error(fmt::sprintf("Unable to convert entry %s: %s", selection[a]->name(), Global::error));
 				errors = true;
 				continue;
 			}
@@ -2521,7 +2521,7 @@ bool ArchivePanel::dSndWavConvert() const
 		}
 		else
 		{
-			Log::info(fmt::sprintf("Error: Unable to convert entry %s: %s", selection[a]->name(), Global::error));
+			Log::error(fmt::sprintf("Unable to convert entry %s: %s", selection[a]->name(), Global::error));
 			errors = true;
 			continue;
 		}
@@ -2732,7 +2732,7 @@ bool ArchivePanel::openEntry(ArchiveEntry* entry, bool force)
 	// Null entry, do nothing
 	if (!entry)
 	{
-		Log::info(1, "Warning: NULL entry focused in the list");
+		Log::warning(1, "Null entry focused in the list");
 		return false;
 	}
 
@@ -2766,7 +2766,7 @@ bool ArchivePanel::openEntry(ArchiveEntry* entry, bool force)
 		// Check it exists (really should)
 		if (!dir)
 		{
-			Log::info(fmt::sprintf("Error: Trying to open nonexistant directory %s", name));
+			Log::error(fmt::sprintf("Trying to open nonexistant directory %s", name));
 			return false;
 		}
 		entry_list_->setDir(dir);
@@ -2804,7 +2804,7 @@ bool ArchivePanel::openEntry(ArchiveEntry* entry, bool force)
 		else if (entry->type()->editor() == "default")
 			new_area = default_area_;
 		else
-			Log::info(fmt::sprintf("Entry editor %s does not exist, using default editor", entry->type()->editor()));
+			Log::warning(fmt::sprintf("Entry editor %s does not exist, using default editor", entry->type()->editor()));
 
 		// Load the entry into the panel
 		if (!new_area->openEntry(entry))

@@ -63,12 +63,12 @@ SBrush::SBrush(string_view name) : name_{ name.data(), name.size() }, icon_{ Str
 	ArchiveEntry* file = res->entryAtPath(fmt::sprintf("icons/general/%s.png", icon_));
 	if (file == nullptr || file->size() == 0)
 	{
-		Log::info(2, fmt::sprintf("error, no file at icons/general/%s.png", icon_));
+		Log::error(2, fmt::sprintf("No file at icons/general/%s.png", icon_));
 		return;
 	}
 	if (!image_.open(file->data(), 0, "png"))
 	{
-		Log::info(2, fmt::sprintf("couldn't load image data for icons/general/%s.png", icon_));
+		Log::error(2, fmt::sprintf("Couldn't load image data for icons/general/%s.png", icon_));
 		return;
 	}
 	image_.convertAlphaMap(SImage::AlphaSource::Alpha);

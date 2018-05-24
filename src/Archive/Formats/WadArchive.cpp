@@ -360,7 +360,7 @@ bool WadArchive::open(MemChunk& mc)
 	// Check the header
 	if (wad_type[1] != 'W' || wad_type[2] != 'A' || wad_type[3] != 'D')
 	{
-		Log::info(fmt::format("WadArchive::openFile: File {} has invalid header", filename_));
+		Log::error(fmt::format("WadArchive::openFile: File {} has invalid header", filename_));
 		Global::error = "Invalid wad header";
 		return false;
 	}
@@ -406,7 +406,7 @@ bool WadArchive::open(MemChunk& mc)
 			}
 			if (VECTOR_EXISTS(offsets, offset))
 			{
-				Log::info(fmt::format("Ignoring entry {}: {}, is a clone of a previous entry", d, name));
+				Log::warning(fmt::format("Ignoring entry {}: {}, is a clone of a previous entry", d, name));
 				continue;
 			}
 			offsets.push_back(offset);
@@ -458,7 +458,7 @@ bool WadArchive::open(MemChunk& mc)
 		// the wadfile is invalid
 		if (offset + actualsize > mc.size())
 		{
-			Log::info(1, "WadArchive::open: Wad archive is invalid or corrupt");
+			Log::error(1, "WadArchive::open: Wad archive is invalid or corrupt");
 			Global::error =
 				fmt::format("Archive is invalid and/or corrupt (lump {}: {} data goes past end of file)", d, name);
 			setMuted(false);
@@ -507,7 +507,7 @@ bool WadArchive::open(MemChunk& mc)
 					&& (unsigned)(int)(entry->exProp("FullSize")) > entry->size())
 					edata.reSize((int)(entry->exProp("FullSize")), true);
 				if (!JaguarDecode(edata))
-					Log::info(
+					Log::warning(
 						fmt::format(
 						"{}: {} (following {}), did not decode properly",
 						a,
@@ -725,7 +725,7 @@ bool WadArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("WadArchive::loadEntryData: Failed to open wadfile {}", filename_));
+		Log::error(fmt::format("WadArchive::loadEntryData: Failed to open wadfile {}", filename_));
 		return false;
 	}
 

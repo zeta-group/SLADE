@@ -826,11 +826,11 @@ public:
 			{
 				size_t size = READ_B32(mc, 4) + 8;
 				if (debugaiff)
-					Log::info(fmt::format("size {}", size));
+					Log::debug(fmt::format("size {}", size));
 				if (size > mc.size())
 				{
 					if (debugaiff)
-						Log::info(fmt::format("{} <= {} fails", size, mc.size()));
+						Log::debug(fmt::format("{} <= {} fails", size, mc.size()));
 					return EDF_FALSE;
 				}
 				size_t s          = 12;
@@ -839,7 +839,7 @@ public:
 				while (s < size && !(comm_found && ssnd_found))
 				{
 					if (debugaiff)
-						Log::info(fmt::format("{}/{}", s, size));
+						Log::debug(fmt::format("{}/{}", s, size));
 					if (mc[s + 0] == 'C' && mc[s + 1] == 'O' && mc[s + 2] == 'M' && mc[s + 3] == 'M')
 						comm_found = true;
 					else if (mc[s + 0] == 'S' && mc[s + 1] == 'S' && mc[s + 2] == 'N' && mc[s + 3] == 'D')
@@ -848,12 +848,12 @@ public:
 					if (s % 2)
 						++s;
 					if (debugaiff)
-						Log::info(fmt::format("looking now at offset {}", s));
+						Log::debug(fmt::format("looking now at offset {}", s));
 				}
 				if (comm_found && ssnd_found)
 					return EDF_TRUE;
 				if (debugaiff)
-					Log::info(fmt::format(
+					Log::debug(fmt::format(
 						"COMM was {}found and SSND was {}found", comm_found ? "" : "not ", ssnd_found ? "" : "not "));
 			}
 		}

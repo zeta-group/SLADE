@@ -100,7 +100,7 @@ bool DiskArchive::open(MemChunk& mc)
 		// Check offset+size
 		if (dent.offset + dent.length > mcsize)
 		{
-			Log::info(1, "DiskArchive::open: Disk archive is invalid or corrupt (entry goes past end of file)");
+			Log::error(1, "DiskArchive::open: Disk archive is invalid or corrupt (entry goes past end of file)");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -297,7 +297,7 @@ bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("DiskArchive::loadEntryData: Unable to open archive file {}", filename_));
+		Log::error(fmt::format("DiskArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

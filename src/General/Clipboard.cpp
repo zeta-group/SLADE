@@ -386,12 +386,12 @@ vector<MapVertex*> MapArchClipboardItem::pasteToMap(SLADEMap* map, fpoint2_t pos
 
 		if (!v1)
 		{
-			Log::info(1, "no v1");
+			Log::debug(1, "no v1");
 			continue;
 		}
 		if (!v2)
 		{
-			Log::info(1, "no v2");
+			Log::debug(1, "no v2");
 		}
 
 		MapLine* newline = map->createLine(v1, v2, true);

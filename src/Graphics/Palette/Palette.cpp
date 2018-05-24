@@ -160,14 +160,14 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 		if (!image.isValid())
 		{
 			Global::error = "Palette information cannot be loaded from an invalid image";
-			Log::info(0, Global::error);
+			Log::error(Global::error);
 			return false;
 		}
 		int side = image.height();
 		if (side != image.width() || side % 16)
 		{
 			Global::error = "Palette information cannot be loaded from a non-square image";
-			Log::info(0, Global::error);
+			Log::error(Global::error);
 			return false;
 		}
 
@@ -193,7 +193,7 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			for (int b = x; b < (x + (cell > 3 ? cell - 1 : cell)); ++b)
 				for (int c = y; c < (y + (cell > 3 ? cell - 1 : cell)); ++c)
 					if (!col.equals(image.pixelAt(b, c)))
-						Log::info(fmt::format(
+						Log::warning(fmt::format(
 							"Image does not seem to be a valid palette, color discrepancy in cell {} at [{}, {}]",
 							a,
 							b,
@@ -223,14 +223,14 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			if (!tz.checkToken("JASC-PAL") || !tz.checkToken("0100"))
 			{
 				Global::error = "Invalid JASC palette (unknown header)";
-				Log::info(0, Global::error);
+				Log::error(Global::error);
 				return false;
 			}
 			int count = tz.getInteger();
 			if (count > 256 || count < 0)
 			{
 				Global::error = "Invalid JASC palette (wrong count)";
-				Log::info(0, Global::error);
+				Log::error(Global::error);
 				return false;
 			}
 		}
@@ -239,7 +239,7 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 			if (!tz.checkToken("GIMP") || !tz.checkToken("Palette"))
 			{
 				Global::error = "Invalid GIMP palette (unknown header)";
-				Log::info(0, Global::error);
+				Log::error(Global::error);
 				return false;
 			}
 		}
@@ -293,7 +293,7 @@ bool Palette::loadMem(MemChunk& mc, Format format)
 	else
 	{
 		Global::error = "Palette could not be imported, this format is not supported yet for import.";
-		Log::info(0, Global::error);
+		Log::error(Global::error);
 	}
 
 	return false;

@@ -502,7 +502,7 @@ protected:
 		// Check it loaded ok
 		if (png.size() == 0)
 		{
-			Log::info(1, "Error reading temporary file");
+			Log::error(1, "Error reading temporary file");
 			return false;
 		}
 

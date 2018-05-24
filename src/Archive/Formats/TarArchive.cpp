@@ -97,7 +97,7 @@ bool TarArchive::open(MemChunk& mc)
 
 		if (!checksum(&header))
 		{
-			Log::info(fmt::format("Invalid checksum for block at {0:#x}", mc.currentPos() - 512));
+			Log::warning(fmt::format("Invalid checksum for block at {0:#x}", mc.currentPos() - 512));
 			continue;
 		}
 
@@ -217,8 +217,8 @@ bool TarArchive::write(MemChunk& mc, bool update)
 		name.erase(0, 1); // Remove leading /
 		if (name.size() > 99)
 		{
-			Log::info(fmt::format(
-				"Warning: Entry {} path is too long (> 99 characters), putting it in the root directory", name));
+			Log::warning(
+				fmt::format("Entry {} path is too long (> 99 characters), putting it in the root directory", name));
 			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			StrUtil::truncateIP(name, 99);
 		}
@@ -278,7 +278,7 @@ bool TarArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("TarArchive::loadEntryData: Unable to open archive file {}", filename_));
+		Log::error(fmt::format("TarArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

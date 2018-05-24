@@ -32,7 +32,6 @@
 #include "Main.h"
 #include "General/Console/Console.h"
 #include "MathStuff.h"
-#include "TextEditor/TextStyle.h"
 
 
 // -----------------------------------------------------------------------------
@@ -476,7 +475,7 @@ Plane MathStuff::planeFromTriangle(const fpoint3_t& p1, const fpoint3_t& p2, con
 }
 
 
-
+#include "StringUtils.h"
 CONSOLE_COMMAND(angle2d, 6, false)
 {
 	double vals[6];

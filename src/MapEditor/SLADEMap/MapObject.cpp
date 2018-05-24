@@ -310,13 +310,13 @@ void MapObject::loadFromBackup(Backup* backup)
 	// Check type match
 	if (backup->type != obj_type_)
 	{
-		Log::info(fmt::format("loadFromBackup: Mobj type mismatch, {} != {}", obj_type_, backup->type));
+		Log::warning(fmt::format("loadFromBackup: Mobj type mismatch, {} != {}", obj_type_, backup->type));
 		return;
 	}
 	// Check id match
 	if (backup->id != obj_id_)
 	{
-		Log::info(fmt::sprintf("loadFromBackup: Mobj id mismatch, %d != %d", obj_id_, backup->id));
+		Log::warning(fmt::sprintf("loadFromBackup: Mobj id mismatch, %d != %d", obj_id_, backup->id));
 		return;
 	}
 

@@ -79,7 +79,7 @@ bool ModMusic::openFromFile(const std::string& filename)
 	}
 	else
 	{
-		Log::info(fmt::format("Failed to load module music file \"{}\"", filename.c_str()));
+		Log::error(fmt::format("Failed to load module music file \"{}\"", filename.c_str()));
 		return false;
 	}
 }
@@ -105,7 +105,7 @@ bool ModMusic::loadFromMemory(const uint8_t* data, const uint32_t size)
 	}
 	else
 	{
-		Log::info(1, "Failed to load module music data");
+		Log::error(1, "Failed to load module music data");
 		return false;
 	}
 }

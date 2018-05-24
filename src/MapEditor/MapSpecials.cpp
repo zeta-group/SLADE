@@ -319,7 +319,7 @@ void MapSpecials::processACSScripts(ArchiveEntry* entry)
 						// Check everything is set
 						if (b < 0)
 						{
-							Log::info(2, "Invalid Sector_SetColor parameters");
+							Log::warning(2, "Invalid Sector_SetColor parameters");
 						}
 						else
 						{
@@ -359,7 +359,7 @@ void MapSpecials::processACSScripts(ArchiveEntry* entry)
 						// Check everything is set
 						if (b < 0)
 						{
-							Log::info(2, "Invalid Sector_SetFade parameters");
+							Log::warning(2, "Invalid Sector_SetFade parameters");
 						}
 						else
 						{
@@ -412,12 +412,12 @@ void MapSpecials::processZDoomSlopes(SLADEMap* map) const
 		MapSector* sector2 = line->backSector();
 		if (!sector1 || !sector2)
 		{
-			Log::info(fmt::sprintf("Ignoring Plane_Align on one-sided line %d", line->index()));
+			Log::warning(fmt::sprintf("Ignoring Plane_Align on one-sided line %d", line->index()));
 			continue;
 		}
 		if (sector1 == sector2)
 		{
-			Log::info(fmt::sprintf(
+			Log::warning(fmt::sprintf(
 				"Ignoring Plane_Align on line %d, which has the same sector on both sides", line->index()));
 			continue;
 		}
@@ -470,7 +470,7 @@ void MapSpecials::processZDoomSlopes(SLADEMap* map) const
 			int tag = thing->intProperty("arg0");
 			if (!tag)
 			{
-				Log::info(fmt::sprintf("Ignoring slope copy thing in sector %d with no argument", target_idx));
+				Log::warning(fmt::sprintf("Ignoring slope copy thing in sector %d with no argument", target_idx));
 				continue;
 			}
 
@@ -478,7 +478,7 @@ void MapSpecials::processZDoomSlopes(SLADEMap* map) const
 			map->sectorsByTag(tag, tagged_sectors);
 			if (tagged_sectors.empty())
 			{
-				Log::info(fmt::sprintf(
+				Log::warning(fmt::sprintf(
 					"Ignoring slope copy thing in sector %d; no sectors have target tag %d", target_idx, tag));
 				continue;
 			}
@@ -614,12 +614,12 @@ void MapSpecials::processEternitySlopes(SLADEMap* map) const
 		MapSector* sector2 = line->backSector();
 		if (!sector1 || !sector2)
 		{
-			Log::info(fmt::sprintf("Ignoring Plane_Align on one-sided line %d", line->index()));
+			Log::warning(fmt::sprintf("Ignoring Plane_Align on one-sided line %d", line->index()));
 			continue;
 		}
 		if (sector1 == sector2)
 		{
-			Log::info(fmt::sprintf(
+			Log::warning(fmt::sprintf(
 				"Ignoring Plane_Align on line %d, which has the same sector on both sides", line->index()));
 			continue;
 		}
@@ -721,7 +721,7 @@ template<SurfaceType p> void MapSpecials::applyPlaneAlign(MapLine* line, MapSect
 
 	if (!furthest_vertex || furthest_dist < 0.01)
 	{
-		Log::info(
+		Log::warning(
 			fmt::sprintf(
 			"Ignoring Plane_Align on line %d; sector %d has no appropriate reference vertex",
 			line->index(),
@@ -747,7 +747,7 @@ template<SurfaceType p> void MapSpecials::applyLineSlopeThing(SLADEMap* map, Map
 	int lineid = thing->intProperty("arg0");
 	if (!lineid)
 	{
-		Log::info(fmt::sprintf("Ignoring line slope thing %d with no lineid argument", thing->index()));
+		Log::warning(fmt::sprintf("Ignoring line slope thing %d with no lineid argument", thing->index()));
 		return;
 	}
 
@@ -860,7 +860,7 @@ template<SurfaceType p> void MapSpecials::applyVavoomSlopeThing(SLADEMap* map, M
 		// the thing's height as absolute
 		if (MathStuff::distanceToLineFast(thing->position(), lines[a]->seg()) == 0)
 		{
-			Log::info(fmt::sprintf("Vavoom thing %d lies directly on its target line %d", thing->index(), a));
+			Log::warning(fmt::sprintf("Vavoom thing %d lies directly on its target line %d", thing->index(), a));
 			return;
 		}
 
@@ -873,7 +873,7 @@ template<SurfaceType p> void MapSpecials::applyVavoomSlopeThing(SLADEMap* map, M
 		return;
 	}
 
-	Log::info(fmt::sprintf("Vavoom thing %d has no matching line with first arg %d", thing->index(), tid));
+	Log::warning(fmt::sprintf("Vavoom thing %d has no matching line with first arg %d", thing->index(), tid));
 }
 
 // -----------------------------------------------------------------------------

@@ -142,7 +142,7 @@ bool GobArchive::open(MemChunk& mc)
 		// the gobfile is invalid
 		if (offset + size > mc.size())
 		{
-			Log::info(1, "GobArchive::open: gob archive is invalid or corrupt");
+			Log::error(1, "GobArchive::open: gob archive is invalid or corrupt");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -283,7 +283,7 @@ bool GobArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("GobArchive::loadEntryData: Failed to open gobfile {}", filename_));
+		Log::error(fmt::format("GobArchive::loadEntryData: Failed to open gobfile {}", filename_));
 		return false;
 	}
 

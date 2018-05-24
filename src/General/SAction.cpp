@@ -499,7 +499,7 @@ bool SActionHandler::doAction(string_view id)
 
 	// Warn if nothing handled it
 	if (!handled)
-		Log::info(fmt::format("Warning: Action \"{}\" not handled", id));
+		Log::warning(fmt::format("Action \"{}\" not handled", id));
 
 	// Log action (to log file only)
 	// TODO: this

@@ -162,7 +162,7 @@ bool WadJArchive::open(MemChunk& mc)
 	// Check the header
 	if (wad_type_[1] != 'W' || wad_type_[2] != 'A' || wad_type_[3] != 'D')
 	{
-		Log::info(fmt::format("WadJArchive::openFile: File {} has invalid header", filename_));
+		Log::error(fmt::format("WadJArchive::openFile: File {} has invalid header", filename_));
 		Global::error = "Invalid wad header";
 		return false;
 	}
@@ -230,7 +230,7 @@ bool WadJArchive::open(MemChunk& mc)
 		// the wadfile is invalid
 		if (offset + actualsize > mc.size())
 		{
-			Log::info(1, "WadJArchive::open: Wad archive is invalid or corrupt");
+			Log::error(1, "WadJArchive::open: Wad archive is invalid or corrupt");
 			Global::error =
 				fmt::format("Archive is invalid and/or corrupt (lump {}: {} data goes past end of file)", d, name);
 			setMuted(false);
@@ -280,7 +280,7 @@ bool WadJArchive::open(MemChunk& mc)
 					&& (unsigned)(int)(entry->exProp("FullSize")) > entry->size())
 					edata.reSize((int)(entry->exProp("FullSize")), true);
 				if (!JaguarDecode(edata))
-					Log::info(
+					Log::warning(
 						fmt::format(
 						"{}: {} (following {}), did not decode properly",
 						a,

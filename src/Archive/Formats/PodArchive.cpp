@@ -264,7 +264,7 @@ bool PodArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("PodArchive::loadEntryData: Failed to open file {}", filename_));
+		Log::error(fmt::format("PodArchive::loadEntryData: Failed to open file {}", filename_));
 		return false;
 	}
 

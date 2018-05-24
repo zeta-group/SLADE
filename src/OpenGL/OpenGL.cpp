@@ -84,7 +84,7 @@ wxGLContext* OpenGL::getContext(wxGLCanvas* canvas)
 			init();
 		}
 		else
-			Log::info(1, "Can't create global GL context, wxGLCanvas is hidden");
+			Log::warning(1, "Can't create global GL context, wxGLCanvas is hidden");
 	}
 
 	return context;

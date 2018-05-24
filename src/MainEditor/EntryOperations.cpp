@@ -46,6 +46,7 @@
 #include "Utility/FileMonitor.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
+#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -134,9 +135,9 @@ bool EntryOperations::gfxConvert(
 	if (target_colformat != SImage::Type::Any && !fmt->canWriteType(target_colformat))
 	{
 		if (target_colformat == SImage::Type::RGBA)
-			Log::info(fmt::sprintf("Format \"%s\" cannot be written as RGBA data", fmt->name()));
+			Log::error(fmt::sprintf("Format \"%s\" cannot be written as RGBA data", fmt->name()));
 		else if (target_colformat == SImage::Type::PalMask)
-			Log::info(fmt::sprintf("Format \"%s\" cannot be written as paletted data", fmt->name()));
+			Log::error(fmt::sprintf("Format \"%s\" cannot be written as paletted data", fmt->name()));
 
 		return false;
 	}
@@ -148,7 +149,7 @@ bool EntryOperations::gfxConvert(
 	int writable = fmt->canWrite(image);
 	if (writable == SIFormat::NOTWRITABLE)
 	{
-		Log::info(
+		Log::error(
 			fmt::sprintf("Entry \"%s\" could not be converted to target format \"%s\"", entry->name(), fmt->name()));
 		return false;
 	}
@@ -184,7 +185,7 @@ bool EntryOperations::modifyGfxOffsets(ArchiveEntry* entry, ModifyOffsetsDialog*
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" || entryformat == "img_doom_alpha"
 		  || entryformat == "img_doom_beta" || entryformat == "img_png"))
 	{
-		Log::info(fmt::sprintf(
+		Log::error(fmt::sprintf(
 			"Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name()));
 		return false;
 	}
@@ -335,7 +336,7 @@ bool EntryOperations::setGfxOffsets(ArchiveEntry* entry, int x, int y)
 	if (!(entryformat == "img_doom" || entryformat == "img_doom_arah" || entryformat == "img_doom_alpha"
 		  || entryformat == "img_doom_beta" || entryformat == "img_png"))
 	{
-		Log::info(fmt::sprintf(
+		Log::error(fmt::sprintf(
 			"Entry \"%s\" is of type \"%s\" which does not support offsets", entry->name(), entry->type()->name()));
 		return false;
 	}
@@ -566,7 +567,8 @@ bool EntryOperations::modifyalPhChunk(ArchiveEntry* entry, bool value)
 	// Check entry type
 	if (!(entry->type()->formatId() == "img_png"))
 	{
-		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->type()->name()));
+		Log::error(
+			fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->type()->name()));
 		return false;
 	}
 
@@ -673,7 +675,7 @@ bool EntryOperations::modifytRNSChunk(ArchiveEntry* entry, bool value)
 	// Check entry type
 	if (!(entry->type()->formatId() == "img_png"))
 	{
-		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
+		Log::error(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -787,7 +789,7 @@ bool EntryOperations::getalPhChunk(ArchiveEntry* entry)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
+		Log::error(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -819,7 +821,7 @@ bool EntryOperations::gettRNSChunk(ArchiveEntry* entry)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
+		Log::error(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -853,7 +855,7 @@ bool EntryOperations::readgrAbChunk(ArchiveEntry* entry, point2_t& offsets)
 	// Check entry type
 	if (entry->type()->formatId() != "img_png")
 	{
-		Log::info(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
+		Log::error(fmt::sprintf("Entry \"%s\" is of type \"%s\" rather than PNG", entry->name(), entry->typeString()));
 		return false;
 	}
 
@@ -942,14 +944,14 @@ bool EntryOperations::addToPatchTable(vector<ArchiveEntry*> entries)
 		// Check entry type
 		if (!(entry->type()->extraProps().propertyExists("image")))
 		{
-			Log::info(fmt::sprintf("Entry %s is not a valid image", entry->name()));
+			Log::warning(fmt::sprintf("Entry %s is not a valid image", entry->name()));
 			continue;
 		}
 
 		// Check entry name
 		if (entry->nameNoExt().size() > 8)
 		{
-			Log::info(fmt::sprintf(
+			Log::warning(fmt::sprintf(
 				"Entry %s has too long a name to add to the patch table (name must be 8 characters max)",
 				entry->name()));
 			continue;
@@ -1047,7 +1049,7 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		// Check entry type
 		if (!(entry->type()->extraProps().propertyExists("image")))
 		{
-			Log::info(fmt::sprintf("Entry %s is not a valid image", entry->name()));
+			Log::warning(fmt::sprintf("Entry %s is not a valid image", entry->name()));
 			continue;
 		}
 
@@ -1055,7 +1057,7 @@ bool EntryOperations::createTexture(vector<ArchiveEntry*> entries)
 		auto name = entry->nameNoExt();
 		if (name.size() > 8)
 		{
-			Log::info(fmt::sprintf(
+			Log::warning(fmt::sprintf(
 				"Entry %s has too long a name to add to the patch table (name must be 8 characters max)",
 				entry->name()));
 			continue;
@@ -1287,7 +1289,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 		output_log += title1;
 		for (const auto& a : output)
 		{
-			Log::console(a);
+			Log::console(WxUtils::stringToView(a));
 			output_log += a;
 		}
 	}
@@ -1299,7 +1301,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 		output_log += title2;
 		for (const auto& a : errout)
 		{
-			Log::console(a);
+			Log::console(WxUtils::stringToView(a));
 			output_log += a + "\n";
 		}
 	}
@@ -1406,7 +1408,7 @@ bool EntryOperations::exportAsPNG(ArchiveEntry* entry, string filename)
 	SImage image;
 	if (!Misc::loadImageFromEntry(&image, entry))
 	{
-		Log::info(fmt::sprintf("Error converting %s: %s", entry->name(), Global::error));
+		Log::error(fmt::sprintf("Error converting %s: %s", entry->name(), Global::error));
 		return false;
 	}
 
@@ -1415,7 +1417,7 @@ bool EntryOperations::exportAsPNG(ArchiveEntry* entry, string filename)
 	SIFormat* fmt_png = SIFormat::getFormat("png");
 	if (!fmt_png->saveImage(image, png, MainEditor::currentPalette(entry)))
 	{
-		Log::info(fmt::sprintf("Error converting %s", entry->name()));
+		Log::error(fmt::sprintf("Error converting %s", entry->name()));
 		return false;
 	}
 
@@ -1450,7 +1452,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	if ((pngpathc.empty() || !wxFileExists(pngpathc)) && (pngpatho.empty() || !wxFileExists(pngpatho))
 		&& (pngpathd.empty() || !wxFileExists(pngpathd)))
 	{
-		Log::info(1, "PNG tool paths not defined or invalid, no optimization done.");
+		Log::warning(1, "PNG tool paths not defined or invalid, no optimization done.");
 		return false;
 	}
 
@@ -1656,7 +1658,7 @@ bool EntryOperations::convertAnimated(ArchiveEntry* entry, MemChunk* animdata, b
 		// reads an entry
 		if (cursor + sizeof(AnimatedEntry) > eodata)
 		{
-			Log::info(1, "Error: ANIMATED entry is corrupt");
+			Log::error(1, "ANIMATED entry is corrupt");
 			return false;
 		}
 		animation = (AnimatedEntry*)cursor;
@@ -1722,7 +1724,7 @@ bool EntryOperations::convertSwitches(ArchiveEntry* entry, MemChunk* animdata, b
 		// reads an entry
 		if (cursor + sizeof(SwitchesEntry) > eodata)
 		{
-			Log::info(1, "Error: SWITCHES entry is corrupt");
+			Log::error(1, "SWITCHES entry is corrupt");
 			return false;
 		}
 		switches = (SwitchesEntry*)cursor;
@@ -1769,14 +1771,14 @@ bool EntryOperations::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata, b
 				string first = tz.getToken();
 				if (last.length() > 8)
 				{
-					Log::info(fmt::sprintf(
-						"Error: string %s is too long for an animated %s name!", last, (texture ? "texture" : "flat")));
+					Log::error(fmt::sprintf(
+						"String %s is too long for an animated %s name!", last, (texture ? "texture" : "flat")));
 					return false;
 				}
 				if (first.length() > 8)
 				{
-					Log::info(fmt::sprintf(
-						"Error: string %s is too long for an animated %s name!",
+					Log::error(fmt::sprintf(
+						"String %s is too long for an animated %s name!",
 						first,
 						(texture ? "texture" : "flat")));
 					return false;
@@ -1826,12 +1828,12 @@ bool EntryOperations::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata, b
 				string on   = tz.getToken();
 				if (off.length() > 8)
 				{
-					Log::info(fmt::sprintf("Error: string %s is too long for a switch name!", off));
+					Log::error(fmt::sprintf("String %s is too long for a switch name!", off));
 					return false;
 				}
 				if (on.length() > 8)
 				{
-					Log::info(fmt::sprintf("Error: string %s is too long for a switch name!", on));
+					Log::error(fmt::sprintf("String %s is too long for a switch name!", on));
 					return false;
 				}
 

@@ -559,7 +559,7 @@ bool TextLanguage::readLanguageDefinition(MemChunk& mc, string_view source)
 	// Open the given text data
 	if (!tz.openMem(mc, source))
 	{
-		Log::info(1, "Unable to open file");
+		Log::error(1, "Unable to open file");
 		return false;
 	}
 
@@ -583,8 +583,8 @@ bool TextLanguage::readLanguageDefinition(MemChunk& mc, string_view source)
 			if (inherit)
 				inherit->copyTo(lang);
 			else
-				Log::info(fmt::sprintf(
-					"Warning: Language %s inherits from undefined language %s", node->name(), node->inherit()));
+				Log::warning(fmt::sprintf(
+					"Language %s inherits from undefined language %s", node->name(), node->inherit()));
 		}
 
 		// Parse language info

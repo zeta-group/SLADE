@@ -1103,7 +1103,7 @@ bool SImage::rotate(int angle)
 		}
 		if (j >= num_pixels_)
 		{
-			Log::info(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
+			Log::error(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
 			delete[] nd;
 			if (mask_)
 				delete[] nm;
@@ -1162,7 +1162,7 @@ bool SImage::mirror(bool vertical)
 			j = ((i / size_.x) * size_.x) + ((size_.x - 1) - (i % size_.x));
 		if (j >= num_pixels_)
 		{
-			Log::info(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
+			Log::error(fmt::format("Pixel {} remapped to {}, how did this even happen?", i, j));
 			delete[] nd;
 			if (mask_)
 				delete[] nm;

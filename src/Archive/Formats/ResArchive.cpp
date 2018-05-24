@@ -81,7 +81,7 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 {
 	if (!parent)
 	{
-		Log::info(1, "ReadDir: No parent node");
+		Log::error(1, "ReadDir: No parent node");
 		Global::error = "Archive is invalid and/or corrupt";
 		return false;
 	}
@@ -108,7 +108,7 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 		// Check the identifier
 		if (magic[0] != 'R' || magic[1] != 'e' || magic[2] != 'S' || magic[3] != 0)
 		{
-			Log::info(fmt::format(
+			Log::error(fmt::format(
 				"ResArchive::readDir: Entry {} ({}@{0:#x}) has invalid directory entry", name, size, offset));
 			Global::error = "Archive is invalid and/or corrupt";
 			return false;
@@ -121,25 +121,25 @@ bool ResArchive::readDirectory(MemChunk& mc, size_t dir_offset, size_t num_lumps
 
 		mc.read(&dumze, 2);
 		if (dumze)
-			Log::info(fmt::format("Flag guard not null for entry {}", name));
+			Log::warning(fmt::format("Flag guard not null for entry {}", name));
 		mc.read(&flags, 1);
 		if (flags != 1 && flags != 17)
-			Log::info(fmt::format("Unknown flag value for entry {}", name));
+			Log::warning(fmt::format("Unknown flag value for entry {}", name));
 		mc.read(&dumzero1, 4);
 		if (dumzero1)
-			Log::info(fmt::format("Near-end values not set to zero for entry {}", name));
+			Log::warning(fmt::format("Near-end values not set to zero for entry {}", name));
 		mc.read(&dumff, 2);
 		if (dumff != 0xFFFF)
-			Log::info(fmt::format("Dummy set to a non-FF value for entry {}", name));
+			Log::warning(fmt::format("Dummy set to a non-FF value for entry {}", name));
 		mc.read(&dumzero2, 4);
 		if (dumzero2)
-			Log::info(fmt::format("Trailing values not set to zero for entry {}", name));
+			Log::warning(fmt::format("Trailing values not set to zero for entry {}", name));
 
 		// If the lump data goes past the end of the file,
 		// the resfile is invalid
 		if (offset + size > mc.size())
 		{
-			Log::info(1, "ResArchive::readDirectory: Res archive is invalid or corrupt, offset overflow");
+			Log::error(1, "ResArchive::readDirectory: Res archive is invalid or corrupt, offset overflow");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -224,14 +224,14 @@ bool ResArchive::open(MemChunk& mc)
 	// Check the header
 	if (magic[0] != 'R' || magic[1] != 'e' || magic[2] != 's' || magic[3] != '!')
 	{
-		Log::info(fmt::format("ResArchive::openFile: File {} has invalid header", filename_));
+		Log::error(fmt::format("ResArchive::openFile: File {} has invalid header", filename_));
 		Global::error = "Invalid res header";
 		return false;
 	}
 
 	if (dir_size % DIRENTRYSIZE)
 	{
-		Log::info(fmt::format("ResArchive::openFile: File {} has invalid directory size", filename_));
+		Log::error(fmt::format("ResArchive::openFile: File {} has invalid directory size", filename_));
 		Global::error = "Invalid res directory size";
 		return false;
 	}
@@ -339,7 +339,7 @@ bool ResArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("ResArchive::loadEntryData: Failed to open resfile {}", filename_));
+		Log::error(fmt::format("ResArchive::loadEntryData: Failed to open resfile {}", filename_));
 		return false;
 	}
 

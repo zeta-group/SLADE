@@ -93,7 +93,7 @@ bool ArchiveManager::validResDir(string_view dir) const
 	{
 		if (!wxFileExists(fmt::format("{}/{}", dir, path)))
 		{
-			Log::info(fmt::format(
+			Log::warning(fmt::format(
 				"Resource %s was not found in dir %s!\n"
 				"This resource folder cannot be used. "
 				"(Did you install SLADE 3 in a SLumpEd folder?)", path, dir));
@@ -122,7 +122,7 @@ bool ArchiveManager::init()
 		res_archive_open_ = (program_resource_archive_->numEntries() > 0);
 
 		if (!initArchiveFormats())
-			Log::info(1, "An error occurred reading archive formats configuration");
+			Log::error(1, "An error occurred reading archive formats configuration");
 
 		return res_archive_open_;
 	}
@@ -141,14 +141,14 @@ bool ArchiveManager::init()
 	// Open slade.pk3
 	if (!program_resource_archive_->open(dir_slade_pk3))
 	{
-		Log::info(1, "Unable to find slade.pk3!");
+		Log::error(1, "Unable to find slade.pk3!");
 		res_archive_open_ = false;
 	}
 	else
 		res_archive_open_ = true;
 
 	if (!initArchiveFormats())
-		Log::info(1, "An error occurred reading archive formats configuration");
+		Log::error(1, "An error occurred reading archive formats configuration");
 
 	return res_archive_open_;
 }
@@ -362,7 +362,7 @@ Archive* ArchiveManager::openArchive(string_view filename, bool manage, bool sil
 	}
 	else
 	{
-		Log::info(1, "Error: " + Global::error);
+		Log::error(Global::error);
 		delete new_archive;
 		return nullptr;
 	}
@@ -481,7 +481,7 @@ Archive* ArchiveManager::openArchive(ArchiveEntry* entry, bool manage, bool sile
 	}
 	else
 	{
-		Log::info(1, "Error: " + Global::error);
+		Log::error(Global::error);
 		delete new_archive;
 		return nullptr;
 	}
@@ -541,7 +541,7 @@ Archive* ArchiveManager::openDirArchive(string_view dir, bool manage, bool silen
 	}
 	else
 	{
-		Log::info(1, "Error: " + Global::error);
+		Log::error(Global::error);
 		delete new_archive;
 		return nullptr;
 	}

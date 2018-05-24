@@ -159,7 +159,7 @@ bool GZipArchive::open(MemChunk& mc)
 		mds += 2;
 		if (hcrc != (fullcrc & 0x0000FFFF))
 		{
-			Log::info(1, "CRC-16 mismatch for GZip header");
+			Log::warning(1, "CRC-16 mismatch for GZip header");
 		}
 	}
 
@@ -317,7 +317,7 @@ bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("GZipArchive::loadEntryData: Failed to open gzip file {}", filename_));
+		Log::error(fmt::format("GZipArchive::loadEntryData: Failed to open gzip file {}", filename_));
 		return false;
 	}
 

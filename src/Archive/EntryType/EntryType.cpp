@@ -352,8 +352,8 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 			if (parent_type != EntryType::unknownType())
 				parent_type->copyToType(ntype);
 			else
-				Log::info(fmt::format(
-					"Warning: Entry type {} inherits from unknown type {}", ntype->id(), typenode->inherit()));
+				Log::warning(fmt::format(
+					"Entry type {} inherits from unknown type {}", ntype->id(), typenode->inherit()));
 		}
 
 		// Go through all parsed fields
@@ -382,8 +382,8 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 
 				// Warn if undefined format
 				if (ntype->format_ == EntryDataFormat::anyFormat())
-					Log::info(
-						fmt::format("Warning: Entry type {} requires undefined format {}", ntype->id(), format_string));
+					Log::warning(
+						fmt::format("Entry type {} requires undefined format {}", ntype->id(), format_string));
 			}
 			else if (StrUtil::equalCI(fieldnode->name(), "icon")) // Icon field
 			{
@@ -470,7 +470,7 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 				if (fieldnode->nValues() >= 3)
 					ntype->colour_ = ColRGBA(fieldnode->intValue(0), fieldnode->intValue(1), fieldnode->intValue(2));
 				else
-					Log::info(fmt::format("Not enough colour components defined for entry type {}", ntype->id()));
+					Log::warning(fmt::format("Not enough colour components defined for entry type {}", ntype->id()));
 			}
 			else
 			{
@@ -537,7 +537,7 @@ bool EntryType::loadEntryTypes()
 	// Check resource archive exists
 	if (!res_archive)
 	{
-		Log::info(1, "Error: No resource archive open!");
+		Log::error(1, "No resource archive open!");
 		return false;
 	}
 
@@ -547,7 +547,7 @@ bool EntryType::loadEntryTypes()
 	// Check it exists
 	if (!et_dir)
 	{
-		Log::info(1, "Error: config/entry_types does not exist in slade.pk3");
+		Log::error(1, "config/entry_types does not exist in slade.pk3");
 		return false;
 	}
 
@@ -562,7 +562,7 @@ bool EntryType::loadEntryTypes()
 
 	// Warn if no types were read (this shouldn't happen unless the resource archive is corrupted)
 	if (!etypes_read)
-		Log::info(1, "Warning: No built-in entry types could be loaded from slade.pk3");
+		Log::warning("No built-in entry types could be loaded from slade.pk3");
 
 
 	// Read Custom Types -------------------------------------------------------

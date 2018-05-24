@@ -694,7 +694,7 @@ bool SLADEMap::readDoomVertexes(ArchiveEntry* entry)
 	if (!entry)
 	{
 		Global::error = "Map has no VERTEXES entry!";
-		Log::info(Global::error);
+		Log::error(Global::error);
 		return false;
 	}
 
@@ -727,7 +727,7 @@ bool SLADEMap::readDoomSidedefs(ArchiveEntry* entry)
 	if (!entry)
 	{
 		Global::error = "Map has no SIDEDEFS entry!";
-		Log::info(Global::error);
+		Log::error(Global::error);
 		return false;
 	}
 
@@ -760,7 +760,7 @@ bool SLADEMap::readDoomLinedefs(ArchiveEntry* entry)
 	if (!entry)
 	{
 		Global::error = "Map has no LINEDEFS entry!";
-		Log::info(Global::error);
+		Log::error(Global::error);
 		return false;
 	}
 
@@ -778,7 +778,7 @@ bool SLADEMap::readDoomLinedefs(ArchiveEntry* entry)
 	{
 		UI::setSplashProgress(p + ((float)a / nl) * 0.2f);
 		if (!addLine(line_data[a]))
-			Log::info(2, fmt::sprintf("Line %lu invalid, not added", a));
+			Log::warning(2, fmt::sprintf("Line %lu invalid, not added", a));
 	}
 
 	Log::info(3, fmt::sprintf("Read %lu lines", lines_.size()));
@@ -794,7 +794,7 @@ bool SLADEMap::readDoomSectors(ArchiveEntry* entry)
 	if (!entry)
 	{
 		Global::error = "Map has no SECTORS entry!";
-		Log::info(Global::error);
+		Log::error(Global::error);
 		return false;
 	}
 
@@ -827,7 +827,7 @@ bool SLADEMap::readDoomThings(ArchiveEntry* entry)
 	if (!entry)
 	{
 		Global::error = "Map has no THINGS entry!";
-		Log::info(Global::error);
+		Log::error(Global::error);
 		return false;
 	}
 

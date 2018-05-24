@@ -79,7 +79,7 @@ bool BSPArchive::open(MemChunk& mc)
 	size_t size = mc.size();
 	if (size < 64)
 	{
-		Log::info(1, "BSPArchive::open: Opening failed, invalid header");
+		Log::error(1, "BSPArchive::open: Opening failed, invalid header");
 		Global::error = "Invalid BSP header";
 		return false;
 	}
@@ -92,7 +92,7 @@ bool BSPArchive::open(MemChunk& mc)
 	version = wxINT32_SWAP_ON_BE(version);
 	if (version != 0x17 && version != 0x1D)
 	{
-		Log::info(1, "BSPArchive::open: Opening failed, unknown BSP version");
+		Log::error(1, "BSPArchive::open: Opening failed, unknown BSP version");
 		Global::error = "Unknown BSP version";
 		return false;
 	}
@@ -112,7 +112,7 @@ bool BSPArchive::open(MemChunk& mc)
 		// Check that content stays within bounds
 		if (wxINT32_SWAP_ON_BE(sz) + wxINT32_SWAP_ON_BE(ofs) > size)
 		{
-			Log::info(1, "BSPArchive::open: Opening failed, invalid header (data out of bounds)");
+			Log::error(1, "BSPArchive::open: Opening failed, invalid header (data out of bounds)");
 			Global::error = "Invalid BSP header";
 			return false;
 		}
@@ -125,7 +125,7 @@ bool BSPArchive::open(MemChunk& mc)
 			// If there are no textures, no need to bother
 			if (texsize == 0)
 			{
-				Log::info(1, "BSPArchive::open: Opening failed, no texture");
+				Log::error(1, "BSPArchive::open: Opening failed, no texture");
 				Global::error = "No texture content";
 				return false;
 			}
@@ -142,7 +142,7 @@ bool BSPArchive::open(MemChunk& mc)
 	// Check that the offset table is within bounds
 	if (texoffset + ((numtex + 1) << 2) > size)
 	{
-		Log::info(1, "BSPArchive::open: Opening failed, miptex entry out of bounds");
+		Log::error(1, "BSPArchive::open: Opening failed, miptex entry out of bounds");
 		Global::error = "Out of bounds";
 		return false;
 	}
@@ -305,7 +305,7 @@ bool BSPArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("BSPArchive::loadEntryData: Unable to open archive file {}", filename_));
+		Log::error(fmt::format("BSPArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

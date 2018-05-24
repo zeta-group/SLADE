@@ -169,7 +169,7 @@ void SStartPage::load(bool new_tip)
 	// Can't do anything without html entry
 	if (!entry_base_html_)
 	{
-		Log::info(1, "No start page resource found");
+		Log::warning(1, "No start page resource found");
 		html_startpage_->SetPage(
 			"<html><head><title>SLADE</title></head><body><center><h1>"
 			"Something is wrong with slade.pk3 :(</h1><center></body></html>",

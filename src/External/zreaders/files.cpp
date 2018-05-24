@@ -345,7 +345,7 @@ void FileReaderBZ2::FillBuffer ()
 
 extern "C" void bz_internal_error (int errcode)
 {
-	Log::info(fmt::sprintf("libbzip2: internal error number %d\n", errcode));
+	Log::error(fmt::sprintf("libbzip2: internal error number %d\n", errcode));
 }
 
 //==========================================================================

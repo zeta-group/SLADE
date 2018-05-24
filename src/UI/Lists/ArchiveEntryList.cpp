@@ -940,7 +940,7 @@ void ArchiveEntryList::onListItemActivated(wxListEvent& e)
 		// Check it exists (really should)
 		if (!dir)
 		{
-			Log::info(1, "Error: Trying to open nonexistant directory");
+			Log::error(1, "Trying to open nonexistant directory");
 			return;
 		}
 

@@ -419,7 +419,7 @@ void parseDecorateActor(Tokenizer& tz, std::map<int, ThingType>& types, vector<T
 		Log::info(3, fmt::format("Parsed actor {}: {}", name, ednum));
 	}
 	else
-		Log::info(1, fmt::format("Warning: Invalid actor definition for {}", name));
+		Log::warning(1, fmt::format("Invalid actor definition for {}", name));
 
 	// Ignore actors filtered for other games,
 	// and actors with a negative or null type

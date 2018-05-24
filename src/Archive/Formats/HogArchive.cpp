@@ -177,7 +177,7 @@ bool HogArchive::open(MemChunk& mc)
 		// the hogfile is invalid
 		if (iter_offset + 17 > archive_size)
 		{
-			Log::info(1, "HogArchive::open: hog archive is invalid or corrupt");
+			Log::error(1, "HogArchive::open: hog archive is invalid or corrupt");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -333,7 +333,7 @@ bool HogArchive::loadEntryData(ArchiveEntry* entry)
 	// Check if opening the file failed
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("HogArchive::loadEntryData: Failed to open hogfile {}", filename_));
+		Log::error(fmt::format("HogArchive::loadEntryData: Failed to open hogfile {}", filename_));
 		return false;
 	}
 

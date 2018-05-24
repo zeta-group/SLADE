@@ -73,7 +73,7 @@ bool SiNArchive::open(MemChunk& mc)
 	// Check it
 	if (pack[0] != 'S' || pack[1] != 'P' || pack[2] != 'A' || pack[3] != 'K')
 	{
-		Log::info(1, "SiNArchive::open: Opening failed, invalid header");
+		Log::error(1, "SiNArchive::open: Opening failed, invalid header");
 		Global::error = "Invalid pak header";
 		return false;
 	}
@@ -105,7 +105,7 @@ bool SiNArchive::open(MemChunk& mc)
 		// Check offset+size
 		if ((unsigned)(offset + size) > mc.size())
 		{
-			Log::info(1, "SiNArchive::open: SiN archive is invalid or corrupt (entry goes past end of file)");
+			Log::error(1, "SiNArchive::open: SiN archive is invalid or corrupt (entry goes past end of file)");
 			Global::error = "Archive is invalid and/or corrupt";
 			setMuted(false);
 			return false;
@@ -286,7 +286,7 @@ bool SiNArchive::loadEntryData(ArchiveEntry* entry)
 	// Check it opened
 	if (!file.IsOpened())
 	{
-		Log::info(fmt::format("SiNArchive::loadEntryData: Unable to open archive file {}", filename_));
+		Log::error(fmt::format("SiNArchive::loadEntryData: Unable to open archive file {}", filename_));
 		return false;
 	}
 

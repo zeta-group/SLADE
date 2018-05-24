@@ -43,7 +43,7 @@
 #endif
 
 #include "Main.h"
-#define I_FatalError(...) Log::error(wxString::Format(__VA_ARGS__))
+#define I_FatalError(...) Log::error(fmt::sprintf(__VA_ARGS__))
 
 namespace GC
 {

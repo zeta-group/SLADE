@@ -43,6 +43,7 @@
 #include "SLADEWxApp.h"
 #include "Utility/StringUtils.h"
 #include <wx/statbmp.h>
+#include "UI/WxUtils.h"
 
 #undef BOOL
 
@@ -110,11 +111,11 @@ protected:
 	void DoLogText(const wxString& msg) override
 	{
 		if (msg.Lower().Contains("error"))
-			Log::error(msg.Right(msg.size() - 10));
+			Log::error(WxUtils::stringToView(msg.Right(msg.size() - 10)));
 		else if (msg.Lower().Contains("warning"))
-			Log::warning(msg.Right(msg.size() - 10));
+			Log::warning(WxUtils::stringToView(msg.Right(msg.size() - 10)));
 		else
-			Log::info(msg.Right(msg.size() - 10));
+			Log::info(WxUtils::stringToView(msg.Right(msg.size() - 10)));
 	}
 
 public:
@@ -670,7 +671,7 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	// Check failed
 	if (e.GetString() == "connect_failed")
 	{
-		Log::info(1, "Version check failed, unable to connect");
+		Log::warning(1, "Version check failed, unable to connect");
 		if (update_check_message_box)
 			wxMessageBox(
 				"Update check failed: unable to connect to internet. "
@@ -685,7 +686,7 @@ void SLADEWxApp::onVersionCheckCompleted(wxThreadEvent& e)
 	// Check for correct info
 	if (info.size() != 5)
 	{
-		Log::info(1, "Version check failed, received invalid version info");
+		Log::warning(1, "Version check failed, received invalid version info");
 		if (update_check_message_box)
 			wxMessageBox("Update check failed: received invalid version info.", "Check for Updates");
 		return;

@@ -286,7 +286,7 @@ vector<string> processCommandLine(vector<string>& args)
 		else if (StrUtil::equalCI(arg, "-debug"))
 		{
 			Global::debug = true;
-			Log::info("Debugging stuff enabled");
+			Log::debug("Debugging stuff enabled");
 		}
 
 		// Other (no dash), open as archive
@@ -295,7 +295,7 @@ vector<string> processCommandLine(vector<string>& args)
 
 		// Unknown parameter
 		else
-			Log::warning(fmt::format("Unknown command line parameter: \"{}\"", arg));
+			Log::debug("Unknown command line parameter: \"{}\"", arg);
 	}
 
 	return to_open;

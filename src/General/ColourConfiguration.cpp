@@ -193,7 +193,7 @@ bool ColourConfiguration::readConfiguration(MemChunk& mc)
 				}
 
 				else
-					Log::info(fmt::format("Warning: unknown colour definition property \"{}\"", prop->name()));
+					Log::warning(fmt::format("Unknown colour definition property \"{}\"", prop->name()));
 			}
 		}
 	}
@@ -217,7 +217,7 @@ bool ColourConfiguration::readConfiguration(MemChunk& mc)
 				flat_alpha = prop->floatValue();
 
 			else
-				Log::info(fmt::format("Warning: unknown theme property \"{}\"", prop->name()));
+				Log::warning(fmt::format("Unknown theme property \"{}\"", prop->name()));
 		}
 	}
 

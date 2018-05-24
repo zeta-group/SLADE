@@ -2,60 +2,125 @@
 
 namespace Log
 {
-	enum class MessageType
+enum class MessageType
+{
+	Info,
+	Warning,
+	Error,
+	Debug,
+	Console, // Only displayed in the console
+	Script,  // Script output
+	Any
+};
+
+struct Message
+{
+	string      message;
+	MessageType type;
+	std::tm     timestamp;
+
+	Message(string_view message, MessageType type, std::tm timestamp) :
+		message{ message.data(), message.size() },
+		type{ type },
+		timestamp{ timestamp }
 	{
-		Info,
-		Warning,
-		Error,
-		Debug,
-		Console,	// Only displayed in the console
-		Script,		// Script output
-		Any
-	};
+	}
 
-	struct Message
-	{
-		string		message;
-		MessageType	type;
-		std::tm		timestamp;
+	string formattedMessageLine() const;
+};
 
-		string	formattedMessageLine() const;
-	};
+const vector<Message>& history();
+int                    verbosity();
+void                   setVerbosity(int verbosity);
+void                   init();
+void                   message(MessageType type, int level, string_view text);
+void                   message(MessageType type, string_view text);
+void                   message(MessageType type, int level, string_view text, fmt::format_args args);
+void                   message(MessageType type, string_view text, fmt::format_args args);
+vector<Message*>       since(time_t time, MessageType type = MessageType::Any);
 
-	const vector<Message>&	history();
-	int						verbosity();
 
-	void	setVerbosity(int verbosity);
+// Message shortcuts by type
+// -----------------------------------------------------------------------------
 
-	void	init();
-
-	void		message(MessageType type, int level, const char* text);
-	void		message(MessageType type, const char* text);
-	inline void	message(MessageType type, int level, const string& text) { message(type, level, text.c_str()); }
-	inline void	message(MessageType type, const string& text) { message(type, text.c_str()); }
-
-	vector<Message*>	since(time_t time, MessageType type = MessageType::Any);
-
-	inline void	info(int level, const char* text) { message(MessageType::Info, level, text); }
-	inline void	info(const char* text) { message(MessageType::Info, text); }
-	inline void	info(int level, const string& text) { message(MessageType::Info, level, text); }
-	inline void	info(const string& text) { message(MessageType::Info, text); }
-
-	inline void	warning(int level, const char* text) { message(MessageType::Warning, level, text); }
-	inline void	warning(const char* text) { message(MessageType::Warning, text); }
-	inline void	warning(int level, const string& text) { message(MessageType::Warning, level, text); }
-	inline void	warning(const string& text) { message(MessageType::Warning, text); }
-
-	inline void	error(int level, const char* text) { message(MessageType::Error, level, text); }
-	inline void	error(const char* text) { message(MessageType::Error, text); }
-	inline void	error(int level, const string& text) { message(MessageType::Error, level, text); }
-	inline void	error(const string& text) { message(MessageType::Error, text); }
-
-	void	debug(int level, const char* text);
-	void	debug(const char* text);
-	inline void	debug(int level, const string& text) { message(MessageType::Debug, level, text); }
-	inline void	debug(const string& text) { message(MessageType::Debug, text); }
-
-	inline void	console(const char* text) { message(MessageType::Console, text); }
-	inline void	console(const string& text) { message(MessageType::Console, text); }
+inline void info(int level, string_view text)
+{
+	message(MessageType::Info, level, text);
 }
+inline void info(string_view text)
+{
+	message(MessageType::Info, text);
+}
+
+inline void warning(int level, string_view text)
+{
+	message(MessageType::Warning, level, text);
+}
+inline void warning(string_view text)
+{
+	message(MessageType::Warning, text);
+}
+
+inline void error(int level, string_view text)
+{
+	message(MessageType::Error, level, text);
+}
+inline void error(string_view text)
+{
+	message(MessageType::Error, text);
+}
+
+// These can't be inline, need access to Global::debug
+void debug(int level, string_view text);
+void debug(string_view text);
+void debug(int level, string_view text, fmt::format_args args);
+void debug(string_view text, fmt::format_args args);
+
+inline void console(string_view text)
+{
+	message(MessageType::Console, text);
+}
+
+
+// Message shortcuts by type with args for fmt::format
+// -----------------------------------------------------------------------------
+
+template<typename... Args> void info(int level, string_view text, const Args& ... args)
+{
+	message(MessageType::Info, level, text, fmt::make_format_args(args...));
+}
+template<typename... Args> void info(string_view text, const Args&... args)
+{
+	message(MessageType::Info, text, fmt::make_format_args(args...));
+}
+
+template<typename... Args> void warning(int level, string_view text, const Args&... args)
+{
+	message(MessageType::Warning, level, text, fmt::make_format_args(args...));
+}
+template<typename... Args> void warning(string_view text, const Args&... args)
+{
+	message(MessageType::Warning, text, fmt::make_format_args(args...));
+}
+
+template<typename... Args> void error(int level, string_view text, const Args&... args)
+{
+	message(MessageType::Error, level, text, fmt::make_format_args(args...));
+}
+template<typename... Args> void error(string_view text, const Args&... args)
+{
+	message(MessageType::Error, text, fmt::make_format_args(args...));
+}
+
+template<typename... Args> void debug(int level, string_view text, const Args&... args)
+{
+	if (Global::debug)
+		message(MessageType::Debug, level, text, fmt::make_format_args(args...));
+}
+template<typename... Args> void debug(string_view text, const Args&... args)
+{
+	if (Global::debug)
+		message(MessageType::Debug, text, fmt::make_format_args(args...));
+}
+
+} // namespace Log

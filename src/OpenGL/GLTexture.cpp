@@ -678,6 +678,7 @@ GLTexture& GLTexture::bgTex()
 		wxColour col1(bgtx_colour1.value);
 		wxColour col2(bgtx_colour2.value);
 		tex_background_.genChequeredTexture(8, ColRGBA(COLWX(col1), 255), ColRGBA(COLWX(col2), 255));
+		Log::debug("Background GL texture id: {}", tex_background_.glId());
 	}
 	return tex_background_;
 }

@@ -566,7 +566,7 @@ bool PolygonSplitter::tracePolyOutline(int edge_start)
 	if (a >= 99999)
 	{
 		if (verbose_)
-			Log::info(1, "Possible infinite loop in tracePolyOutline");
+			Log::warning(1, "Possible infinite loop in tracePolyOutline");
 		return false;
 	}
 
@@ -621,7 +621,7 @@ bool PolygonSplitter::testTracePolyOutline(int edge_start)
 	if (a >= 99999)
 	{
 		if (verbose_)
-			Log::info(1, "Possible infinite loop in tracePolyOutline");
+			Log::warning(1, "Possible infinite loop in tracePolyOutline");
 		return false;
 	}
 

@@ -1036,7 +1036,7 @@ bool Archive::swapEntries(ArchiveEntry* entry1, ArchiveEntry* entry2)
 	// Check they are both in the same directory
 	if (entry2->parentDir() != dir)
 	{
-		Log::info(1, "Error: Can't swap two entries in different directories");
+		Log::error(1, "Can't swap two entries in different directories");
 		return false;
 	}
 

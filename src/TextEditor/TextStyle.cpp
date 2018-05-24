@@ -813,7 +813,7 @@ bool StyleSet::loadResourceStyles()
 	// Check it exists
 	if (!dir)
 	{
-		Log::info(1, "Warning: No 'config/text_styles' directory exists in slade.pk3");
+		Log::warning(1, "No 'config/text_styles' directory exists in slade.pk3");
 		return false;
 	}
 
