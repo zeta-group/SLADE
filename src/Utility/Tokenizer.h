@@ -82,7 +82,10 @@ public:
 	void setCommentTypes(int types) { comment_types_ = types; }
 	void setSpecialCharacters(string_view characters)
 	{
-		special_characters_.assign(characters.begin(), characters.end());
+		memset(special_character_, 0, 256);
+		for (char c : characters)
+			special_character_[c] = true;
+		//special_characters_.assign(characters.begin(), characters.end());
 	}
 	void setSource(const string& source) { source_ = source; }
 	void setReadLowerCase(bool lower) { read_lowercase_ = lower; }
@@ -130,7 +133,7 @@ public:
 	bool openMem(const MemChunk& mc, string_view source);
 
 	// General
-	bool isSpecialCharacter(char p) const { return VECTOR_EXISTS(special_characters_, p); }
+	bool isSpecialCharacter(char p) const { return special_character_[p]; }
 	bool atEnd() const { return !token_next_.valid; }
 	void reset();
 
@@ -202,7 +205,8 @@ private:
 
 	// Configuration
 	int          comment_types_;      // Types of comments to skip
-	vector<char> special_characters_; // These will always be read as separate tokens
+	//vector<char> special_characters_; // These will always be read as separate tokens
+	bool         special_character_[256]; // Table of char values that are considered special characters
 	string       source_;             // What file/entry/chunk is being tokenized
 	bool         decorate_;           // Special handling for //$ comments
 	bool         read_lowercase_;     // If true, tokens will all be read in lowercase
