@@ -102,7 +102,7 @@ STreeNode* STreeNode::child(string_view name)
 		return nullptr;
 
 	// If name ends with /, remove it
-	if (name.ends_with('/'))
+	if (name.ends_with('/') || name.ends_with('\\'))
 		name.remove_suffix(1);
 
 	// If no directories were given
@@ -149,7 +149,7 @@ vector<STreeNode*> STreeNode::children(string_view name)
 		return ret;
 
 	// If name ends with /, remove it
-	if (name.ends_with('/'))
+	if (name.ends_with('/') || name.ends_with('\\'))
 		name.remove_suffix(1);
 
 	// If no directories were given
@@ -201,7 +201,7 @@ STreeNode* STreeNode::addChild(string_view name)
 		return nullptr;
 
 	// If name ends with /, remove it
-	if (name.ends_with('/'))
+	if (name.ends_with('/') || name.ends_with('\\'))
 		name.remove_suffix(1);
 
 	// If no directories were given
