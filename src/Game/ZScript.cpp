@@ -523,14 +523,18 @@ bool StateTable::parse(ParsedStatement& states)
 
 		auto states_added = false;
 		auto index        = 0u;
+		auto n_tokens     = statement.tokens.size();
 
 		// Check for state labels
-		for (auto a = 0u; a < statement.tokens.size(); ++a)
+		for (auto a = 0u; a < n_tokens; ++a)
 		{
+			if (statement.tokens[a] == '(')
+				break;
+
 			if (statement.tokens[a] == ':')
 			{
 				// Ignore ::
-				if (a + 1 < statement.tokens.size() && statement.tokens[a + 1] == ':')
+				if (a + 1 < n_tokens && statement.tokens[a + 1] == ':')
 				{
 					++a;
 					continue;
@@ -552,7 +556,7 @@ bool StateTable::parse(ParsedStatement& states)
 			}
 		}
 
-		if (index >= statement.tokens.size())
+		if (index >= n_tokens)
 		{
 			logParserMessage(
 				statement,
@@ -567,23 +571,72 @@ bool StateTable::parse(ParsedStatement& states)
 			|| StrUtil::equalCI(statement.tokens[index], "fail"))
 			continue;
 
-		if (index + 2 < statement.tokens.size())
-		{
-			// Parse duration
-			int duration;
-			if (statement.tokens[index + 2] == "-" && index + 3 < statement.tokens.size())
-			{
-				// Negative number
-				duration = StrUtil::toInt(statement.tokens[index + 3]);
-				duration = -duration;
-			}
-			else
-				duration = StrUtil::toInt(statement.tokens[index + 2]);
+		State::Frame frame;
 
-			for (auto& state : current_states)
-				states_[state].frames.push_back(
-					{ statement.tokens[index], statement.tokens[index + 1], (int)duration });
+		// Sprite base
+		// Check for "----" (will be 4 separate tokens)
+		if (statement.tokens[index] == StrUtil::DASH)
+		{
+			while (index < n_tokens)
+			{
+				if (statement.tokens[index] != StrUtil::DASH)
+					break;
+				frame.sprite_base += statement.tokens[index++];
+			}
 		}
+		else
+			frame.sprite_base = statement.tokens[index++];
+
+		if (index >= n_tokens)
+		{
+			logParserMessage(
+				statement,
+				Log::MessageType::Warning,
+				fmt::format("Failed to parse states block beginning on line {}", states.line));
+			continue;
+		}
+
+		// Sprite frame
+		while (index < n_tokens && statement.tokens[index] != '-'
+			   && !StrUtil::isInteger(statement.tokens[index], false))
+			frame.sprite_frame += statement.tokens[index++];
+
+		if (index >= n_tokens)
+		{
+			logParserMessage(
+				statement,
+				Log::MessageType::Warning,
+				fmt::format("Failed to parse states block beginning on line {}", states.line));
+			continue;
+		}
+
+		// Duration
+		// Check for negative number
+		if (statement.tokens[index] == "-" && index + 1 < n_tokens)
+			frame.duration = -StrUtil::toInt(statement.tokens[index + 1]);
+		else
+			frame.duration = -StrUtil::toInt(statement.tokens[index]);
+
+		for (auto& state : current_states)
+			states_[state].frames.push_back(frame);
+
+		//if (index + 2 < statement.tokens.size())
+		//{
+		//	// Parse duration
+		//	int duration;
+		//	//if (statement.tokens[index + 2] == "-" && index + 3 < statement.tokens.size())
+		//	//{
+		//	//	// Negative number
+		//	//	duration = StrUtil::toInt(statement.tokens[index + 3]);
+		//	//	duration = -duration;
+		//	//}
+		//	//else
+		//		duration = StrUtil::toInt(statement.tokens[index + 2]);
+
+		//	for (auto& state : current_states)
+		//		states_[state].frames.push_back(
+		//			{ statement.tokens[index], statement.tokens[index + 1], (int)duration });
+		//}
 	}
 
 	states_.erase("");
