@@ -43,10 +43,11 @@
 #include "General/Misc.h"
 #include "MainEditor/MainEditor.h"
 #include "UI/TextureXEditor/TextureXEditor.h"
+#include "UI/WxUtils.h"
 #include "Utility/FileMonitor.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
-#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -1220,7 +1221,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 
 	// Check if the ACC path is set up
 	string accpath = path_acc;
-	if (accpath.empty() || !wxFileExists(accpath))
+	if (accpath.empty() || !FileUtil::fileExists(accpath))
 	{
 		wxMessageBox(
 			"Error: ACC path not defined, please configure in SLADE preferences",
@@ -1251,7 +1252,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 	sopt.match_type               = EntryType::fromId("acs");
 	sopt.search_subdirs           = true;
 	vector<ArchiveEntry*> entries = App::archiveManager().findAllResourceEntries(sopt);
-	wxArrayString         lib_paths;
+	vector<string>        lib_paths;
 	for (auto& res_entry : entries)
 	{
 		// Ignore SCRIPTS
@@ -1264,7 +1265,7 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 
 		string path = App::path(StrUtil::join(res_entry->nameNoExt(), ".acs"), App::Dir::Temp);
 		res_entry->exportFile(path);
-		lib_paths.Add(path);
+		lib_paths.push_back(path);
 		Log::info(2, fmt::sprintf("Exporting ACS library %s", res_entry->name()));
 	}
 
@@ -1307,14 +1308,14 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 	}
 
 	// Delete source file
-	wxRemoveFile(srcfile);
+	FileUtil::removeFile(srcfile);
 
 	// Delete library files
 	for (const auto& lib_path : lib_paths)
-		wxRemoveFile(lib_path);
+		FileUtil::removeFile(lib_path);
 
 	// Check it compiled successfully
-	bool success = wxFileExists(ofile);
+	bool success = FileUtil::fileExists(ofile);
 	if (success)
 	{
 		// If no target entry was given, find one
@@ -1360,13 +1361,13 @@ bool EntryOperations::compileACS(ArchiveEntry* entry, bool hexen, ArchiveEntry* 
 			target->importFile(ofile);
 
 		// Delete compiled script file
-		wxRemoveFile(ofile);
+		FileUtil::removeFile(ofile);
 	}
 
 	if (!success || acc_always_show_output)
 	{
 		string errors;
-		if (wxFileExists(App::path("acs.err", App::Dir::Temp)))
+		if (FileUtil::fileExists(App::path("acs.err", App::Dir::Temp)))
 		{
 			// Read acs.err to string
 			wxFile file(App::path("acs.err", App::Dir::Temp));
@@ -1449,8 +1450,8 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	string pngpathc = path_pngcrush;
 	string pngpatho = path_pngout;
 	string pngpathd = path_deflopt;
-	if ((pngpathc.empty() || !wxFileExists(pngpathc)) && (pngpatho.empty() || !wxFileExists(pngpatho))
-		&& (pngpathd.empty() || !wxFileExists(pngpathd)))
+	if ((pngpathc.empty() || !FileUtil::fileExists(pngpathc)) && (pngpatho.empty() || !FileUtil::fileExists(pngpatho))
+		&& (pngpathd.empty() || !FileUtil::fileExists(pngpathd)))
 	{
 		Log::warning(1, "PNG tool paths not defined or invalid, no optimization done.");
 		return false;
@@ -1468,7 +1469,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	bool          crushed = false, outed = false;
 
 	// Run PNGCrush
-	if (!pngpathc.empty() && wxFileExists(pngpathc))
+	if (!pngpathc.empty() && FileUtil::fileExists(pngpathc))
 	{
 		StrUtil::Path fn(pngpathc);
 		fn.setExtension("opt");
@@ -1482,13 +1483,13 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 		errors.Empty();
 		wxExecute(command, output, errors, wxEXEC_SYNC);
 
-		if (wxFileExists(optfile))
+		if (FileUtil::fileExists(optfile))
 		{
 			if (optfile.size() < oldsize)
 			{
 				entry->importFile(optfile);
-				wxRemoveFile(optfile);
-				wxRemoveFile(pngfile);
+				FileUtil::removeFile(optfile);
+				FileUtil::removeFile(pngfile);
 			}
 			else
 				errormessages += "PNGCrush failed to reduce file size further.\n";
@@ -1520,7 +1521,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	}
 
 	// Run PNGOut
-	if (!pngpatho.empty() && wxFileExists(pngpatho))
+	if (!pngpatho.empty() && FileUtil::fileExists(pngpatho))
 	{
 		StrUtil::Path fn(pngpatho);
 		fn.setExtension("opt");
@@ -1534,13 +1535,13 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 		errors.Empty();
 		wxExecute(command, output, errors, wxEXEC_SYNC);
 
-		if (wxFileExists(optfile))
+		if (FileUtil::fileExists(optfile))
 		{
 			if (optfile.size() < oldsize)
 			{
 				entry->importFile(optfile);
-				wxRemoveFile(optfile);
-				wxRemoveFile(pngfile);
+				FileUtil::removeFile(optfile);
+				FileUtil::removeFile(pngfile);
 			}
 			else
 				errormessages += "PNGout failed to reduce file size further.\n";
@@ -1573,7 +1574,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 	}
 
 	// Run deflopt
-	if (!pngpathd.empty() && wxFileExists(pngpathd))
+	if (!pngpathd.empty() && FileUtil::fileExists(pngpathd))
 	{
 		StrUtil::Path fn(pngpathd);
 		fn.setExtension("png");
@@ -1586,7 +1587,7 @@ bool EntryOperations::optimizePNG(ArchiveEntry* entry)
 		wxExecute(command, output, errors, wxEXEC_SYNC);
 
 		entry->importFile(pngfile);
-		wxRemoveFile(pngfile);
+		FileUtil::removeFile(pngfile);
 		deflsize = entry->size();
 
 		// send app output to console if wanted
@@ -1778,9 +1779,7 @@ bool EntryOperations::convertSwanTbls(ArchiveEntry* entry, MemChunk* animdata, b
 				if (first.length() > 8)
 				{
 					Log::error(fmt::sprintf(
-						"String %s is too long for an animated %s name!",
-						first,
-						(texture ? "texture" : "flat")));
+						"String %s is too long for an animated %s name!", first, (texture ? "texture" : "flat")));
 					return false;
 				}
 

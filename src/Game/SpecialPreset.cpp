@@ -30,8 +30,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "SpecialPreset.h"
 #include "App.h"
+#include "SpecialPreset.h"
+#include "Utility/FileUtils.h"
 #include "Utility/Parser.h"
 
 using namespace Game;
@@ -149,7 +150,7 @@ bool Game::loadCustomSpecialPresets()
 {
 	// Check file exists
 	string file = App::path("special_presets.cfg", App::Dir::User);
-	if (!wxFileExists(file))
+	if (!FileUtil::fileExists(file))
 		return true;
 
 	// Load special presets file to memory

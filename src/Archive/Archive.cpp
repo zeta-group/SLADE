@@ -35,6 +35,7 @@
 #include "General/UndoRedo.h"
 #include "Utility/Parser.h"
 #include <regex>
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -591,7 +592,7 @@ bool Archive::save(string_view filename)
 			// No filename is given, but the archive has a filename, so overwrite it (and make a backup)
 
 			// Create backup
-			if (backup_archives && wxFileName::FileExists(this->filename_) && save_backup)
+			if (backup_archives && FileUtil::fileExists(filename_) && save_backup)
 			{
 				// Copy current file contents to new backup file
 				string bakfile = this->filename_ + ".bak";
@@ -1151,14 +1152,12 @@ bool Archive::renameEntry(ArchiveEntry* entry, string_view name)
 bool Archive::importDir(string_view directory)
 {
 	// Get a list of all files in the directory
-	wxArrayString files;
-	wxDir::GetAllFiles({ directory.data(), directory.size() }, &files);
+	auto files = FileUtil::allFilesInDir(directory, true);
 
 	// Go through files
 	for (const auto& file : files)
 	{
-		auto        filename    = file.ToStdString();
-		string_view fn_relative = filename;
+		string_view fn_relative = file;
 
 		// Remove directory from entry name
 		fn_relative.remove_prefix(directory.size());
@@ -1176,7 +1175,7 @@ bool Archive::importDir(string_view directory)
 		auto entry = addNewEntry(ename, dir->numEntries() + 1, dir);
 
 		// Load data
-		entry->importFile(filename);
+		entry->importFile(file);
 
 		// Set unmodified
 		entry->setState(0);

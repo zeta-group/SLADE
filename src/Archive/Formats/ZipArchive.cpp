@@ -37,6 +37,7 @@
 #include "ZipArchive.h"
 #include <fstream>
 #include "UI/WxUtils.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -64,7 +65,7 @@ ZipArchive::~ZipArchive()
 	if (test.good())
 	{
 		test.close();
-		wxRemoveFile(temp_file_);
+		FileUtil::removeFile(temp_file_);
 	}
 }
 
@@ -199,7 +200,7 @@ bool ZipArchive::open(MemChunk& mc)
 	bool success = open(tempfile);
 
 	// Clean up
-	wxRemoveFile(tempfile);
+	FileUtil::removeFile(tempfile);
 
 	return success;
 }
@@ -221,7 +222,7 @@ bool ZipArchive::write(MemChunk& mc, bool update)
 	}
 
 	// Clean up
-	wxRemoveFile(tempfile);
+	FileUtil::removeFile(tempfile);
 
 	return success;
 }
@@ -602,7 +603,7 @@ void ZipArchive::generateTempFileName(string_view filename)
 {
 	auto tfn   = StrUtil::Path::fileNameOf(filename);
 	temp_file_ = App::path(tfn, App::Dir::Temp);
-	if (wxFileExists(temp_file_))
+	if (FileUtil::fileExists(temp_file_))
 	{
 		// Make sure we don't overwrite an existing temp file
 		// (in case there are multiple zips open with the same name)
@@ -610,7 +611,7 @@ void ZipArchive::generateTempFileName(string_view filename)
 		while (true)
 		{
 			temp_file_ = App::path(fmt::format("{}.{}", tfn, n), App::Dir::Temp);
-			if (!wxFileExists(temp_file_))
+			if (!FileUtil::fileExists(temp_file_))
 				break;
 
 			n++;

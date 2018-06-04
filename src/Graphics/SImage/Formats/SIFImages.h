@@ -1,5 +1,6 @@
 
 #include "App.h"
+#include "Utility/FileUtils.h"
 
 class PNGChunk
 {
@@ -532,7 +533,7 @@ protected:
 		data.write(png_data + 33, png.size() - 33);
 
 		// Clean up
-		wxRemoveFile(App::path("temp.png", App::Dir::Temp));
+		FileUtil::removeFile(App::path("temp.png", App::Dir::Temp));
 
 		// Success
 		return true;

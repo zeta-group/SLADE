@@ -35,6 +35,7 @@
 #include "Lua.h"
 #include "ScriptManager.h"
 #include "UI/ScriptManagerWindow.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -130,23 +131,13 @@ void loadCustomScripts()
 {
 	// If the directory doesn't exist create it
 	auto user_scripts_dir = App::path("scripts/custom", App::Dir::User);
-	if (!wxDirExists(user_scripts_dir))
-		wxMkdir(user_scripts_dir);
+	if (!FileUtil::createDir(user_scripts_dir))
+		return;
 
-	// Open the custom custom_scripts directory
-	wxDir res_dir;
-	res_dir.Open(user_scripts_dir);
-
-	// Go through each file in the directory
-	wxString filename = wxEmptyString;
-	bool     files    = res_dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-	while (files)
-	{
-		addEditorScriptFromFile(user_scripts_dir + "/" + filename.ToStdString(), ScriptType::Custom);
-
-		// Next file
-		files = res_dir.GetNext(&filename);
-	}
+	// Go through each file in the custom scripts directory
+	auto files = FileUtil::allFilesInDir(user_scripts_dir);
+	for (const auto& file : files)
+		addEditorScriptFromFile(file, ScriptType::Custom);
 }
 
 // -----------------------------------------------------------------------------
@@ -173,23 +164,13 @@ void loadEditorScripts(ScriptType type, const string& dir)
 
 	// If the directory doesn't exist create it
 	auto user_scripts_dir = App::path(fmt::sprintf("scripts/%s", dir), App::Dir::User);
-	if (!wxDirExists(user_scripts_dir))
-		wxMkdir(user_scripts_dir);
+	if (!FileUtil::createDir(user_scripts_dir))
+		return;
 
-	// Open the custom custom_scripts directory
-	wxDir res_dir;
-	res_dir.Open(user_scripts_dir);
-
-	// Go through each file in the directory
-	wxString filename = wxEmptyString;
-	bool     files    = res_dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-	while (files)
-	{
-		addEditorScriptFromFile(user_scripts_dir + "/" + filename.ToStdString(), type);
-
-		// Next file
-		files = res_dir.GetNext(&filename);
-	}
+	// Go through each file in the custom scripts directory
+	auto files = FileUtil::allFilesInDir(user_scripts_dir);
+	for (const auto& file : files)
+		addEditorScriptFromFile(file, type);
 }
 
 // -----------------------------------------------------------------------------
@@ -199,23 +180,17 @@ void exportUserScripts(const string& path, ScriptList& list)
 {
 	// Check dir exists
 	auto scripts_dir = App::path(path, App::Dir::User);
-	if (wxDirExists(scripts_dir))
+	if (FileUtil::dirExists(scripts_dir))
 	{
 		// Exists, clear directory
-		wxDir res_dir;
-		res_dir.Open(scripts_dir);
-		wxString filename = wxEmptyString;
-		bool     files    = res_dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-		while (files)
-		{
-			wxRemoveFile(fmt::sprintf("%s/%s", scripts_dir, filename));
-			files = res_dir.GetNext(&filename);
-		}
+		auto files = FileUtil::allFilesInDir(scripts_dir);
+		for (const auto& file : files)
+			FileUtil::removeFile(file);
 	}
 	else
 	{
 		// Doesn't exist, create directory
-		wxMkdir(scripts_dir);
+		FileUtil::createDir(scripts_dir);
 	}
 
 	// Write scripts to directory
@@ -267,9 +242,7 @@ Script* getEditorScript(const string& name, ScriptType type, bool user_only = tr
 void ScriptManager::init()
 {
 	// Create user scripts directory if it doesn't exist
-	auto user_scripts_dir = App::path("scripts", App::Dir::User);
-	if (!wxDirExists(user_scripts_dir))
-		wxMkdir(user_scripts_dir);
+	FileUtil::createDir(App::path("scripts", App::Dir::User));
 
 	// Init script templates
 	readResourceEntryText(script_templates[ScriptType::Archive], "scripts/archive/_template.lua");

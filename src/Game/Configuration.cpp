@@ -43,6 +43,7 @@
 #include "Utility/Parser.h"
 #include "Utility/StringUtils.h"
 #include "ZScript.h"
+#include "Utility/FileUtils.h"
 
 using namespace Game;
 
@@ -857,7 +858,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 		{
 			// Config is in user dir
 			string filename = App::path("games/", App::Dir::User) + game_config.filename + ".cfg";
-			if (wxFileExists(filename))
+			if (FileUtil::fileExists(filename))
 				StrUtil::processIncludes(filename, full_config);
 			else
 			{
@@ -889,7 +890,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 			{
 				// Config is in user dir
 				string filename = App::path("games/", App::Dir::User) + conf.filename + ".cfg";
-				if (wxFileExists(filename))
+				if (FileUtil::fileExists(filename))
 					StrUtil::processIncludes(filename, full_config);
 				else
 				{

@@ -36,6 +36,7 @@
 #include "Archive/Formats/WadArchive.h"
 #include "FileMonitor.h"
 #include "Utility/StringUtils.h"
+#include "FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -199,5 +200,5 @@ void DB2MapFileMonitor::processTerminated()
 	}
 
 	// Remove the temp wadfile
-	wxRemoveFile(filename_);
+	FileUtil::removeFile(filename_);
 }

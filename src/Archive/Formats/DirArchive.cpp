@@ -36,6 +36,7 @@
 #include "DirArchive.h"
 #include "General/UI.h"
 #include "TextEditor/TextStyle.h"
+#include "Utility/FileUtils.h"
 #include "WadArchive.h"
 
 
@@ -219,10 +220,10 @@ bool DirArchive::save(string_view filename)
 	time = App::runTimer();
 	for (const auto& removed_file : removed_files_)
 	{
-		if (wxFileExists(removed_file))
+		if (FileUtil::fileExists(removed_file))
 		{
 			Log::info(2, fmt::format("Removing file {}", removed_file));
-			wxRemoveFile(removed_file);
+			FileUtil::removeFile(removed_file);
 		}
 	}
 
@@ -256,8 +257,11 @@ bool DirArchive::save(string_view filename)
 		if (entries[a]->type() == EntryType::folderType())
 		{
 			// Create if needed
-			if (!wxDirExists(path))
-				wxMkdir(path);
+			if (!FileUtil::createDir(path))
+			{
+				Global::error = fmt::format("Unable to create directory \"{}\"", path);
+				return false;
+			}
 
 			// Set unmodified
 			entries[a]->exProp("filePath") = path;

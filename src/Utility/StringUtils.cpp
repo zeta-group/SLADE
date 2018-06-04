@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
+#include "FileUtils.h"
 #include "StringUtils.h"
 #include "Tokenizer.h"
 #include <regex>
@@ -107,7 +108,7 @@ bool StrUtil::equalCI(string_view left, string_view right)
 }
 
 // This one is a bit tricky - the string_view == string_view one above should be sufficient
-//bool StrUtil::equalCI(string_view left, const char* right)
+// bool StrUtil::equalCI(string_view left, const char* right)
 //{
 //	if (!right)
 //		return false;
@@ -205,12 +206,16 @@ bool StrUtil::contains(string_view str, string_view check)
 
 bool StrUtil::containsCI(string_view str, string_view check)
 {
-	// TODO: Could be improved to avoid copying strings
+	if (str.size() < check.size())
+		return false;
+
+	// TODO: Could be improved to avoid copying strings - it's currently unused so not a priority
 	return lower(str).find(lower(check)) != string::npos;
 }
 
 bool StrUtil::matches(string_view str, string_view check)
 {
+	// TODO: Should just implement this myself, regex is a bit slow
 	return std::regex_search(str.data(), std::regex(wildcardToRegex(check)));
 }
 
@@ -814,7 +819,7 @@ void StrUtil::processIncludes(ArchiveEntry* entry, string& out, bool use_res)
 	}
 
 	// Delete temp file
-	wxRemoveFile(filename);
+	FileUtil::removeFile(filename);
 }
 
 int StrUtil::toInt(const string& str)

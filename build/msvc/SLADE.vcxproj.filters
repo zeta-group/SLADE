@@ -1521,6 +1521,9 @@
     <ClCompile Include="..\..\src\External\fmt\posix.cc">
       <Filter>External\Fmt</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Utility\FileUtils.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2677,6 +2680,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\External\fmt\fmt\time.h">
       <Filter>External\Fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Utility\FileUtils.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

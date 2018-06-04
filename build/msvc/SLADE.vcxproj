@@ -1729,6 +1729,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release - WinXP|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\Utility\FileMonitor.cpp" />
+    <ClCompile Include="..\..\src\Utility\FileUtils.cpp" />
     <ClCompile Include="..\..\src\Utility\MathStuff.cpp" />
     <ClCompile Include="..\..\src\Utility\MemChunk.cpp" />
     <ClCompile Include="..\..\src\Utility\Parser.cpp" />
@@ -2239,6 +2240,7 @@
     <ClInclude Include="..\..\src\Utility\CodePages.h" />
     <ClInclude Include="..\..\src\Utility\Compression.h" />
     <ClInclude Include="..\..\src\Utility\FileMonitor.h" />
+    <ClInclude Include="..\..\src\Utility\FileUtils.h" />
     <ClInclude Include="..\..\src\Utility\MathStuff.h" />
     <ClInclude Include="..\..\src\Utility\MemChunk.h" />
     <ClInclude Include="..\..\src\Utility\Parser.h" />

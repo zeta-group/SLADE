@@ -38,6 +38,7 @@
 #include "UI/MapBackupPanel.h"
 #include "UI/SDialog.h"
 #include "Utility/StringUtils.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -71,8 +72,8 @@ bool MapBackupManager::writeBackup(vector<ArchiveEntry::UPtr>& map_data, string_
 {
 	// Create backup directory if needed
 	string backup_dir = App::path("backups", App::Dir::User);
-	if (!wxDirExists(backup_dir))
-		wxMkdir(backup_dir);
+	if (!FileUtil::createDir(backup_dir))
+		return false;
 
 	// Open or create backup zip
 	ZipArchive backup;

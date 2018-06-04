@@ -45,6 +45,7 @@
 #include "MapEditor/MapEditContext.h"
 #include "MapEditor/SLADEMap/SLADEMap.h"
 #include "Utility/SFileDialog.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -361,7 +362,7 @@ CONSOLE_COMMAND(script, 1, true)
 
 CONSOLE_COMMAND(script_file, 1, true)
 {
-	if (!wxFile::Exists(args[0]))
+	if (!FileUtil::fileExists(args[0]))
 	{
 		Log::error(fmt::sprintf("File \"%s\" does not exist", args[0]));
 		return;

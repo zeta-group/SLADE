@@ -34,6 +34,7 @@
 #include "ArchiveTreeNode.h"
 #include "General/Misc.h"
 #include "MapEditor/Edit/Input.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -510,9 +511,8 @@ bool ArchiveTreeNode::merge(ArchiveTreeNode* node, unsigned position, int state)
 bool ArchiveTreeNode::exportTo(string_view path)
 {
 	// Create directory if needed
-	wxString wxpath{ path.data(), path.size() };
-	if (!wxDirExists(wxpath))
-		wxMkdir(wxpath);
+	if (!FileUtil::createDir(path))
+		return false;
 
 	// Export entries as files
 	for (auto& entry : entries_)

@@ -36,10 +36,10 @@
 #include "Formats/All.h"
 #include "Formats/DirArchive.h"
 #include "General/Console/Console.h"
-#include "General/UI.h"
 #include "General/ResourceManager.h"
+#include "General/UI.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
-#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -91,12 +91,14 @@ bool ArchiveManager::validResDir(string_view dir) const
 
 	for (const auto& path : paths)
 	{
-		if (!wxFileExists(fmt::format("{}/{}", dir, path)))
+		if (!FileUtil::fileExists(fmt::format("{}/{}", dir, path)))
 		{
 			Log::warning(fmt::format(
 				"Resource %s was not found in dir %s!\n"
 				"This resource folder cannot be used. "
-				"(Did you install SLADE 3 in a SLumpEd folder?)", path, dir));
+				"(Did you install SLADE 3 in a SLumpEd folder?)",
+				path,
+				dir));
 			return false;
 		}
 	}
@@ -116,7 +118,7 @@ bool ArchiveManager::init()
 	string resdir = App::path("res", App::Dir::Executable);
 #endif
 
-	if (wxDirExists(resdir) && validResDir(resdir))
+	if (FileUtil::dirExists(resdir) && validResDir(resdir))
 	{
 		program_resource_archive_->importDir(resdir);
 		res_archive_open_ = (program_resource_archive_->numEntries() > 0);
@@ -129,13 +131,13 @@ bool ArchiveManager::init()
 
 	// Find slade3.pk3 directory
 	string dir_slade_pk3 = App::path("slade.pk3", App::Dir::Resources);
-	if (!wxFileExists(dir_slade_pk3))
+	if (!FileUtil::fileExists(dir_slade_pk3))
 		dir_slade_pk3 = App::path("slade.pk3", App::Dir::Data);
-	if (!wxFileExists(dir_slade_pk3))
+	if (!FileUtil::fileExists(dir_slade_pk3))
 		dir_slade_pk3 = App::path("slade.pk3", App::Dir::Executable);
-	if (!wxFileExists(dir_slade_pk3))
+	if (!FileUtil::fileExists(dir_slade_pk3))
 		dir_slade_pk3 = App::path("slade.pk3", App::Dir::User);
-	if (!wxFileExists(dir_slade_pk3))
+	if (!FileUtil::fileExists(dir_slade_pk3))
 		dir_slade_pk3 = "slade.pk3";
 
 	// Open slade.pk3
@@ -258,8 +260,7 @@ Archive* ArchiveManager::getArchive(string_view filename)
 Archive* ArchiveManager::openArchive(string_view filename, bool manage, bool silent)
 {
 	// Check for directory
-	wxString wxfn(filename.data(), filename.size());
-	if (!wxFile::Exists(wxfn) && wxDirExists(wxfn))
+	if (!FileUtil::fileExists(filename.to_string()) && FileUtil::dirExists(filename.to_string()))
 		return openDirArchive(filename, manage, silent);
 
 	Archive* new_archive = getArchive(filename);
@@ -804,7 +805,7 @@ void ArchiveManager::setArchiveResource(Archive* archive, bool resource)
 bool ArchiveManager::addBaseResourcePath(string_view path)
 {
 	// Firstly, check the file exists
-	if (!wxFileExists({ path.data(), path.size() }))
+	if (!FileUtil::fileExists(path.to_string()))
 		return false;
 
 	// Second, check the path doesn't already exist
@@ -1021,7 +1022,7 @@ void ArchiveManager::addRecentFile(string_view path)
 	auto recent_path = path.to_string();
 
 	// Check the path is valid
-	if (!(wxFileName::FileExists(recent_path) || wxDirExists(recent_path)))
+	if (!(FileUtil::fileExists(recent_path) || FileUtil::dirExists(recent_path)))
 		return;
 
 	// Replace \ with /

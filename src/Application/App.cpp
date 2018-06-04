@@ -54,6 +54,7 @@
 #include "TextEditor/TextLanguage.h"
 #include "TextEditor/TextStyle.h"
 #include "UI/SBrush.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
 
@@ -148,7 +149,7 @@ bool initDirectories()
 	dir_app = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath().ToStdString();
 
 	// Check for portable install
-	if (wxFileExists(path("portable", Dir::Executable)))
+	if (FileUtil::fileExists(path("portable", Dir::Executable)))
 	{
 		// Setup portable user/data dirs
 		dir_data = dir_app;
@@ -164,7 +165,7 @@ bool initDirectories()
 	}
 
 	// Create user dir if necessary
-	if (!wxDirExists(dir_user))
+	if (!FileUtil::dirExists(dir_user))
 	{
 		if (!wxMkdir(dir_user))
 		{
@@ -174,11 +175,11 @@ bool initDirectories()
 	}
 
 	// Check data dir
-	if (!wxDirExists(dir_data))
+	if (!FileUtil::dirExists(dir_data))
 		dir_data = dir_app; // Use app dir if data dir doesn't exist
 
 	// Check res dir
-	if (!wxDirExists(dir_res))
+	if (!FileUtil::dirExists(dir_res))
 		dir_res = dir_app; // Use app dir if res dir doesn't exist
 
 	return true;
@@ -594,16 +595,10 @@ void App::exit(bool save_config)
 	EntryType::cleanupEntryTypes();
 
 	// Clear temp folder
-	wxDir temp;
-	temp.Open(App::path("", App::Dir::Temp));
-	wxString filename;
-	bool     files = temp.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-	while (files)
-	{
-		if (!wxRemoveFile(App::path((string)filename, App::Dir::Temp)))
-			Log::warning(fmt::format("Warning: Could not clean up temporary file \"{}\"", filename));
-		files = temp.GetNext(&filename);
-	}
+	auto temp_files = FileUtil::allFilesInDir(App::path("", App::Dir::Temp), true);
+	for (const auto& file : temp_files)
+		if (!FileUtil::removeFile(file))
+			Log::warning("Warning: Could not clean up temporary file \"{}\"", file);
 
 	// Close lua
 	Lua::close();
@@ -644,7 +639,7 @@ string App::path(string_view filename, Dir dir)
 			dir_temp = temp_location_custom;
 
 		// Create folder if necessary
-		if (!wxDirExists(dir_temp) && temp_fail_count < 2)
+		if (!FileUtil::dirExists(dir_temp) && temp_fail_count < 2)
 		{
 			if (!wxMkdir(dir_temp))
 			{

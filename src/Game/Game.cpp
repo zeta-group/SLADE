@@ -31,12 +31,13 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "Game.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "Archive/Formats/ZipArchive.h"
 #include "Configuration.h"
+#include "Game.h"
 #include "TextEditor/TextLanguage.h"
+#include "Utility/FileUtils.h"
 #include "Utility/Parser.h"
 #include "ZScript.h"
 #include <thread>
@@ -358,39 +359,36 @@ void Game::init()
 	ActionSpecial::initGlobal();
 
 	// Add game configurations from user dir
-	wxArrayString allfiles;
-	wxDir::GetAllFiles(App::path("games", App::Dir::User), &allfiles);
+	auto allfiles = FileUtil::allFilesInDir(App::path("games", App::Dir::User), true);
 	for (const auto& file : allfiles)
 	{
 		// Read config info
 		MemChunk mc;
-		mc.importFile(file.ToStdString());
+		mc.importFile(file);
 
 		// Add to list if valid
 		GameDef gdef;
 		if (gdef.parse(mc))
 		{
-			gdef.filename        = wxFileName(file).GetName();
+			S_SET_VIEW(gdef.filename, StrUtil::Path::fileNameOf(file, false));
 			gdef.user            = true;
 			game_defs[gdef.name] = gdef;
 		}
 	}
 
 	// Add port configurations from user dir
-	allfiles.clear();
-	wxDir::GetAllFiles(App::path("ports", App::Dir::User), &allfiles);
+	allfiles = FileUtil::allFilesInDir(App::path("ports", App::Dir::User), true);
 	for (const auto& file : allfiles)
 	{
 		// Read config info
 		MemChunk mc;
-		mc.importFile(file.ToStdString());
+		mc.importFile(file);
 
 		// Add to list if valid
 		PortDef pdef;
 		if (pdef.parse(mc))
 		{
-			auto fname = StrUtil::Path::fileNameOf({ file.data(), file.size() }, false);
-			S_SET_VIEW(pdef.filename, fname);
+			S_SET_VIEW(pdef.filename, StrUtil::Path::fileNameOf(file, false));
 			pdef.user            = true;
 			port_defs[pdef.name] = pdef;
 		}
@@ -447,7 +445,7 @@ void Game::init()
 		Log::warning("An error occurred loading user special_presets.cfg");
 
 	// Load zdoom.pk3 stuff
-	if (wxFileExists(zdoom_pk3_path.value))
+	if (FileUtil::fileExists(zdoom_pk3_path.value))
 	{
 		std::thread thread([=]() {
 			ZipArchive zdoom_pk3;

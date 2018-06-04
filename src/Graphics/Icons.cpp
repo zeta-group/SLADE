@@ -30,10 +30,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "Icons.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "General/UI.h"
+#include "Icons.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -133,7 +134,7 @@ bool loadIconsDir(Type type, ArchiveTreeNode* dir)
 		icons.push_back(n_icon);
 
 		// Delete the temporary file
-		wxRemoveFile(tempfile);
+		FileUtil::removeFile(tempfile);
 	}
 
 	// Go through large icons
@@ -176,7 +177,7 @@ bool loadIconsDir(Type type, ArchiveTreeNode* dir)
 			}
 
 			// Delete the temporary file
-			wxRemoveFile(tempfile);
+			FileUtil::removeFile(tempfile);
 		}
 	}
 

@@ -31,9 +31,10 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "General/UI.h"
+#include "UI/WxUtils.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 #include "WolfArchive.h"
-#include "UI/WxUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -58,24 +59,34 @@ string findFileCasing(const StrUtil::Path& filename)
 #ifdef _WIN32
 	return filename.fileName().to_string();
 #else
-	string path = filename.path().to_string();
-	wxDir  dir(path);
-	if (!dir.IsOpened())
+	auto path  = filename.path();
+	auto files = FileUtil::allFilesInDir(path);
+	for (const auto& file : files)
 	{
-		Log::error(1, "No directory at path %s. This shouldn't happen.");
-		return "";
-	}
-
-	wxString found;
-	bool   cont = dir.GetFirst(&found);
-	while (cont)
-	{
-		if (StrUtil::equalCI(WxUtils::stringToView(found), filename.fileName()))
-			return (dir.GetNameWithSep() + found).ToStdString();
-		cont = dir.GetNext(&found);
+		if (StrUtil::equalCI(StrUtil::Path::fileNameOf(file), filename.fileName()))
+			return file;
 	}
 
 	return "";
+
+//	string path = filename.path().to_string();
+//	wxDir  dir(path);
+//	if (!dir.IsOpened())
+//	{
+//		Log::error(1, "No directory at path %s. This shouldn't happen.");
+//		return "";
+//	}
+//
+//	wxString found;
+//	bool     cont = dir.GetFirst(&found);
+//	while (cont)
+//	{
+//		if (StrUtil::equalCI(WxUtils::stringToView(found), filename.fileName()))
+//			return (dir.GetNameWithSep() + found).ToStdString();
+//		cont = dir.GetNext(&found);
+//	}
+//
+//	return "";
 #endif
 }
 
@@ -336,7 +347,8 @@ void ExpandWolfGraphLump(ArchiveEntry* entry, size_t lumpnum, size_t numlumps, h
 			huffptr = hufftable + (nodeval - 256);
 		}
 		else
-			Log::warning(fmt::format("ExpandWolfGraphLump: nodeval is out of control ({}) in entry {}", nodeval, lumpnum));
+			Log::warning(
+				fmt::format("ExpandWolfGraphLump: nodeval is out of control ({}) in entry {}", nodeval, lumpnum));
 	}
 
 	entry->importMem(start, expanded);
@@ -377,7 +389,7 @@ bool WolfArchive::open(string_view filename)
 	// Find wolf archive type
 	StrUtil::Path fn1(filename);
 	string        fn1_name = StrUtil::upper(fn1.fileName(false));
-	bool       opened;
+	bool          opened;
 	if (fn1_name == "MAPHEAD" || fn1_name == "GAMEMAPS" || fn1_name == "MAPTEMP")
 	{
 		// MAPHEAD can be paried with either a GAMEMAPS (Carmack,RLEW) or MAPTEMP (RLEW)
@@ -385,7 +397,7 @@ bool WolfArchive::open(string_view filename)
 		if (fn1_name == "MAPHEAD")
 		{
 			fn2.setFileName("GAMEMAPS");
-			if (!wxFile::Exists(fn2.fullPath()))
+			if (!FileUtil::fileExists(fn2.fullPath()))
 				fn2.setFileName("MAPTEMP");
 		}
 		else
@@ -1165,10 +1177,10 @@ bool WolfArchive::isWolfArchive(string_view filename)
 		StrUtil::Path fn2(fn1);
 		fn1.setFileName("MAPHEAD");
 		fn2.setFileName("GAMEMAPS");
-		if (!(wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2))))
+		if (!(FileUtil::fileExists(findFileCasing(fn1)) && FileUtil::fileExists(findFileCasing(fn2))))
 		{
 			fn2.setFileName("MAPTEMP");
-			return (wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2)));
+			return (FileUtil::fileExists(findFileCasing(fn1)) && FileUtil::fileExists(findFileCasing(fn2)));
 		}
 		return true;
 	}
@@ -1177,7 +1189,7 @@ bool WolfArchive::isWolfArchive(string_view filename)
 		StrUtil::Path fn2(fn1);
 		fn1.setFileName("AUDIOHED");
 		fn2.setFileName("AUDIOT");
-		return (wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2)));
+		return (FileUtil::fileExists(findFileCasing(fn1)) && FileUtil::fileExists(findFileCasing(fn2)));
 	}
 	else if (fn1_name == "VGAHEAD" || fn1_name == "VGAGRAPH" || fn1_name == "VGADICT")
 	{
@@ -1187,8 +1199,8 @@ bool WolfArchive::isWolfArchive(string_view filename)
 		fn2.setFileName("VGAGRAPH");
 		fn3.setFileName("VGADICT");
 		return (
-			wxFile::Exists(findFileCasing(fn1)) && wxFile::Exists(findFileCasing(fn2))
-			&& wxFile::Exists(findFileCasing(fn3)));
+			FileUtil::fileExists(findFileCasing(fn1)) && FileUtil::fileExists(findFileCasing(fn2))
+			&& FileUtil::fileExists(findFileCasing(fn3)));
 	}
 
 	// else we have to deal with a VSWAP archive, which is the only self-contained type

@@ -31,11 +31,13 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "PaletteManager.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "Archive/Formats/ZipArchive.h"
 #include "General/Misc.h"
+#include "PaletteManager.h"
+#include "Utility/FileUtils.h"
+#include "Utility/StringUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -184,32 +186,23 @@ bool PaletteManager::loadResourcePalettes()
 bool PaletteManager::loadCustomPalettes()
 {
 	// If the directory doesn't exist create it
-	if (!wxDirExists(App::path("palettes", App::Dir::User)))
-		wxMkdir(App::path("palettes", App::Dir::User));
+	string custom_dir = App::path("palettes", App::Dir::User);
+	if (!FileUtil::createDir(custom_dir))
+		return false;
 
-	// Open the custom palettes directory
-	wxDir res_dir;
-	res_dir.Open(App::path("palettes", App::Dir::User));
-
-	// Go through each file in the directory
-	wxString filename = wxEmptyString;
-	bool     files    = res_dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-	while (files)
+	// Go through each file in the custom palettes directory
+	auto files = FileUtil::allFilesInDir(custom_dir);
+	for (const auto& file : files)
 	{
-		auto pal       = std::make_unique<Palette>();
-		auto full_path = res_dir.GetName() + '/' + filename;
+		auto pal = std::make_unique<Palette>();
 
 		// Load palette data
 		MemChunk mc;
-		mc.importFile(full_path.ToStdString());
+		mc.importFile(file);
 		pal->loadMem(mc);
 
 		// Add the palette
-		wxFileName fn(filename);
-		addPalette(std::move(pal), fn.GetName().ToStdString());
-
-		// Next file
-		files = res_dir.GetNext(&filename);
+		addPalette(std::move(pal), StrUtil::Path::fileNameOf(file, false));
 	}
 
 	return true;

@@ -45,6 +45,7 @@
 #include "MainEditor.h"
 #include "Utility/FileMonitor.h"
 #include "Utility/StringUtils.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -433,7 +434,7 @@ bool ExternalEditManager::openEntryExternal(ArchiveEntry* entry, string_view edi
 	// Get external editor path
 	string exe_path = Executables::externalExe(editor, category).path;
 #ifdef WIN32
-	if (exe_path.empty() || !wxFileExists(exe_path))
+	if (exe_path.empty() || !FileUtil::fileExists(exe_path))
 #else
 	if (exe_path.empty())
 #endif

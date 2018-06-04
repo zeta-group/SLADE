@@ -30,10 +30,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ColourConfiguration.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
+#include "ColourConfiguration.h"
 #include "Console/Console.h"
+#include "Utility/FileUtils.h"
 #include "Utility/Parser.h"
 
 
@@ -44,10 +45,10 @@
 // -----------------------------------------------------------------------------
 namespace ColourConfiguration
 {
-std::map<string, ColourConfiguration::Definition> cc_colours;
-double line_hilight_width;
-double line_selection_width;
-double flat_alpha;
+std::map<string, Definition> cc_colours;
+double                       line_hilight_width;
+double                       line_selection_width;
+double                       flat_alpha;
 } // namespace ColourConfiguration
 
 
@@ -283,7 +284,7 @@ bool ColourConfiguration::init()
 	loadDefaults();
 
 	// Check for saved colour configuration
-	if (wxFileExists(App::path("colours.cfg", App::Dir::User)))
+	if (FileUtil::fileExists(App::path("colours.cfg", App::Dir::User)))
 	{
 		MemChunk ccfg;
 		ccfg.importFile(App::path("colours.cfg", App::Dir::User));

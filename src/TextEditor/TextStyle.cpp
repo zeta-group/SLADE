@@ -40,6 +40,7 @@
 #include "TextStyle.h"
 #include "UI/TextEditorCtrl.h"
 #include "UI/WxUtils.h"
+#include "Utility/FileUtils.h"
 #include "Utility/Parser.h"
 #include "Utility/Tokenizer.h"
 
@@ -626,7 +627,7 @@ void StyleSet::initCurrent()
 
 	// First up, check if "<userdir>/current.sss" exists
 	string path = App::path("current.sss", App::Dir::User);
-	if (wxFileExists(path))
+	if (FileUtil::fileExists(path))
 	{
 		// Read it in
 		Tokenizer tz;
@@ -883,8 +884,9 @@ bool StyleSet::loadResourceStyles()
 bool StyleSet::loadCustomStyles()
 {
 	// If the custom stylesets directory doesn't exist, create it
-	if (!wxDirExists(App::path("text_styles", App::Dir::User)))
-		wxMkdir(App::path("text_styles", App::Dir::User));
+	string custom_dir = App::path("text_styles", App::Dir::User);
+	if (!FileUtil::createDir(custom_dir))
+		return false;
 
 	// Open the custom stylesets directory
 	wxDir res_dir;

@@ -50,11 +50,9 @@ Tokenizer::Token Tokenizer::invalid_token_;
 // ----------------------------------------------------------------------------
 namespace
 {
-// ------------------------------------------------------------------------
-// isWhitespace
-//
+// ----------------------------------------------------------------------------
 // Returns true if [p] is a whitespace character
-// ------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 bool isWhitespace(char p)
 {
 	// Whitespace is either a newline, tab character or space
@@ -71,10 +69,8 @@ bool isWhitespace(char p)
 
 
 // ----------------------------------------------------------------------------
-// Token::isInteger
-//
-// Returns true if the token is a valid integer. If [allow_hex] is true, can
-// also be a valid hex string
+// Returns true if the token is a valid integer.
+// If [allow_hex] is true, can also be a valid hex string
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isInteger(bool allow_hex) const
 {
@@ -82,8 +78,6 @@ bool Tokenizer::Token::isInteger(bool allow_hex) const
 }
 
 // ----------------------------------------------------------------------------
-// Token::isHex
-//
 // Returns true if the token is a valid hex string
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isHex() const
@@ -92,8 +86,6 @@ bool Tokenizer::Token::isHex() const
 }
 
 // ----------------------------------------------------------------------------
-// Token::isFloat
-//
 // Returns true if the token is a floating point number
 // ----------------------------------------------------------------------------
 bool Tokenizer::Token::isFloat() const
@@ -101,14 +93,15 @@ bool Tokenizer::Token::isFloat() const
 	return StrUtil::isFloat(text);
 }
 
+// ----------------------------------------------------------------------------
+// Returns the token as an integer value
+// ----------------------------------------------------------------------------
 int Tokenizer::Token::asInt() const
 {
 	return StrUtil::toInt(text);
 }
 
 // ----------------------------------------------------------------------------
-// Token::asBool
-//
 // Returns the token as a bool value.
 // "false", "no" and "0" are false, anything else is true.
 // ----------------------------------------------------------------------------
@@ -117,11 +110,17 @@ bool Tokenizer::Token::asBool() const
 	return !(StrUtil::equalCI(text, "false") || StrUtil::equalCI(text, "no") || StrUtil::equalCI(text, "0"));
 }
 
+// ----------------------------------------------------------------------------
+// Returns the token as a floating point value
+// ----------------------------------------------------------------------------
 double Tokenizer::Token::asFloat() const
 {
 	return StrUtil::toDouble(text);
 }
 
+// ----------------------------------------------------------------------------
+// Sets [val] to the integer value of the token
+// ----------------------------------------------------------------------------
 void Tokenizer::Token::toInt(int& val) const
 {
 	val = StrUtil::toInt(text);
@@ -130,7 +129,7 @@ void Tokenizer::Token::toInt(int& val) const
 // ----------------------------------------------------------------------------
 // Token::toBool
 //
-// Sets [val] to the token as a bool value.
+// Sets [val] to the boolean value of the token.
 // "false", "no" and "0" are false, anything else is true.
 // ----------------------------------------------------------------------------
 void Tokenizer::Token::toBool(bool& val) const
@@ -138,11 +137,17 @@ void Tokenizer::Token::toBool(bool& val) const
 	val = !(StrUtil::equalCI(text, "false") || StrUtil::equalCI(text, "no") || StrUtil::equalCI(text, "0"));
 }
 
+// ----------------------------------------------------------------------------
+// Sets [val] to the floating point (double) value of the token
+// ----------------------------------------------------------------------------
 void Tokenizer::Token::toFloat(double& val) const
 {
 	val = StrUtil::toDouble(text);
 }
 
+// ----------------------------------------------------------------------------
+// Sets [val] to the floating point (float) value of the token
+// ----------------------------------------------------------------------------
 void Tokenizer::Token::toFloat(float& val) const
 {
 	val = StrUtil::toFloat(text);
@@ -157,8 +162,6 @@ void Tokenizer::Token::toFloat(float& val) const
 
 
 // ----------------------------------------------------------------------------
-// Tokenizer::Tokenizer
-//
 // Tokenizer class constructor
 // ----------------------------------------------------------------------------
 Tokenizer::Tokenizer(int comments, const string& special_characters) :
@@ -172,8 +175,6 @@ Tokenizer::Tokenizer(int comments, const string& special_characters) :
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::peek
-//
 // Returns the 'next' token but doesn't advance
 // ----------------------------------------------------------------------------
 const Tokenizer::Token& Tokenizer::peek() const
@@ -185,8 +186,6 @@ const Tokenizer::Token& Tokenizer::peek() const
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::next
-//
 // Returns the 'next' token and advances to it
 // ----------------------------------------------------------------------------
 const Tokenizer::Token& Tokenizer::next()
@@ -200,8 +199,6 @@ const Tokenizer::Token& Tokenizer::next()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::adv
-//
 // Advances [inc] tokens
 // ----------------------------------------------------------------------------
 void Tokenizer::adv(int inc)
@@ -217,8 +214,6 @@ void Tokenizer::adv(int inc)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::advIf
-//
 // Advances [inc] tokens if the current token matches [check]
 // ----------------------------------------------------------------------------
 bool Tokenizer::advIf(const char* check, int inc)
@@ -253,8 +248,6 @@ bool Tokenizer::advIf(char check, int inc)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::advIfNC
-//
 // Advances [inc] tokens if the current token matches [check] (Case-Insensitive)
 // ----------------------------------------------------------------------------
 bool Tokenizer::advIfNC(const char* check, int inc)
@@ -279,8 +272,6 @@ bool Tokenizer::advIfNC(const string& check, int inc)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::advIfNext
-//
 // Advances [inc] tokens if the next token matches [check]
 // ----------------------------------------------------------------------------
 bool Tokenizer::advIfNext(const char* check, int inc)
@@ -324,8 +315,6 @@ bool Tokenizer::advIfNext(char check, int inc)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::advIfNextNC
-//
 // Advances [inc] tokens if the next token matches [check] (Case-Insensitive)
 // ----------------------------------------------------------------------------
 bool Tokenizer::advIfNextNC(const char* check, int inc)
@@ -343,8 +332,6 @@ bool Tokenizer::advIfNextNC(const char* check, int inc)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::advToNextLine
-//
 // Advances to the first token on the next line
 // ----------------------------------------------------------------------------
 void Tokenizer::advToNextLine()
@@ -379,6 +366,9 @@ void Tokenizer::advToNextLine()
 	token_next_ = token_current_;
 }
 
+// ----------------------------------------------------------------------------
+// Advances to the last token on the current line
+// ----------------------------------------------------------------------------
 void Tokenizer::advToEndOfLine()
 {
 	// Ignore if we're on the last token already

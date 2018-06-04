@@ -37,6 +37,7 @@
 #include "General/Console/Console.h"
 #include "MainEditor/BinaryControlLump.h"
 #include "MainEditor/MainEditor.h"
+#include "Utility/FileUtils.h"
 #include "Utility/Parser.h"
 
 
@@ -352,8 +353,8 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 			if (parent_type != EntryType::unknownType())
 				parent_type->copyToType(ntype);
 			else
-				Log::warning(fmt::format(
-					"Entry type {} inherits from unknown type {}", ntype->id(), typenode->inherit()));
+				Log::warning(
+					fmt::format("Entry type {} inherits from unknown type {}", ntype->id(), typenode->inherit()));
 		}
 
 		// Go through all parsed fields
@@ -382,8 +383,7 @@ bool EntryType::readEntryTypeDefinition(MemChunk& mc, string_view source)
 
 				// Warn if undefined format
 				if (ntype->format_ == EntryDataFormat::anyFormat())
-					Log::warning(
-						fmt::format("Entry type {} requires undefined format {}", ntype->id(), format_string));
+					Log::warning(fmt::format("Entry type {} requires undefined format {}", ntype->id(), format_string));
 			}
 			else if (StrUtil::equalCI(fieldnode->name(), "icon")) // Icon field
 			{
@@ -568,27 +568,19 @@ bool EntryType::loadEntryTypes()
 	// Read Custom Types -------------------------------------------------------
 
 	// If the directory doesn't exist create it
-	if (!wxDirExists(App::path("entry_types", App::Dir::User)))
-		wxMkdir(App::path("entry_types", App::Dir::User));
+	string custom_dir = App::path("entry_types", App::Dir::User);
+	FileUtil::createDir(custom_dir);
 
-	// Open the custom palettes directory
-	wxDir res_dir;
-	res_dir.Open(App::path("entry_types", App::Dir::User));
-
-	// Go through each file in the directory
-	wxString filename = wxEmptyString;
-	bool     files    = res_dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
-	while (files)
+	// Go through each file in the custom palettes directory
+	auto files = FileUtil::allFilesInDir(custom_dir);
+	for (const auto& file : files)
 	{
 		// Load file data
 		MemChunk mc;
-		mc.importFile(res_dir.GetName().ToStdString() + "/" + filename.ToStdString());
+		mc.importFile(file);
 
 		// Parse file
-		readEntryTypeDefinition(mc, filename.ToStdString());
-
-		// Next file
-		files = res_dir.GetNext(&filename);
+		readEntryTypeDefinition(mc, StrUtil::Path::fileNameOf(file));
 	}
 
 	return true;
