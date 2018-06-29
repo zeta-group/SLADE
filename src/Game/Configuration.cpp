@@ -911,11 +911,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 	}
 
 	if (debug_configuration)
-	{
-		wxFile test("full.cfg", wxFile::write);
-		test.Write(full_config);
-		test.Close();
-	}
+		FileUtil::writeStrToFile(full_config, "full.cfg");
 
 	// Read fully built configuration
 	bool ok = true;
@@ -925,7 +921,7 @@ bool Configuration::openConfig(string_view game, string_view port, uint8_t forma
 		S_SET_VIEW(current_port_, port);
 		S_SET_VIEW(game_configuration.value, game);
 		S_SET_VIEW(port_configuration.value, port);
-		Log::info(fmt::format("Read game configuration \"{}\" + \"{}\"", current_game_, current_port_));
+		Log::info(fmt::format(R"(Read game configuration "{}" + "{}")", current_game_, current_port_));
 	}
 	else
 	{

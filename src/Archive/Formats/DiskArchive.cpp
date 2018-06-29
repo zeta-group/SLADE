@@ -36,6 +36,7 @@
 #include "DiskArchive.h"
 #include "General/UI.h"
 #include "TextEditor/TextStyle.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -279,37 +280,9 @@ bool DiskArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool DiskArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("DiskArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
+
 
 // -----------------------------------------------------------------------------
 //
@@ -373,34 +346,25 @@ bool DiskArchive::isDiskArchive(MemChunk& mc)
 bool DiskArchive::isDiskArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < 4)
-		return false;
-	// Check given data is valid
-	size_t mcsize = file.Length();
-	if (mcsize < 80)
+	if (!file.isOpen() || file.size() < 80)
 		return false;
 
 	// Read disk header
-	uint32_t num_entries;
-	uint32_t size_entries;
-	file.Seek(0, wxFromStart);
-	file.Read(&num_entries, 4);
+	auto num_entries = file.get<uint32_t>();
 	num_entries = wxUINT32_SWAP_ON_LE(num_entries);
 
 	size_t start_offset = (72 * num_entries) + 8;
-
-	if (mcsize < start_offset)
+	if (file.size() < start_offset)
 		return false;
 
 	// Read the directory
 	for (uint32_t d = 0; d < num_entries; d++)
 	{
 		// Read entry info
-		DiskEntry entry{};
-		file.Read(&entry, 72);
+		auto entry = file.get<DiskEntry>();
 
 		// Byteswap if needed
 		entry.length = wxUINT32_SWAP_ON_LE(entry.length);
@@ -410,12 +374,12 @@ bool DiskArchive::isDiskArchive(string_view filename)
 		entry.offset += start_offset;
 
 		// Check offset+size
-		if (entry.offset + entry.length > mcsize)
+		if (entry.offset + entry.length > file.size())
 			return false;
 	}
-	file.Read(&size_entries, 4);
+	auto size_entries = file.get<uint32_t>();
 	size_entries = wxUINT32_SWAP_ON_LE(size_entries);
-	if (size_entries + start_offset != mcsize)
+	if (size_entries + start_offset != file.size())
 		return false;
 
 	// That'll do

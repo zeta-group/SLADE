@@ -84,7 +84,7 @@ public:
 		if (ok)
 		{
 			filename_      = fn.fullPath();
-			file_modified_ = wxFileModificationTime(filename_);
+			file_modified_ = FileUtil::fileModificationTime(filename_);
 			Start(1000);
 		}
 		else
@@ -196,7 +196,7 @@ public:
 		filename_ = fn.fullPath();
 		if (png.exportFile(filename_))
 		{
-			file_modified_ = wxFileModificationTime(filename_);
+			file_modified_ = FileUtil::fileModificationTime(filename_);
 			Start(1000);
 			return true;
 		}
@@ -262,7 +262,7 @@ public:
 		filename_ = fn.fullPath();
 		if (convdata.exportFile(filename_))
 		{
-			file_modified_ = wxFileModificationTime(filename_);
+			file_modified_ = FileUtil::fileModificationTime(filename_);
 			Start(1000);
 			return true;
 		}
@@ -360,7 +360,7 @@ public:
 		filename_ = fn.fullPath();
 		if (convdata.exportFile(filename_))
 		{
-			file_modified_ = wxFileModificationTime(filename_);
+			file_modified_ = FileUtil::fileModificationTime(filename_);
 			Start(1000);
 			return true;
 		}

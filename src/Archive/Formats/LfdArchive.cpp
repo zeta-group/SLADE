@@ -31,8 +31,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "LfdArchive.h"
 #include "General/UI.h"
+#include "LfdArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -250,9 +251,9 @@ bool LfdArchive::write(MemChunk& mc, bool update)
 			t = 0;
 		for (char& n : name)
 			n = 0;
-		size = wxINT32_SWAP_ON_BE(entry->size());
+		size       = wxINT32_SWAP_ON_BE(entry->size());
 		auto fname = StrUtil::Path::fileNameOf(entry->name(), false);
-		auto fext = StrUtil::Path::extensionOf(entry->name());
+		auto fext  = StrUtil::Path::extensionOf(entry->name());
 
 		for (size_t c = 0; c < fname.size() && c < 9; c++)
 			name[c] = fname[c];
@@ -272,9 +273,9 @@ bool LfdArchive::write(MemChunk& mc, bool update)
 			t = 0;
 		for (char& n : name)
 			n = 0;
-		size = wxINT32_SWAP_ON_BE(entry->size());
+		size       = wxINT32_SWAP_ON_BE(entry->size());
 		auto fname = StrUtil::Path::fileNameOf(entry->name(), false);
-		auto fext = StrUtil::Path::extensionOf(entry->name());
+		auto fext  = StrUtil::Path::extensionOf(entry->name());
 
 		for (size_t c = 0; c < fname.size() && c < 9; c++)
 			name[c] = fname[c];
@@ -296,36 +297,7 @@ bool LfdArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool LfdArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open lfdfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("LfdArchive::loadEntryData: Failed to open lfdfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -420,55 +392,52 @@ bool LfdArchive::isLfdArchive(MemChunk& mc)
 bool LfdArchive::isLfdArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Check size
-	if (file.Length() < 16)
+	if (file.size() < 16)
 		return false;
 
 	// Read header
 	char header[4];
-	file.Read(header, 4);
+	file.read(header, 4);
 
 	// Check magic header
 	if (header[0] != 'R' || header[1] != 'M' || header[2] != 'A' || header[3] != 'P')
 		return false;
 
 	// Get offset of first entry
-	uint32_t dir_offset = 0;
-	file.Seek(12, wxFromStart);
-	file.Read(&dir_offset, 4);
+	file.seekFromStart(12);
+	auto dir_offset = file.get<uint32_t>();
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset) + 16;
 	if (dir_offset % 16)
 		return false;
-	char     type1[5];
-	char     type2[5];
-	char     name1[9];
-	char     name2[9];
-	uint32_t len1;
-	uint32_t len2;
-	file.Read(type1, 4);
+	char type1[5];
+	char type2[5];
+	char name1[9];
+	char name2[9];
+	file.read(type1, 4);
 	type1[4] = 0;
-	file.Read(name1, 8);
+	file.read(name1, 8);
 	name1[8] = 0;
-	file.Read(&len1, 4);
+	auto len1 = file.get<uint32_t>();
 	len1 = wxINT32_SWAP_ON_BE(len1);
 
 	// Check size
-	if ((unsigned)file.Length() < (dir_offset + 16 + len1))
+	if (file.size() < (dir_offset + 16 + len1))
 		return false;
 
 	// Compare
-	file.Seek(dir_offset, wxFromStart);
-	file.Read(type2, 4);
+	file.seekFromStart(dir_offset);
+	file.read(type2, 4);
 	type2[4] = 0;
-	file.Read(name2, 8);
+	file.read(name2, 8);
 	name2[8] = 0;
-	file.Read(&len2, 4);
+	auto len2 = file.get<uint32_t>();
 	len2 = wxINT32_SWAP_ON_BE(len2);
 
 	if (strcmp(type1, type2) != 0 || strcmp(name1, name2) != 0 || len1 != len2)

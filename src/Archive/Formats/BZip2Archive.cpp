@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "BZip2Archive.h"
 #include "Utility/Compression.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -114,37 +115,6 @@ bool BZip2Archive::write(MemChunk& mc, bool update)
 bool BZip2Archive::loadEntryData(ArchiveEntry* entry)
 {
 	return false;
-
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("BZip2Archive::loadEntryData: Failed to open gzip file {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-	entry->setState(0);
-
-	return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -236,15 +206,15 @@ bool BZip2Archive::isBZip2Archive(MemChunk& mc)
 bool BZip2Archive::isBZip2Archive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < 14)
+	if (!file.isOpen() || file.size() < 14)
 		return false;
 
 	// Read header
-	uint8_t header[4];
-	file.Read(header, 4);
+	char header[4];
+	file.read(header, 4);
 
 	// Check for BZip2 header (reject BZip1 headers)
 	return header[0] == 'B' && header[1] == 'Z' && header[2] == 'h' && (header[3] >= '1' && header[3] <= '9');

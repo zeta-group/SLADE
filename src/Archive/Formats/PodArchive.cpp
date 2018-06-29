@@ -35,6 +35,7 @@
 #include "General/UI.h"
 #include "MainEditor/MainEditor.h"
 #include "PodArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -246,36 +247,7 @@ bool PodArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool PodArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open file
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("PodArchive::loadEntryData: Failed to open file {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 
@@ -324,42 +296,32 @@ bool PodArchive::isPodArchive(MemChunk& mc)
 // -----------------------------------------------------------------------------
 bool PodArchive::isPodArchive(string_view filename)
 {
-	wxFile file;
-	if (!file.Open(filename.to_string()))
-		return false;
+	SFile file(filename);
 
-	file.SeekEnd(0);
-	uint32_t file_size = file.Tell();
+	if (!file.isOpen())
+		return false;
 
 	// Check size for header
-	if (file_size < 84)
-	{
-		file.Close();
+	if (file.size() < 84)
 		return false;
-	}
 
 	// Read no. of files
-	file.Seek(0);
-	uint32_t num_files;
-	file.Read(&num_files, 4);
+	auto num_files = file.get<uint32_t>();
 
 	// Read id
 	char id[80];
-	file.Read(id, 80);
+	file.read(id, 80);
 
 	// Check size for directory
-	if (file_size < 84 + (num_files * 40))
-	{
-		file.Close();
+	if (file.size() < 84 + (num_files * 40))
 		return false;
-	}
 
 	// Read directory and check offsets
 	FileEntry entry{};
 	for (unsigned a = 0; a < num_files; a++)
 	{
-		file.Read(&entry, 40);
-		if (entry.offset + entry.size > file_size)
+		file.read(entry);
+		if (entry.offset + entry.size > file.size())
 			return false;
 	}
 	return true;

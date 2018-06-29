@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "DatArchive.h"
 #include "General/UI.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -524,36 +525,7 @@ bool DatArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool DatArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open wadfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("DatArchive::loadEntryData: Failed to open datfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -622,38 +594,29 @@ bool DatArchive::isDatArchive(MemChunk& mc)
 bool DatArchive::isDatArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Read dat header
-	file.Seek(0, wxFromStart);
-	uint16_t num_lumps;
-	uint32_t dir_offset, junk;
-	file.Read(&num_lumps, 2);  // Size
-	file.Read(&dir_offset, 4); // Directory offset
-	file.Read(&junk, 4);       // Unknown value
+	auto num_lumps  = file.get<uint16_t>();
+	auto dir_offset = file.get<uint32_t>();
+	file.seek(4); // Skip unknown value
 	num_lumps  = wxINT16_SWAP_ON_BE(num_lumps);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
-	junk       = wxINT32_SWAP_ON_BE(junk);
 
-	if (dir_offset >= file.Length())
+	if (dir_offset >= file.size())
 		return false;
 
 	// Read the directory
-	file.Seek(dir_offset, wxFromStart);
+	file.seekFromStart(dir_offset);
 	// Read lump info
-	uint32_t offset  = 0;
-	uint32_t size    = 0;
-	uint16_t nameofs = 0;
-	uint16_t flags   = 0;
-
-	file.Read(&offset, 4);  // Offset
-	file.Read(&size, 4);    // Size
-	file.Read(&nameofs, 2); // Name offset
-	file.Read(&flags, 2);   // Flags
+	auto offset  = file.get<uint32_t>();
+	auto size    = file.get<uint32_t>();
+	auto nameofs = file.get<uint16_t>();
+	auto flags   = file.get<uint16_t>();
 
 	// Byteswap values for big endian if needed
 	offset  = wxINT32_SWAP_ON_BE(offset);
@@ -663,7 +626,7 @@ bool DatArchive::isDatArchive(string_view filename)
 
 	// The first lump should have a name (subsequent lumps need not have one).
 	// Also, sanity check the values.
-	if (nameofs == 0 || nameofs >= file.Length() || offset + size >= file.Length())
+	if (nameofs == 0 || nameofs >= file.size() || offset + size >= file.size())
 	{
 		return false;
 	}
@@ -672,16 +635,15 @@ bool DatArchive::isDatArchive(string_view filename)
 	size_t len   = 1;
 	size_t start = nameofs + dir_offset;
 	// Sanity checks again. Make sure there is actually a name.
-	if (start > file.Length())
+	if (start > file.size())
 		return false;
-	uint8_t temp;
-	file.Seek(start, wxFromStart);
-	file.Read(&temp, 1);
+	file.seekFromStart(start);
+	auto temp = file.get<uint8_t>();
 	if (temp < 33)
 		return false;
-	for (size_t i = start; i < file.Length(); ++i, ++len)
+	for (size_t i = start; i < file.size(); ++i, ++len)
 	{
-		file.Read(&temp, 1);
+		file.read(temp);
 		// Found end of name
 		if (temp == 0)
 			break;

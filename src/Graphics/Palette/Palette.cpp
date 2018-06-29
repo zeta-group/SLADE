@@ -406,20 +406,10 @@ bool Palette::saveFile(string_view filename, Format format)
 // -----------------------------------------------------------------------------
 bool Palette::loadFile(string_view filename, Format format)
 {
-	// Open the file
-	wxFile file({ filename.data(), filename.size() });
-
-	// Check that it opened ok
-	if (!file.IsOpened())
-		return false;
-
-	// The file should contain some actual data
-	if (file.Length() == 0)
-		return false;
-
-	// Write data to MemChunk
+	// Import file to MemChunk
 	MemChunk mc;
-	mc.importFile(filename, 0, file.Length());
+	if (!mc.importFile(filename))
+		return false;
 
 	// Now load it
 	return loadMem(mc, format);

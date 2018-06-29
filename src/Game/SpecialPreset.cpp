@@ -197,8 +197,8 @@ bool Game::saveCustomSpecialPresets()
 		return true;
 
 	// Open file
-	wxFile file;
-	if (!file.Open(App::path("special_presets.cfg", App::Dir::User), wxFile::write))
+	SFile file;
+	if (!file.open(App::path("special_presets.cfg", App::Dir::User)))
 	{
 		Log::error("Unable to open special_presets.cfg file for writing");
 		return false;
@@ -213,7 +213,7 @@ bool Game::saveCustomSpecialPresets()
 	// Write to file
 	string presets;
 	root.write(presets);
-	if (!file.Write(presets))
+	if (!file.writeStr(presets))
 	{
 		Log::error("Writing to special_presets.cfg failed");
 		return false;

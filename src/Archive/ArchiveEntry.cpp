@@ -33,9 +33,10 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "ArchiveEntry.h"
 #include "Archive.h"
+#include "ArchiveEntry.h"
 #include "General/Misc.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -426,10 +427,10 @@ bool ArchiveEntry::importFile(string_view filename, uint32_t offset, uint32_t si
 	}
 
 	// Open the file
-	wxFile file({ filename.data(), filename.size() });
+	SFile file(filename);
 
 	// Check that it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 	{
 		Global::error = "Unable to open file for reading";
 		return false;
@@ -437,16 +438,16 @@ bool ArchiveEntry::importFile(string_view filename, uint32_t offset, uint32_t si
 
 	// Get the size to read, if zero
 	if (size == 0)
-		size = file.Length() - offset;
+		size = file.size() - offset;
 
 	// Check offset/size bounds
-	if (offset + size > file.Length())
+	if (offset + size > file.size())
 		return false;
 
 	// Create temporary buffer and load file contents
 	uint8_t* temp_buf = new uint8_t[size];
-	file.Seek(offset, wxFromStart);
-	file.Read(temp_buf, size);
+	file.seekFromStart(offset);
+	file.read(temp_buf, size);
 
 	// Import data into entry
 	importMem(temp_buf, size);
@@ -460,7 +461,7 @@ bool ArchiveEntry::importFile(string_view filename, uint32_t offset, uint32_t si
 // -----------------------------------------------------------------------------
 // Imports [len] data from [file]
 // -----------------------------------------------------------------------------
-bool ArchiveEntry::importFileStream(wxFile& file, uint32_t len)
+bool ArchiveEntry::importFileStream(const SFile& file, uint32_t len)
 {
 	// Check if locked
 	if (locked_)
@@ -515,19 +516,19 @@ bool ArchiveEntry::importEntry(ArchiveEntry* entry)
 bool ArchiveEntry::exportFile(string_view filename)
 {
 	// Attempt to open file
-	wxFile file({ filename.data(), filename.size() }, wxFile::write);
+	SFile file(filename, SFile::Mode::Write);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 	{
 		Global::error = fmt::format("Unable to open file {} for writing", filename);
 		return false;
 	}
 
 	// Write entry data to the file, if any
-	const uint8_t* data = dataRaw();
+	auto data = dataRaw();
 	if (data)
-		file.Write(data, this->size());
+		file.write(data, this->size());
 
 	return true;
 }
@@ -600,7 +601,7 @@ void ArchiveEntry::setExtensionByType()
 	if (parent() && !parent()->formatDesc()->names_extensions)
 		return;
 
-	// Convert name to wxFileName for processing
+	// Convert name to Path for processing
 	StrUtil::Path fn(name_);
 
 	// Set new extension

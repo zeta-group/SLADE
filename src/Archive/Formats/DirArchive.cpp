@@ -113,8 +113,7 @@ bool DirArchive::open(string_view filename)
 		new_entry->importFile(files[a]);
 		new_entry->setLoaded(true);
 
-		time_t modtime                      = wxFileModificationTime(files[a]);
-		file_modification_times_[new_entry] = modtime;
+		file_modification_times_[new_entry] = FileUtil::fileModificationTime(files[a]);
 
 		// Detect entry type
 		EntryType::detectEntryType(new_entry);
@@ -285,7 +284,7 @@ bool DirArchive::save(string_view filename)
 		// Set unmodified
 		entries[a]->setState(0);
 		entries[a]->exProp("filePath")       = path;
-		file_modification_times_[entries[a]] = wxFileModificationTime(path);
+		file_modification_times_[entries[a]] = FileUtil::fileModificationTime(path);
 	}
 
 	removed_files_.clear();
@@ -301,7 +300,7 @@ bool DirArchive::loadEntryData(ArchiveEntry* entry)
 {
 	if (entry->importFile(entry->exProp("filePath").stringValueRef()))
 	{
-		file_modification_times_[entry] = wxFileModificationTime(entry->exProp("filePath").stringValueRef());
+		file_modification_times_[entry] = FileUtil::fileModificationTime(entry->exProp("filePath").stringValueRef());
 		return true;
 	}
 
@@ -610,7 +609,7 @@ void DirArchive::updateChangedEntries(vector<DirEntryChange>& changes)
 			ArchiveEntry* entry = entryAtPath(change.entry_path);
 			entry->importFile(change.file_path);
 			EntryType::detectEntryType(entry);
-			file_modification_times_[entry] = wxFileModificationTime(change.file_path);
+			file_modification_times_[entry] = FileUtil::fileModificationTime(change.file_path);
 		}
 
 		// Deleted Entries
@@ -664,8 +663,7 @@ void DirArchive::updateChangedEntries(vector<DirEntryChange>& changes)
 			new_entry->importFile(change.file_path);
 			new_entry->setLoaded(true);
 
-			time_t modtime                      = wxFileModificationTime(change.file_path);
-			file_modification_times_[new_entry] = modtime;
+			file_modification_times_[new_entry] = FileUtil::fileModificationTime(change.file_path);
 
 			// Detect entry type
 			EntryType::detectEntryType(new_entry);

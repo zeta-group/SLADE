@@ -1063,36 +1063,7 @@ bool WolfArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool WolfArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open wadfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("WolfArchive::loadEntryData: Failed to open datfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 
@@ -1206,42 +1177,38 @@ bool WolfArchive::isWolfArchive(string_view filename)
 	// else we have to deal with a VSWAP archive, which is the only self-contained type
 
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Read Wolf header
-	file.Seek(0, wxFromStart);
-	uint16_t num_lumps, sprites, sounds;
-
-	file.Read(&num_lumps, 2); // Size
-	num_lumps = wxINT16_SWAP_ON_BE(num_lumps);
+	auto num_lumps = file.get<uint16_t>();
+	num_lumps      = wxINT16_SWAP_ON_BE(num_lumps);
 	if (num_lumps == 0)
 		return false;
 
-	file.Read(&sprites, 2); // Sprites start
-	file.Read(&sounds, 2);  // Sounds start
-	sprites = wxINT16_SWAP_ON_BE(sprites);
-	sounds  = wxINT16_SWAP_ON_BE(sounds);
+	auto sprites = file.get<uint16_t>(); // Sprites start
+	auto sounds  = file.get<uint16_t>(); // Sounds start
+	sprites      = wxINT16_SWAP_ON_BE(sprites);
+	sounds       = wxINT16_SWAP_ON_BE(sounds);
 	if (sprites > sounds)
 		return false;
 
 	// Read lump info
 	uint32_t offset    = 0;
 	uint16_t size      = 0;
-	size_t   totalsize = 6 * (num_lumps + 1);
-	size_t   pagesize  = (totalsize / 512) + ((totalsize % 512) ? 1 : 0);
-	size_t   filesize  = file.Length();
-	if (filesize < totalsize)
+	unsigned totalsize = 6 * (num_lumps + 1);
+	unsigned pagesize  = (totalsize / 512) + ((totalsize % 512) ? 1 : 0);
+	if (file.size() < totalsize)
 		return false;
 
 	WolfHandle* pages      = new WolfHandle[num_lumps];
 	uint32_t    lastoffset = 0;
 	for (size_t a = 0; a < num_lumps; ++a)
 	{
-		file.Read(&offset, 4);
+		file.read(offset);
 		offset = wxINT32_SWAP_ON_BE(offset);
 		if (offset == 0)
 		{
@@ -1260,7 +1227,7 @@ bool WolfArchive::isWolfArchive(string_view filename)
 	lastoffset        = pages[0].offset;
 	for (size_t b = 0; b < num_lumps; ++b)
 	{
-		file.Read(&size, 2);
+		file.read(size);
 		if (pages[b].offset > 0)
 		{
 			size = wxINT16_SWAP_ON_BE(size);
@@ -1278,7 +1245,7 @@ bool WolfArchive::isWolfArchive(string_view filename)
 			pages[b].size = 0;
 	}
 	delete[] pages;
-	return ((pagesize * 512) <= filesize || filesize >= lastoffset + lastsize);
+	return ((pagesize * 512) <= file.size() || file.size() >= lastoffset + lastsize);
 }
 
 

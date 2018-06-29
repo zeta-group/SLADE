@@ -33,6 +33,7 @@
 #include "ADatArchive.h"
 #include "General/UI.h"
 #include "Utility/Compression.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -249,8 +250,8 @@ bool ADatArchive::write(MemChunk& mc, bool update)
 		StrUtil::removePrefixIP(name, '/'); // Remove leading /
 		if (name.size() > 128)
 		{
-			Log::warning(fmt::format(
-				"Entry {} path is too long (> 128 characters), putting it in the root directory", name));
+			Log::warning(
+				fmt::format("Entry {} path is too long (> 128 characters), putting it in the root directory", name));
 			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			if (name.size() > 128)
 				name = name.substr(0, 128);
@@ -320,36 +321,7 @@ bool ADatArchive::write(string_view filename, bool update)
 // -----------------------------------------------------------------------------
 bool ADatArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("ADatArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 
@@ -406,22 +378,18 @@ bool ADatArchive::isADatArchive(MemChunk& mc)
 bool ADatArchive::isADatArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename.to_string());
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < 16)
+	if (!file.isOpen() || file.size() < 16)
 		return false;
 
 	// Read dat header
 	char magic[4];
-	long dir_offset;
-	long dir_size;
-	long version;
-	file.Seek(0, wxFromStart);
-	file.Read(magic, 4);
-	file.Read(&dir_offset, 4);
-	file.Read(&dir_size, 4);
-	file.Read(&version, 4);
+	file.read(magic, 4);
+	auto dir_offset = file.get<int32_t>();
+	auto dir_size   = file.get<int32_t>();
+	auto version    = file.get<int32_t>();
 
 	// Byteswap values for big endian if needed
 	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
@@ -436,7 +404,7 @@ bool ADatArchive::isADatArchive(string_view filename)
 		return false;
 
 	// Check directory is sane
-	if (dir_offset < 16 || dir_offset + dir_size > file.Length())
+	if (dir_offset < 16 || dir_offset + dir_size > file.size())
 		return false;
 
 	// That'll do

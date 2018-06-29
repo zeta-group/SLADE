@@ -401,9 +401,8 @@ bool TextureXList::readTEXTUREXData(ArchiveEntry* texturex, PatchTable& patch_ta
 		}
 
 		// Create texture
-		// CTexture* tex = new CTexture();
 		auto tex      = std::make_unique<CTexture>();
-		tex->name_    = wxString::FromAscii(tdef.name, 8);
+		tex->name_    = tdef.name;
 		tex->width_   = wxINT16_SWAP_ON_BE(tdef.width);
 		tex->height_  = wxINT16_SWAP_ON_BE(tdef.height);
 		tex->scale_x_ = tdef.scale[0] / 8.0;

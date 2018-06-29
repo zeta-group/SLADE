@@ -171,6 +171,8 @@ protected:
 	bool on_disk_   = false; // Specifies whether the archive exists on disk (as opposed to being newly created)
 	bool read_only_ = false; // If true, the archive cannot be modified
 
+	bool loadEntryDataAtOffset(ArchiveEntry* entry, unsigned file_offset);
+
 private:
 	bool            modified_ = true;
 	ArchiveTreeNode dir_root_{ nullptr, this };

@@ -31,8 +31,9 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "GZipArchive.h"
-#include "Utility/Compression.h"
 #include "General/Misc.h"
+#include "Utility/Compression.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -298,37 +299,6 @@ bool GZipArchive::renameEntry(ArchiveEntry* entry, string_view name)
 bool GZipArchive::loadEntryData(ArchiveEntry* entry)
 {
 	return false;
-
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open gzip file
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("GZipArchive::loadEntryData: Failed to open gzip file {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-	entry->setState(0);
-
-	return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -496,21 +466,18 @@ bool GZipArchive::isGZipArchive(MemChunk& mc)
 bool GZipArchive::isGZipArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Minimal metadata size is 18: 10 for header, 8 for footer
 	size_t mds = 18;
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < mds)
-	{
+	if (!file.isOpen() || file.size() < mds)
 		return false;
-	}
 
-	size_t size = file.Length();
 	// Read header
-	uint8_t header[4];
-	file.Read(header, 4);
+	char header[4];
+	file.read(header, 4);
 	// bool ftext = (header[3] & GZIP_FLG_FTEXT) != 0;
 	bool fhcrc = (header[3] & GZIP_FLG_FHCRC) != 0;
 	bool fxtra = (header[3] & GZIP_FLG_FXTRA) != 0;
@@ -525,24 +492,19 @@ bool GZipArchive::isGZipArchive(string_view filename)
 		return false;
 	}
 
-	uint32_t mtime;
-	file.Read(&mtime, 4);
-
-	uint8_t xfl;
-	file.Read(&xfl, 1);
-	uint8_t os;
-	file.Read(&os, 1);
+	auto mtime = file.get<uint32_t>();
+	auto xfl   = file.get<uint8_t>();
+	auto os    = file.get<uint8_t>();
 
 	// Skip extra fields which may be there
 	if (fxtra)
 	{
-		uint16_t xlen;
-		file.Read(&xlen, 2);
+		auto xlen = file.get<uint16_t>();
 		xlen = wxUINT16_SWAP_ON_BE(xlen);
 		mds += xlen + 2;
-		if (mds > size)
+		if (mds > file.size())
 			return false;
-		file.Seek(xlen, wxFromCurrent);
+		file.seek(xlen);
 	}
 
 	// Skip past name
@@ -552,11 +514,11 @@ bool GZipArchive::isGZipArchive(string_view filename)
 		char   c;
 		do
 		{
-			file.Read(&c, 1);
+			file.read(c);
 			if (c)
 				name += c;
 			++mds;
-		} while (c != 0 && size > mds);
+		} while (c != 0 && file.size() > mds);
 	}
 
 	// Skip past comment
@@ -566,23 +528,19 @@ bool GZipArchive::isGZipArchive(string_view filename)
 		char   c;
 		do
 		{
-			file.Read(&c, 1);
+			file.read(c);
 			if (c)
 				comment += c;
 			++mds;
-		} while (c != 0 && size > mds);
+		} while (c != 0 && file.size() > mds);
 	}
 
 	// Skip past CRC 16 check
 	if (fhcrc)
-	{
-		uint16_t hcrc;
-		file.Read(&hcrc, 2);
 		mds += 2;
-	}
 
 	// Header is over
-	if (mds > size)
+	if (mds > file.size())
 		return false;
 
 	// If it's passed to here it's probably a gzip file

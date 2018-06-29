@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "StringUtils.h"
 #include "Tokenizer.h"
+#include "FileUtils.h"
 
 
 // ----------------------------------------------------------------------------
@@ -127,8 +128,6 @@ void Tokenizer::Token::toInt(int& val) const
 }
 
 // ----------------------------------------------------------------------------
-// Token::toBool
-//
 // Sets [val] to the boolean value of the token.
 // "false", "no" and "0" are false, anything else is true.
 // ----------------------------------------------------------------------------
@@ -386,8 +385,6 @@ void Tokenizer::advToEndOfLine()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::skipSection
-//
 // Advances tokens until [end] is found. Can also handle nesting if [begin] is
 // specified. If [allow_quoted] is true, section delimiters will count even if
 // within a quoted string.
@@ -537,8 +534,6 @@ bool Tokenizer::checkOrEndNC(const char* check) const
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::checkNext
-//
 // Returns true if the next token matches [check]
 // ----------------------------------------------------------------------------
 bool Tokenizer::checkNext(const char* check) const
@@ -572,35 +567,33 @@ bool Tokenizer::checkNextNC(const char* check) const
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::openFile
-//
 // Opens text from a file [filename], reading [length] bytes from [offset].
 // If [length] is 0, read to the end of the file
 // ----------------------------------------------------------------------------
-bool Tokenizer::openFile(const string& filename, unsigned offset, unsigned length)
+bool Tokenizer::openFile(string_view filename, unsigned offset, unsigned length)
 {
 	// Open the file
-	wxFile file(filename);
+	SFile file(filename);
 
 	// Check file opened
-	if (!file.IsOpened())
+	if (!file.isOpen())
 	{
 		Log::error(fmt::sprintf("Tokenizer::openFile: Unable to open file %s", filename));
 		return false;
 	}
 
 	// Use filename as source
-	source_ = filename;
+	S_SET_VIEW(source_, filename);
 
 	// If length isn't specified or exceeds the file length,
 	// only read to the end of the file
-	if (offset + length > file.Length() || length == 0)
-		length = file.Length() - offset;
+	if (offset + length > file.size() || length == 0)
+		length = file.size() - offset;
 
 	// Read the file portion
 	data_.resize(length, 0);
-	file.Seek(offset, wxFromStart);
-	file.Read(data_.data(), length);
+	file.seekFromStart(offset);
+	file.read(data_.data(), length);
 
 	reset();
 
@@ -608,8 +601,6 @@ bool Tokenizer::openFile(const string& filename, unsigned offset, unsigned lengt
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::openString
-//
 // Opens text from a string [text], reading [length] bytes from [offset].
 // If [length] is 0, read to the end of the string
 // ----------------------------------------------------------------------------
@@ -627,8 +618,6 @@ bool Tokenizer::openString(string_view text, unsigned offset, unsigned length, s
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::openMem
-//
 // Opens text from memory [mem], reading [length] bytes
 // ----------------------------------------------------------------------------
 bool Tokenizer::openMem(const char* mem, unsigned length, string_view source)
@@ -642,8 +631,6 @@ bool Tokenizer::openMem(const char* mem, unsigned length, string_view source)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::openMem
-//
 // Opens text from a MemChunk [mc]
 // ----------------------------------------------------------------------------
 bool Tokenizer::openMem(const MemChunk& mc, string_view source)
@@ -657,8 +644,6 @@ bool Tokenizer::openMem(const MemChunk& mc, string_view source)
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::reset
-//
 // Resets the tokenizer to the beginning of the data
 // ----------------------------------------------------------------------------
 void Tokenizer::reset()
@@ -673,8 +658,6 @@ void Tokenizer::reset()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::checkCommentBegin
-//
 // Checks if a comment begins at the current position and returns the comment
 // type if one does (0 otherwise)
 // ----------------------------------------------------------------------------
@@ -708,8 +691,6 @@ unsigned Tokenizer::checkCommentBegin()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::tokenizeUnknown
-//
 // Process the current unknown character
 // ----------------------------------------------------------------------------
 void Tokenizer::tokenizeUnknown()
@@ -770,8 +751,6 @@ void Tokenizer::tokenizeUnknown()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::tokenizeToken
-//
 // Process the current token character
 // ----------------------------------------------------------------------------
 void Tokenizer::tokenizeToken()
@@ -815,8 +794,6 @@ void Tokenizer::tokenizeToken()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::tokenizeComment
-//
 // Process the current comment character
 // ----------------------------------------------------------------------------
 void Tokenizer::tokenizeComment()
@@ -859,8 +836,6 @@ void Tokenizer::tokenizeComment()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::tokenizeWhitespace
-//
 // Process the current whitespace character
 // ----------------------------------------------------------------------------
 void Tokenizer::tokenizeWhitespace()
@@ -872,8 +847,6 @@ void Tokenizer::tokenizeWhitespace()
 }
 
 // ----------------------------------------------------------------------------
-// Tokenizer::readNext
-//
 // Reads the next token from the data and writes it to [target] if specified
 // ----------------------------------------------------------------------------
 bool Tokenizer::readNext(Token* target)

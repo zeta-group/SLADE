@@ -31,8 +31,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "HogArchive.h"
 #include "General/UI.h"
+#include "HogArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -315,36 +316,7 @@ bool HogArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool HogArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open hogfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("HogArchive::loadEntryData: Failed to open hogfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -404,7 +376,7 @@ bool HogArchive::renameEntry(ArchiveEntry* entry, string_view name)
 		else
 			entry->setEncryption(ENC_NONE);
 	}
-	
+
 	return ok;
 }
 
@@ -451,38 +423,35 @@ bool HogArchive::isHogArchive(MemChunk& mc)
 bool HogArchive::isHogArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Check size
-	size_t size = file.Length();
-	if (size < 3)
+	if (file.size() < 3)
 		return false;
 
 	// Check magic header
 	char magic[3] = "";
-	file.Seek(0, wxFromStart);
-	file.Read(magic, 3);
+	file.read(magic, 3);
 	if (magic[0] != 'D' || magic[1] != 'H' || magic[2] != 'F')
 		return false;
 
 	// Iterate through files to see if the size seems okay
 	size_t offset = 3;
-	while (offset < size)
+	while (offset < file.size())
 	{
 		// Enough room for the header?
-		if (offset + 17 > size)
+		if (offset + 17 > file.size())
 			return false;
 		// Read entry size to compute next offset
-		uint32_t lumpsize;
-		file.Seek(offset + 13, wxFromStart);
-		file.Read(&lumpsize, 4);
+		file.seekFromStart(offset + 13);
+		auto lumpsize = file.get<uint32_t>();
 		offset += 17 + wxINT32_SWAP_ON_BE(lumpsize);
 	}
 
 	// We should end on at exactly the end of the file
-	return (offset == size);
+	return (offset == file.size());
 }

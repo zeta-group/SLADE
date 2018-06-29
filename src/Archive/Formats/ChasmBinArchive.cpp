@@ -36,6 +36,7 @@
 #include "Main.h"
 #include "ChasmBinArchive.h"
 #include "General/UI.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -313,38 +314,7 @@ bool ChasmBinArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool ChasmBinArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-	{
-		return false;
-	}
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("ChasmBinArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek(static_cast<int>(entry->exProp("Offset")), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 // -----------------------------------------------------------------------------
@@ -387,27 +357,23 @@ bool ChasmBinArchive::isChasmBinArchive(MemChunk& mc)
 bool ChasmBinArchive::isChasmBinArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < HEADER_SIZE)
-	{
+	if (!file.isOpen() || file.size() < HEADER_SIZE)
 		return false;
-	}
 
 	// Read bin header and check it
 	char magic[4] = {};
-	file.Read(magic, sizeof magic);
+	file.read(magic, sizeof magic);
 
 	if (magic[0] != 'C' || magic[1] != 'S' || magic[2] != 'i' || magic[3] != 'd')
-	{
 		return false;
-	}
 
 	uint16_t num_entries = 0;
-	file.Read(&num_entries, sizeof num_entries);
+	file.read<uint16_t>(num_entries);
 	num_entries = wxUINT16_SWAP_ON_BE(num_entries);
 
 	return num_entries > MAX_ENTRY_COUNT
-		   || (HEADER_SIZE + ENTRY_SIZE * MAX_ENTRY_COUNT) <= static_cast<uint32_t>(file.Length());
+		   || (HEADER_SIZE + ENTRY_SIZE * MAX_ENTRY_COUNT) <= static_cast<uint32_t>(file.size());
 }

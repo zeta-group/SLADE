@@ -100,11 +100,8 @@ Script* addEditorScriptFromFile(const string& filename, ScriptType type)
 	auto& list = scripts_editor[type];
 	list.push_back(std::move(s));
 
-	wxFile   file(filename);
-	wxString file_text;
-	file.ReadAll(&file_text);
-	list.back()->text = file_text.ToStdString();
-	file.Close();
+	SFile file(filename);
+	file.read(list.back()->text);
 
 	return list.back().get();
 }
@@ -199,9 +196,8 @@ void exportUserScripts(const string& path, ScriptList& list)
 		if (script->read_only)
 			continue;
 
-		wxFile f(App::path(fmt::sprintf("%s/%s.lua", path, script->name), App::Dir::User), wxFile::write);
-		f.Write(script->text);
-		f.Close();
+		FileUtil::writeStrToFile(
+			script->text, App::path(fmt::sprintf("%s/%s.lua", path, script->name), App::Dir::User));
 	}
 }
 

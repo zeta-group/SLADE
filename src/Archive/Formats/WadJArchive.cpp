@@ -31,10 +31,11 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "MainEditor/UI/MainWindow.h"
-#include "WadJArchive.h"
 #include "General/UI.h"
+#include "MainEditor/UI/MainWindow.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
+#include "WadJArchive.h"
 
 
 // -----------------------------------------------------------------------------
@@ -280,8 +281,7 @@ bool WadJArchive::open(MemChunk& mc)
 					&& (unsigned)(int)(entry->exProp("FullSize")) > entry->size())
 					edata.reSize((int)(entry->exProp("FullSize")), true);
 				if (!JaguarDecode(edata))
-					Log::warning(
-						fmt::format(
+					Log::warning(fmt::format(
 						"{}: {} (following {}), did not decode properly",
 						a,
 						entry->name(),
@@ -457,15 +457,15 @@ bool WadJArchive::isWadJArchive(MemChunk& mc)
 bool WadJArchive::isWadJArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Read header
 	char header[4];
-	file.Read(header, 4);
+	file.read(header, 4);
 
 	// Check for IWAD/PWAD header
 	if (!(header[1] == 'W' && header[2] == 'A' && header[3] == 'D' && (header[0] == 'P' || header[0] == 'I')))
@@ -474,15 +474,19 @@ bool WadJArchive::isWadJArchive(string_view filename)
 	// Get number of lumps and directory offset
 	uint32_t num_lumps  = 0;
 	uint32_t dir_offset = 0;
-	file.Read(&num_lumps, 4);
-	file.Read(&dir_offset, 4);
+	file.read<uint32_t>(num_lumps);
+	file.read<uint32_t>(dir_offset);
+	// file >> num_lumps;
+	// file >> dir_offset;
+	// FileUtil::readStream<uint32_t>(file, num_lumps);
+	// FileUtil::readStream<uint32_t>(file, dir_offset);
 
 	// Byteswap values for little endian
 	num_lumps  = wxINT32_SWAP_ON_LE(num_lumps);
 	dir_offset = wxINT32_SWAP_ON_LE(dir_offset);
 
 	// Check directory offset is decent
-	if ((dir_offset + (num_lumps * 16)) > file.Length() || dir_offset < 12)
+	if ((dir_offset + (num_lumps * 16)) > file.size() || dir_offset < 12)
 		return false;
 
 	// If it's passed to here it's probably a wad file

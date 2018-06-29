@@ -35,7 +35,6 @@
 #include "Utility/StringUtils.h"
 #include "WadArchive.h"
 #include "ZipArchive.h"
-#include <fstream>
 #include "UI/WxUtils.h"
 #include "Utility/FileUtils.h"
 
@@ -61,12 +60,8 @@ EXTERN_CVAR(Bool, archive_load_data)
 ZipArchive::~ZipArchive()
 {
 	// Remove temp file if it exists
-	std::ifstream test(temp_file_);
-	if (test.good())
-	{
-		test.close();
+	if (FileUtil::fileExists(temp_file_))
 		FileUtil::removeFile(temp_file_);
-	}
 }
 
 // -----------------------------------------------------------------------------
@@ -655,15 +650,15 @@ bool ZipArchive::isZipArchive(MemChunk& mc)
 bool ZipArchive::isZipArchive(string_view filename)
 {
 	// Open the file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Read first file header
 	ZipFileHeader header{};
-	file.Read(&header, sizeof(ZipFileHeader));
+	file.read<ZipFileHeader>(header);
 
 	// Check header signature
 	if (header.sig != 0x04034b50)

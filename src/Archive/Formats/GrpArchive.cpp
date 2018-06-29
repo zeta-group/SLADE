@@ -31,8 +31,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "GrpArchive.h"
 #include "General/UI.h"
+#include "GrpArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -253,36 +254,7 @@ bool GrpArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool GrpArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open grpfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("GrpArchive::loadEntryData: Failed to open grpfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -368,22 +340,20 @@ bool GrpArchive::isGrpArchive(MemChunk& mc)
 bool GrpArchive::isGrpArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Check size
-	if (file.Length() < 16)
+	if (file.size() < 16)
 		return false;
 
 	// Get number of lumps
-	uint32_t num_lumps     = 0;
-	char     ken_magic[13] = "";
-	file.Seek(0, wxFromStart);
-	file.Read(ken_magic, 12); // "KenSilverman"
-	file.Read(&num_lumps, 4); // No. of lumps in grp
+	char ken_magic[13] = "";
+	file.read(ken_magic, 12);              // "KenSilverman"
+	auto num_lumps = file.get<uint32_t>(); // No. of lumps in grp
 
 	// Byteswap values for big endian if needed
 	num_lumps = wxINT32_SWAP_ON_BE(num_lumps);
@@ -400,13 +370,13 @@ bool GrpArchive::isGrpArchive(string_view filename)
 	uint32_t size      = 0;
 	for (uint32_t a = 0; a < num_lumps; ++a)
 	{
-		file.Read(ken_magic, 12);
-		file.Read(&size, 4);
+		file.read(ken_magic, 12);
+		file.read(size);
 		totalsize += size;
 	}
 
 	// Check if total size is correct
-	if (totalsize > file.Length())
+	if (totalsize > file.size())
 		return false;
 
 	// If it's passed to here it's probably a grp file

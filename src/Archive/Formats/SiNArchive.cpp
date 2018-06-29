@@ -33,6 +33,7 @@
 #include "Main.h"
 #include "General/UI.h"
 #include "SiNArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -224,8 +225,8 @@ bool SiNArchive::write(MemChunk& mc, bool update)
 		name.erase(0, 1); // Remove leading /
 		if (name.size() > 120)
 		{
-			Log::warning(fmt::format(
-				"Entry {} path is too long (> 120 characters), putting it in the root directory", name));
+			Log::warning(
+				fmt::format("Entry {} path is too long (> 120 characters), putting it in the root directory", name));
 			S_SET_VIEW(name, StrUtil::Path::fileNameOf(name));
 			StrUtil::truncateIP(name, 120);
 		}
@@ -268,36 +269,7 @@ bool SiNArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool SiNArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("SiNArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 
@@ -348,20 +320,17 @@ bool SiNArchive::isSiNArchive(MemChunk& mc)
 bool SiNArchive::isSiNArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < 12)
+	if (!file.isOpen() || file.size() < 12)
 		return false;
 
 	// Read pak header
-	char    pack[4];
-	int32_t dir_offset;
-	int32_t dir_size;
-	file.Seek(0, wxFromStart);
-	file.Read(pack, 4);
-	file.Read(&dir_offset, 4);
-	file.Read(&dir_size, 4);
+	char pack[4];
+	file.read(pack, 4);
+	auto dir_offset = file.get<int32_t>();
+	auto dir_size   = file.get<int32_t>();
 
 	// Byteswap values for big endian if needed
 	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
@@ -372,7 +341,7 @@ bool SiNArchive::isSiNArchive(string_view filename)
 		return false;
 
 	// Check directory is sane
-	if (dir_offset < 12 || dir_offset + dir_size > file.Length())
+	if (dir_offset < 12 || dir_offset + dir_size > file.size())
 		return false;
 
 	// That'll do

@@ -59,5 +59,5 @@ struct WinInfo
 WinInfo getWindowInfo(string_view id);
 void    setWindowInfo(string_view id, int width, int height, int left, int top);
 void    readWindowInfo(Tokenizer& tz);
-void    writeWindowInfo(wxFile& file);
+string  writeWindowInfo();
 } // namespace Misc

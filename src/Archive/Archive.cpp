@@ -1598,6 +1598,40 @@ bool Archive::loadFormats(MemChunk& mc)
 	return true;
 }
 
+bool Archive::loadEntryDataAtOffset(ArchiveEntry* entry, unsigned file_offset)
+{
+	// Check entry is ok
+	if (!checkEntry(entry))
+		return false;
+
+	// Do nothing if the entry's size is zero,
+	// or if it has already been loaded
+	if (entry->size() == 0 || entry->isLoaded())
+	{
+		entry->setLoaded();
+		return true;
+	}
+
+	// Open archive file
+	SFile file(filename_);
+
+	// Check it opened
+	if (!file.isOpen())
+	{
+		Log::error(fmt::format("loadEntryData: Unable to open archive file {}", filename_));
+		return false;
+	}
+
+	// Seek to entry offset in file and read it in
+	file.seekFromStart(file_offset);
+	entry->importFileStream(file, entry->size());
+
+	// Set the lump to loaded
+	entry->setLoaded();
+
+	return true;
+}
+
 
 // -----------------------------------------------------------------------------
 //

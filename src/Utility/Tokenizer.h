@@ -127,7 +127,7 @@ public:
 	bool checkNextNC(const char* check) const;
 
 	// Load Data
-	bool openFile(const string& filename, unsigned offset = 0, unsigned length = 0);
+	bool openFile(string_view filename, unsigned offset = 0, unsigned length = 0);
 	bool openString(string_view text, unsigned offset = 0, unsigned length = 0, string_view source = "unknown");
 	bool openMem(const char* mem, unsigned length, string_view source);
 	bool openMem(const MemChunk& mc, string_view source);

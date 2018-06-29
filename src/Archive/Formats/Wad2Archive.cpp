@@ -32,9 +32,10 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "Wad2Archive.h"
 #include "General/UI.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
+#include "Wad2Archive.h"
 
 
 // -----------------------------------------------------------------------------
@@ -243,36 +244,7 @@ bool Wad2Archive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool Wad2Archive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open wadfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("Wad2Archive::loadEntryData: Failed to open wadfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 // -----------------------------------------------------------------------------
@@ -349,32 +321,30 @@ bool Wad2Archive::isWad2Archive(MemChunk& mc)
 bool Wad2Archive::isWad2Archive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Read header
 	char header[4];
-	file.Read(header, 4);
+	file.read(header, 4);
 
 	// Check for IWAD/PWAD header
 	if (header[0] != 'W' || header[1] != 'A' || header[2] != 'D' || (header[3] != '2' && header[3] != '3'))
 		return false;
 
 	// Get number of lumps and directory offset
-	int32_t num_lumps  = 0;
-	int32_t dir_offset = 0;
-	file.Read(&num_lumps, 4);
-	file.Read(&dir_offset, 4);
+	auto num_lumps  = file.get<int32_t>();
+	auto dir_offset = file.get<int32_t>();
 
 	// Byteswap values for big endian if needed
 	num_lumps  = wxINT32_SWAP_ON_BE(num_lumps);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// Check directory offset is decent
-	if ((dir_offset + (num_lumps * 32)) > file.Length() || dir_offset < 12)
+	if ((dir_offset + (num_lumps * 32)) > file.size() || dir_offset < 12)
 		return false;
 
 	// If it's passed to here it's probably a wad file

@@ -40,6 +40,7 @@
 #include "Main.h"
 #include "BSPArchive.h"
 #include "General/UI.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -287,36 +288,7 @@ bool BSPArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool BSPArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("BSPArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 
@@ -447,37 +419,34 @@ bool BSPArchive::isBSPArchive(MemChunk& mc)
 bool BSPArchive::isBSPArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// If size is less than 64, there's not even enough room for a full header
-	size_t size = file.Length();
-	if (size < 64)
+	auto fsize = file.size();
+	if (fsize < 64)
 		return false;
 
 	// Read BSP version; valid values are 0x17 (Qtest) or 0x1D (Quake, Hexen II)
-	uint32_t version;
-	uint32_t texoffset = 0;
-	file.Seek(0, wxFromStart);
-	file.Read(&version, 4);
-	version = wxINT32_SWAP_ON_BE(version);
+	auto version = file.get<uint32_t>();
+	version      = wxINT32_SWAP_ON_BE(version);
 	if (version != 0x17 && version != 0x1D)
 		return false;
 
 	// Validate directory to make sure it's the correct format.
 	// This mean checking each of the 15 entries, even if only
 	// the third has content we want.
+	uint32_t texoffset = 0;
 	for (int a = 0; a < 15; ++a)
 	{
-		uint32_t ofs, sz;
-		file.Read(&ofs, 4);
-		file.Read(&sz, 4);
+		auto ofs = file.get<uint32_t>();
+		auto sz  = file.get<uint32_t>();
 
 		// Check that content stays within bounds
-		if (wxINT32_SWAP_ON_BE(sz) + wxINT32_SWAP_ON_BE(ofs) > size)
+		if (wxINT32_SWAP_ON_BE(sz) + wxINT32_SWAP_ON_BE(ofs) > fsize)
 			return false;
 		// Grab the miptex entry data
 		if (a == 2)
@@ -486,39 +455,39 @@ bool BSPArchive::isBSPArchive(string_view filename)
 
 	// Now validate miptex entry
 	uint32_t numtex;
-	file.Seek(texoffset, wxFromStart);
-	file.Read(&numtex, 4);
+	file.seekFromStart(texoffset);
+	file.read<uint32_t>(numtex);
 	numtex = wxINT32_SWAP_ON_BE(numtex);
 
 	// Check that the offset table is within bounds
-	if (texoffset + ((numtex + 1) << 2) > size)
+	if (texoffset + ((numtex + 1) << 2) > fsize)
 		return false;
 
 	// Check that each texture is within bounds
 	for (size_t a = 0; a < numtex; ++a)
 	{
-		size_t offset;
-		file.Read(&offset, 4);
+		uint32_t offset;
+		file.read<uint32_t>(offset);
 		offset = wxINT32_SWAP_ON_BE(offset);
 		// A texture header takes 40 bytes (16 bytes for name, 6 int32 for records),
 		// and offsets are measured from the start of the miptex lump.
-		if (offset + texoffset + 40 > size)
+		if (offset + texoffset + 40 > fsize)
 			return false;
 
 		// Keep track of where we are now to return to it later.
-		size_t currentpos = file.Tell();
+		uint32_t currentpos = file.currentPos();
 
 		// Move to texture header
-		file.Seek(texoffset + offset, wxFromStart);
+		file.seekFromStart(texoffset + offset);
 		char     name[16];
 		uint32_t width, height, offset1, offset2, offset4, offset8;
-		file.Read(name, 16);
-		file.Read(&width, 4);
-		file.Read(&height, 4);
-		file.Read(&offset1, 4);
-		file.Read(&offset2, 4);
-		file.Read(&offset4, 4);
-		file.Read(&offset8, 4);
+		file.read(name, 16);
+		file.read<uint32_t>(width);
+		file.read<uint32_t>(height);
+		file.read<uint32_t>(offset1);
+		file.read<uint32_t>(offset2);
+		file.read<uint32_t>(offset4);
+		file.read<uint32_t>(offset8);
 
 		// Byteswap values for big endian if needed
 		width   = wxINT32_SWAP_ON_BE(width);
@@ -534,17 +503,17 @@ bool BSPArchive::isBSPArchive(string_view filename)
 
 		// Check that texture data is within bounds
 		uint32_t texsize = width * height;
-		if (texoffset + offset + offset1 + texsize > size)
+		if (texoffset + offset + offset1 + texsize > fsize)
 			return false;
-		if (texoffset + offset + offset2 + (texsize >> 2) > size)
+		if (texoffset + offset + offset2 + (texsize >> 2) > fsize)
 			return false;
-		if (texoffset + offset + offset4 + (texsize >> 4) > size)
+		if (texoffset + offset + offset4 + (texsize >> 4) > fsize)
 			return false;
-		if (texoffset + offset + offset8 + (texsize >> 6) > size)
+		if (texoffset + offset + offset8 + (texsize >> 6) > fsize)
 			return false;
 
 		// Okay, that texture works, go back to where we were and check the next
-		file.Seek(currentpos, wxFromStart);
+		file.seekFromStart(currentpos);
 	}
 
 	// That'll do

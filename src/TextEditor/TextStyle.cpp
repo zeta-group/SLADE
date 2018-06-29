@@ -521,40 +521,41 @@ TextStyle* StyleSet::styleAt(unsigned index)
 bool StyleSet::writeFile(string_view filename)
 {
 	// Open file for writing
-	wxFile file(WxUtils::stringFromView(filename), wxFile::write);
+	SFile file(filename, SFile::Mode::Write);
 
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Write opening
-	file.Write("styleset {\n");
+	fmt::memory_buffer buf;
+	format_to(buf, "styleset {{\n");
 
 	// Name
-	file.Write(wxString::Format("\tname = \"%s\";\n\n", name_));
+	format_to(buf, "\tname = \"{}\";\n\n", name_);
 
 	// Default style
-	file.Write("\tdefault {\n");
-	file.Write(ts_default_.getDefinition(2));
-	file.Write("\t}\n\n");
+	format_to(buf, "\tdefault {{\n");
+	format_to(buf, ts_default_.getDefinition(2));
+	format_to(buf, "\t}}\n\n");
 
 	// Selection style
-	file.Write("\tselection {\n");
-	file.Write(ts_selection_.getDefinition(2));
-	file.Write("\t}\n\n");
+	format_to(buf, "\tselection {{\n");
+	format_to(buf, ts_selection_.getDefinition(2));
+	format_to(buf, "\t}}\n\n");
 
 	// Other styles
 	for (auto& style : styles_)
 	{
-		file.Write(wxString::Format("\t%s {\n", style->name_));
-		file.Write(style->getDefinition(2));
-		file.Write("\t}\n\n");
+		format_to(buf, "\t{} {{\n", style->name_);
+		format_to(buf, style->getDefinition(2));
+		format_to(buf, "\t}}\n\n");
 	}
 
 	// Write end
-	file.Write("}\n");
+	format_to(buf, "}}\n");
 
-	// Close file
-	file.Close();
+	// Write file
+	file.write(buf.data(), buf.size());
 
 	return true;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+class SFile;
+
 class MemChunk
 {
 public:
@@ -20,7 +22,7 @@ public:
 
 	// Data import
 	bool importFile(string_view filename, uint32_t offset = 0, uint32_t len = 0);
-	bool importFileStream(wxFile& file, uint32_t len = 0);
+	bool importFileStream(const SFile& file, unsigned len = 0);
 	bool importMem(const uint8_t* start, uint32_t len);
 
 	// Data export

@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "General/UI.h"
 #include "TarArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -260,36 +261,7 @@ bool TarArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool TarArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check entry is ok
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the entry's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open archive file
-	wxFile file(filename_);
-
-	// Check it opened
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("TarArchive::loadEntryData: Unable to open archive file {}", filename_));
-		return false;
-	}
-
-	// Seek to entry offset in file and read it in
-	file.Seek((int)entry->exProp("Offset"), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, entry->exProp("Offset"));
 }
 
 
@@ -355,19 +327,17 @@ bool TarArchive::isTarArchive(MemChunk& mc)
 bool TarArchive::isTarArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened() || file.Length() < 512)
+	if (!file.isOpen() || file.size() < 512)
 		return false;
 
 	int blankcount = 0;
-	while ((file.Tell() + 512) <= file.Length() && blankcount < 3)
+	while (((unsigned)file.currentPos() + 512) <= file.size() && blankcount < 3)
 	{
 		// Read tar header
-		TarHeader header{};
-		file.Read(&header, 512);
-		// if (string(wxString::FromAscii(header.magic, 5)).CmpNoCase(TMAGIC))
+		auto header = file.get<TarHeader>();
 		if (!StrUtil::equalCI(header.magic, TMAGIC))
 		{
 			if (makeChecksum(&header) == 0)
@@ -396,9 +366,9 @@ bool TarArchive::isTarArchive(string_view filename)
 		size_t size = tarSum(header.size, 12);
 		size_t sum  = size % 512; // Do we need padding?
 		if (sum)
-			sum = 512 - sum;           // Compute it
-		sum += size;                   // then add it
-		file.Seek(sum, wxFromCurrent); // and move on
+			sum = 512 - sum; // Compute it
+		sum += size;         // then add it
+		file.seek(sum);      // and move on
 	}
 	// We should end with a blankcount of precisely 2
 	return (blankcount == 2);

@@ -135,16 +135,19 @@ void NodeBuilders::addBuilderPath(string_view builder, string_view path)
 // -----------------------------------------------------------------------------
 // Writes builder paths to [file]
 // -----------------------------------------------------------------------------
-void NodeBuilders::saveBuilderPaths(wxFile& file)
+string NodeBuilders::writeBuilderPaths()
 {
-	file.Write("nodebuilder_paths\n{\n");
+	fmt::memory_buffer buf;
+	format_to(buf, "nodebuilder_paths\n{{\n");
 	for (auto& builder : builders)
 	{
 		string path = builder.path;
 		std::replace(path.begin(), path.end(), '\\', '/');
-		file.Write(fmt::sprintf("\t%s \"%s\"\n", builder.id, path));
+		format_to(buf, "\t{} \"{}\"\n", builder.id, path);
 	}
-	file.Write("}\n");
+	format_to(buf, "}}\n");
+
+	return to_string(buf);
 }
 
 // -----------------------------------------------------------------------------

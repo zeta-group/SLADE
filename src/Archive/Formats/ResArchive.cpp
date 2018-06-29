@@ -32,6 +32,7 @@
 #include "Main.h"
 #include "General/UI.h"
 #include "ResArchive.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -321,36 +322,7 @@ bool ResArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool ResArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open resfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("ResArchive::loadEntryData: Failed to open resfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -450,17 +422,15 @@ bool ResArchive::isResArchive(MemChunk& mc, size_t& dir_offset, size_t& num_lump
 bool ResArchive::isResArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
-
-	file.Seek(0, wxFromStart);
 
 	// Read header
 	char header[5];
-	file.Read(header, 4);
+	file.read(header, 4);
 	header[4] = 0;
 
 	// Check for "Res!" header
@@ -468,17 +438,15 @@ bool ResArchive::isResArchive(string_view filename)
 		return false;
 
 	// Get number of lumps and directory offset
-	uint32_t dir_offset = 0;
-	uint32_t dir_size   = 0;
-	file.Read(&dir_offset, 4);
-	file.Read(&dir_size, 4);
+	auto dir_offset = file.get<uint32_t>();
+	auto dir_size = file.get<uint32_t>();
 
 	// Byteswap values for big endian if needed
 	dir_size   = wxINT32_SWAP_ON_BE(dir_size);
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// Check directory offset and size are both decent
-	if (dir_size % DIRENTRYSIZE || (dir_offset + dir_size) > file.Length())
+	if (dir_size % DIRENTRYSIZE || (dir_offset + dir_size) > file.size())
 		return false;
 
 	// If it's passed to here it's probably a res file

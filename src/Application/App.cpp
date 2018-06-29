@@ -413,6 +413,11 @@ bool App::init(vector<string>& args, double ui_scale)
 	// Init SImage formats
 	SIFormat::initFormats();
 
+	// Load entry types
+	Log::info("Loading entry types");
+	EntryDataFormat::initBuiltinFormats();
+	EntryType::loadEntryTypes();
+
 	// Init brushes
 	theBrushManager->initBrushes();
 
@@ -422,11 +427,6 @@ bool App::init(vector<string>& args, double ui_scale)
 
 	// Load program fonts
 	Drawing::initFonts();
-
-	// Load entry types
-	Log::info("Loading entry types");
-	EntryDataFormat::initBuiltinFormats();
-	EntryType::loadEntryTypes();
 
 	// Load text languages
 	Log::info("Loading text languages");
@@ -495,63 +495,67 @@ bool App::init(vector<string>& args, double ui_scale)
 // -----------------------------------------------------------------------------
 void App::saveConfigFile()
 {
+	// Make a backup of the existing config
+	const auto cfg_file = App::path("slade3.cfg", App::Dir::User);
+	FileUtil::copyFile(cfg_file, cfg_file + ".bak");
+
 	// Open SLADE.cfg for writing text
-	wxFile file(App::path("slade3.cfg", App::Dir::User), wxFile::write);
+	SFile file(cfg_file, SFile::Mode::Write);
 
 	// Do nothing if it didn't open correctly
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return;
 
 	// Write cfg header
-	file.Write("/*****************************************************\n");
-	file.Write(" * SLADE Configuration File\n");
-	file.Write(" * Don't edit this unless you know what you're doing\n");
-	file.Write(" *****************************************************/\n\n");
+	file.writeStr("// ----------------------------------------------------------\n");
+	file.writeStr("// SLADE Configuration File\n");
+	file.writeStr("// Don't edit this manually unless you know what you're doing\n");
+	file.writeStr("// ----------------------------------------------------------\n\n");
 
 	// Write cvars
-	save_cvars(file);
+	file.writeStr(save_cvars());
 
 	// Write base resource archive paths
-	file.Write("\nbase_resource_paths\n{\n");
+	file.writeStr("\nbase_resource_paths\n{\n");
 	for (size_t a = 0; a < archive_manager.numBaseResourcePaths(); a++)
 	{
 		string path = archive_manager.getBaseResourcePath(a);
 		StrUtil::replaceIP(path, "\\", "/");
-		file.Write(fmt::format("\t\"{}\"\n", path), wxConvUTF8);
+		file.writeStr(fmt::format("\t\"{}\"\n", path));
 	}
-	file.Write("}\n");
+	file.writeStr("}\n");
 
 	// Write recent files list (in reverse to keep proper order when reading back)
-	file.Write("\nrecent_files\n{\n");
+	file.writeStr("\nrecent_files\n{\n");
 	for (int a = archive_manager.numRecentFiles() - 1; a >= 0; a--)
 	{
 		string path = archive_manager.recentFile(a);
 		StrUtil::replaceIP(path, "\\", "/");
-		file.Write(fmt::format("\t\"{}\"\n", path), wxConvUTF8);
+		file.writeStr(fmt::format("\t\"{}\"\n", path));
 	}
-	file.Write("}\n");
+	file.writeStr("}\n");
 
 	// Write keybinds
-	file.Write("\nkeys\n{\n");
-	file.Write(KeyBind::writeBinds());
-	file.Write("}\n");
+	file.writeStr("\nkeys\n{\n");
+	file.writeStr(KeyBind::writeBinds());
+	file.writeStr("}\n");
 
 	// Write nodebuilder paths
-	file.Write("\n");
-	NodeBuilders::saveBuilderPaths(file);
+	file.writeStr("\n");
+	file.writeStr(NodeBuilders::writeBuilderPaths());
 
 	// Write game exe paths
-	file.Write("\nexecutable_paths\n{\n");
-	file.Write(Executables::writePaths());
-	file.Write("}\n");
+	file.writeStr("\nexecutable_paths\n{\n");
+	file.writeStr(Executables::writePaths());
+	file.writeStr("}\n");
 
 	// Write window info
-	file.Write("\nwindow_info\n{\n");
-	Misc::writeWindowInfo(file);
-	file.Write("}\n");
+	file.writeStr("\nwindow_info\n{\n");
+	file.writeStr(Misc::writeWindowInfo());
+	file.writeStr("}\n");
 
 	// Close configuration file
-	file.Write("\n// End Configuration File\n\n");
+	file.writeStr("\n// End Configuration File\n\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -576,10 +580,7 @@ void App::exit(bool save_config)
 		ccfg.exportFile(App::path("colours.cfg", App::Dir::User));
 
 		// Save game exes
-		wxFile f;
-		f.Open(App::path("executables.cfg", App::Dir::User), wxFile::write);
-		f.Write(Executables::writeExecutables());
-		f.Close();
+		FileUtil::writeStrToFile(Executables::writeExecutables(), App::path("executables.cfg", App::Dir::User));
 
 		// Save custom special presets
 		Game::saveCustomSpecialPresets();

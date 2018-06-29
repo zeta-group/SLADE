@@ -34,6 +34,7 @@
 #include "GobArchive.h"
 #include "General/UI.h"
 #include "Utility/StringUtils.h"
+#include "Utility/FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -265,36 +266,7 @@ bool GobArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool GobArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open gobfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("GobArchive::loadEntryData: Failed to open gobfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -383,43 +355,40 @@ bool GobArchive::isGobArchive(MemChunk& mc)
 bool GobArchive::isGobArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.data());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Check size
-	if (file.Length() < 12)
+	if (file.size() < 12)
 		return false;
 
 	// Read header
 	char header[4];
-	file.Read(header, 4);
+	file.read(header, 4);
 
 	// Check magic header
 	if (header[0] != 'G' || header[1] != 'O' || header[2] != 'B' || header[3] != 0xA)
 		return false;
 
 	// Get directory offset
-	uint32_t dir_offset = 0;
-	file.Seek(4, wxFromStart);
-	file.Read(&dir_offset, 4);
+	auto dir_offset = file.get<uint32_t>();
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
 
 	// Check size
-	if ((unsigned)file.Length() < (dir_offset + 4))
+	if (file.size() < (dir_offset + 4))
 		return false;
 
 	// Get number of lumps
-	uint32_t num_lumps = 0;
-	file.Seek(dir_offset, wxFromStart);
-	file.Read(&num_lumps, 4);
+	file.seekFromStart(dir_offset);
+	auto num_lumps = file.get<uint32_t>();
 	num_lumps = wxINT32_SWAP_ON_BE(num_lumps);
 
 	// Compute directory size
 	uint32_t dir_size = (num_lumps * 21) + 4;
-	if ((unsigned)file.Length() < (dir_offset + dir_size))
+	if (file.size() < (dir_offset + dir_size))
 		return false;
 
 	// If it's passed to here it's probably a gob file

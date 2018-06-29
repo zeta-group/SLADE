@@ -133,7 +133,8 @@ void Announcer::announce(string_view event_name, MemChunk& event_data)
 	if (isMuted())
 		return;
 
-	for (auto& listener : listeners_)
+	auto listeners = listeners_;
+	for (auto& listener : listeners)
 	{
 		if (!listener->isDeaf())
 			listener->onAnnouncement(this, event_name, event_data);

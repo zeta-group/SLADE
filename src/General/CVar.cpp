@@ -35,8 +35,8 @@
 /*******************************************************************
  * VARIABLES
  *******************************************************************/
-CVar**		cvars;
-uint16_t	n_cvars;
+CVar**   cvars;
+uint16_t n_cvars;
 
 
 /*******************************************************************
@@ -48,7 +48,7 @@ uint16_t	n_cvars;
  *******************************************************************/
 void add_cvar_list(CVar* cvar)
 {
-	cvars = (CVar**)realloc(cvars, (n_cvars + 1) * sizeof(CVar*));
+	cvars          = (CVar**)realloc(cvars, (n_cvars + 1) * sizeof(CVar*));
 	cvars[n_cvars] = cvar;
 	n_cvars++;
 }
@@ -104,9 +104,9 @@ void get_cvar_list(vector<string>& list)
 }
 
 /* save_cvars
- * Saves cvars to a config file
+ * Saves cvars to a string and returns it
  *******************************************************************/
-void save_cvars(wxFile& file)
+string save_cvars()
 {
 	uint32_t max_size = 0;
 	for (uint32_t c = 0; c < n_cvars; c++)
@@ -115,37 +115,39 @@ void save_cvars(wxFile& file)
 			max_size = cvars[c]->name.size();
 	}
 
-	file.Write("cvars\n{\n");
+	fmt::memory_buffer buf;
+	format_to(buf, "cvars\n{{\n");
 
 	for (uint32_t c = 0; c < n_cvars; c++)
 	{
 		if (cvars[c]->flags & CVAR_SAVE)
 		{
-			file.Write(fmt::format("\t{} ", cvars[c]->name));
+			format_to(buf, "\t{} ", cvars[c]->name);
 
 			int spaces = max_size - cvars[c]->name.size();
-			for (int a = 0; a < spaces; a++) file.Write(" ");
+			for (int a = 0; a < spaces; a++)
+				buf.push_back(' ');
 
 			if (cvars[c]->type == CVAR_INTEGER)
-				file.Write(fmt::format("{}\n", cvars[c]->GetValue().Int));
+				format_to(buf, "{}\n", cvars[c]->GetValue().Int);
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				file.Write(fmt::format("{}\n", cvars[c]->GetValue().Bool));
+				format_to(buf, "{}\n", cvars[c]->GetValue().Bool);
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				file.Write(fmt::format("{:1.5f}\n", cvars[c]->GetValue().Float));
+				format_to(buf, "{:1.5f}\n", cvars[c]->GetValue().Float);
 
 			if (cvars[c]->type == CVAR_STRING)
 			{
 				string value = StrUtil::escapedString(((CStringCVar*)cvars[c])->value, true);
-				//value.Replace("\\", "/");
-				//value.Replace("\"", "\\\"");
-				file.Write(fmt::format("\"{}\"\n", value), wxConvUTF8);
+				format_to(buf, "\"{}\"\n", value);
 			}
 		}
 	}
 
-	file.Write("}\n\n");
+	format_to(buf, "}}\n\n");
+
+	return to_string(buf);
 }
 
 /* read_cvar
@@ -159,16 +161,16 @@ void read_cvar(string name, const string& value)
 		if (name == cvars[c]->name)
 		{
 			if (cvars[c]->type == CVAR_INTEGER)
-				*((CIntCVar*) cvars[c]) = StrUtil::toInt(value);
+				*((CIntCVar*)cvars[c]) = StrUtil::toInt(value);
 
 			if (cvars[c]->type == CVAR_BOOLEAN)
-				*((CBoolCVar*) cvars[c]) = StrUtil::toBoolean(value);
+				*((CBoolCVar*)cvars[c]) = StrUtil::toBoolean(value);
 
 			if (cvars[c]->type == CVAR_FLOAT)
-				*((CFloatCVar*) cvars[c]) = StrUtil::toFloat(value);
+				*((CFloatCVar*)cvars[c]) = StrUtil::toFloat(value);
 
 			if (cvars[c]->type == CVAR_STRING)
-				*((CStringCVar*) cvars[c]) = value;
+				*((CStringCVar*)cvars[c]) = value;
 		}
 	}
 }
@@ -183,10 +185,10 @@ void read_cvar(string name, const string& value)
  *******************************************************************/
 CIntCVar::CIntCVar(string NAME, int defval, uint16_t FLAGS)
 {
-	name = NAME;
+	name  = NAME;
 	flags = FLAGS;
 	value = defval;
-	type = CVAR_INTEGER;
+	type  = CVAR_INTEGER;
 	add_cvar_list(this);
 }
 
@@ -195,10 +197,10 @@ CIntCVar::CIntCVar(string NAME, int defval, uint16_t FLAGS)
  *******************************************************************/
 CBoolCVar::CBoolCVar(string NAME, bool defval, uint16_t FLAGS)
 {
-	name = NAME;
+	name  = NAME;
 	flags = FLAGS;
 	value = defval;
-	type = CVAR_BOOLEAN;
+	type  = CVAR_BOOLEAN;
 	add_cvar_list(this);
 }
 
@@ -207,10 +209,10 @@ CBoolCVar::CBoolCVar(string NAME, bool defval, uint16_t FLAGS)
  *******************************************************************/
 CFloatCVar::CFloatCVar(string NAME, double defval, uint16_t FLAGS)
 {
-	name = NAME;
+	name  = NAME;
 	flags = FLAGS;
 	value = defval;
-	type = CVAR_FLOAT;
+	type  = CVAR_FLOAT;
 	add_cvar_list(this);
 }
 
@@ -219,9 +221,9 @@ CFloatCVar::CFloatCVar(string NAME, double defval, uint16_t FLAGS)
  *******************************************************************/
 CStringCVar::CStringCVar(string NAME, string defval, uint16_t FLAGS)
 {
-	name = NAME;
+	name  = NAME;
 	flags = FLAGS;
 	value = defval;
-	type = CVAR_STRING;
+	type  = CVAR_STRING;
 	add_cvar_list(this);
 }

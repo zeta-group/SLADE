@@ -82,7 +82,7 @@ public:
 	bool importMem(const void* data, uint32_t size);
 	bool importMemChunk(MemChunk& mc);
 	bool importFile(string_view filename, uint32_t offset = 0, uint32_t size = 0);
-	bool importFileStream(wxFile& file, uint32_t len = 0);
+	bool importFileStream(const SFile& file, uint32_t len = 0);
 	bool importEntry(ArchiveEntry* entry);
 
 	// Data export
@@ -92,7 +92,7 @@ public:
 	bool     write(const void* data, uint32_t size);
 	bool     read(void* buf, uint32_t size);
 	bool     seek(uint32_t offset, uint32_t start) { return data_.seek(offset, start); }
-	uint32_t currentPos() { return data_.currentPos(); }
+	uint32_t currentPos() const { return data_.currentPos(); }
 
 	// Misc
 	string        sizeString() const;

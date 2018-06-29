@@ -17,7 +17,7 @@ struct Builder
 
 void     init();
 void     addBuilderPath(string_view builder, string_view path);
-void     saveBuilderPaths(wxFile& file);
+string   writeBuilderPaths();
 unsigned nNodeBuilders();
 Builder& getBuilder(string_view id);
 Builder& getBuilder(unsigned index);

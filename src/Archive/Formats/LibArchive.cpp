@@ -30,8 +30,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "LibArchive.h"
 #include "General/UI.h"
+#include "LibArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -239,36 +240,7 @@ bool LibArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool LibArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open wadfile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("LibArchive::loadEntryData: Failed to open libfile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -375,39 +347,36 @@ bool LibArchive::isLibArchive(MemChunk& mc)
 bool LibArchive::isLibArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
+
 	// Read lib footer
-	file.Seek(file.Length() - 2, wxFromStart); // wxFromEnd does not work for some reason
-	uint32_t num_lumps = 0;
-	file.Read(&num_lumps, 2); // Size
+	file.seekFromEnd(2);
+	auto num_lumps     = file.get<uint16_t>();
 	num_lumps          = wxINT16_SWAP_ON_BE(num_lumps);
-	int32_t dir_offset = file.Length() - (2 + (num_lumps * 21));
+	int32_t dir_offset = file.size() - (2 + (num_lumps * 21));
 
 	// Check directory offset is valid
 	if (dir_offset < 0)
 		return false;
 
 	// Check directory offset is decent
-	file.Seek(dir_offset, wxFromStart);
-	char     myname[13] = "";
-	uint32_t offset     = 0;
-	uint32_t size       = 0;
-	uint8_t  dummy      = 0;
-	file.Read(&size, 4);   // Size
-	file.Read(&offset, 4); // Offset
-	file.Read(myname, 12); // Name
-	file.Read(&dummy, 1);  // Separator
-	offset     = wxINT32_SWAP_ON_BE(offset);
-	size       = wxINT32_SWAP_ON_BE(size);
-	myname[12] = '\0';
+	file.seekFromStart(dir_offset);
+	char myname[13] = "";
+	auto size       = file.get<uint32_t>();
+	auto offset     = file.get<uint32_t>();
+	offset          = wxINT32_SWAP_ON_BE(offset);
+	size            = wxINT32_SWAP_ON_BE(size);
+	file.read(myname, 12);
+	myname[12]     = '\0';
+	auto separator = file.get<uint8_t>();
 
 	// If the lump data goes past the directory,
 	// the library is invalid
-	if (dummy != 0 || offset != 0 || offset + size > file.Length())
+	if (separator != 0 || offset != 0 || offset + size > file.size())
 	{
 		return false;
 	}

@@ -34,6 +34,7 @@
 #include "General/Misc.h"
 #include "MemChunk.h"
 #include "UI/WxUtils.h"
+#include "FileUtils.h"
 
 
 // -----------------------------------------------------------------------------
@@ -137,10 +138,10 @@ bool MemChunk::reSize(uint32_t new_size, bool preserve_data)
 bool MemChunk::importFile(string_view filename, uint32_t offset, uint32_t len)
 {
 	// Open the file
-	wxFile file(WxUtils::stringFromView(filename));
+	SFile file(filename);
 
 	// Return false if file open failed
-	if (!file.IsOpened())
+	if (!file.isOpen())
 	{
 		Log::error(fmt::sprintf("MemChunk::importFile: Unable to open file %s", filename));
 		Global::error = fmt::sprintf("Unable to open file %s", filename);
@@ -152,8 +153,8 @@ bool MemChunk::importFile(string_view filename, uint32_t offset, uint32_t len)
 
 	// If length isn't specified or exceeds the file length,
 	// only read to the end of the file
-	if (offset + len > file.Length() || len == 0)
-		len = file.Length() - offset;
+	if (offset + len > file.size() || len == 0)
+		len = file.size() - offset;
 
 	// Setup variables
 	size_ = len;
@@ -161,50 +162,40 @@ bool MemChunk::importFile(string_view filename, uint32_t offset, uint32_t len)
 	// Read the file
 	if (size_ > 0)
 	{
-		// data = new uint8_t[size];
 		if (allocData(size_))
 		{
 			// Read the file
-			file.Seek(offset, wxFromStart);
-			size_t count = file.Read(data_, size_);
-			if (count != size_)
+			file.seekFromStart(offset);
+			if (!file.read(data_, size_))
 			{
-				Log::error(fmt::sprintf(
-					"MemChunk::importFile: Unable to read full file %s, read %u out of %u", filename, count, size_));
-				Global::error = fmt::sprintf("Unable to read file %s", filename);
+				Log::error("MemChunk::importFile: Unable to read full file {} ({} bytes)", filename, size_);
+				Global::error = fmt::format("Unable to read file {}", filename);
 				clear();
-				file.Close();
 				return false;
 			}
 		}
-
-		file.Close();
 	}
 
 	return true;
 }
 
-// -----------------------------------------------------------------------------
-// Loads a file (or part of it) from a currently open file stream into the
-// MemChunk.
-// Returns false if file couldn't be opened, true otherwise
-// -----------------------------------------------------------------------------
-bool MemChunk::importFileStream(wxFile& file, uint32_t len)
+bool MemChunk::importFileStream(const SFile& file, unsigned len)
 {
 	// Check file
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Clear current data if it exists
 	clear();
 
 	// Get current file position
-	uint32_t offset = file.Tell();
+	unsigned offset = file.currentPos();
 
 	// If length isn't specified or exceeds the file length,
 	// only read to the end of the file
-	if (offset + len > file.Length() || len == 0)
-		len = file.Length() - offset;
+	auto flen = file.size();
+	if (offset + len > flen || len == 0)
+		len = flen - offset;
 
 	// Setup variables
 	size_ = len;
@@ -212,9 +203,8 @@ bool MemChunk::importFileStream(wxFile& file, uint32_t len)
 	// Read the file
 	if (size_ > 0)
 	{
-		// data = new uint8_t[size];
 		if (allocData(size_))
-			file.Read(data_, size_);
+			file.read((char*)data_, size_);
 		else
 			return false;
 	}
@@ -270,8 +260,8 @@ bool MemChunk::exportFile(string_view filename, uint32_t start, uint32_t size) c
 		size = this->size_ - start;
 
 	// Open file for writing
-	wxFile file(WxUtils::stringFromView(filename), wxFile::write);
-	if (!file.IsOpened())
+	SFile file(filename, SFile::Mode::Write);
+	if (!file.isOpen())
 	{
 		Log::error(fmt::sprintf("Unable to write to file %s", filename));
 		Global::error = "Unable to open file for writing";
@@ -279,7 +269,7 @@ bool MemChunk::exportFile(string_view filename, uint32_t start, uint32_t size) c
 	}
 
 	// Write the data
-	file.Write(data_ + start, size);
+	file.write(data_ + start, size);
 
 	return true;
 }

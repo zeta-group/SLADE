@@ -67,8 +67,9 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
-#include "RffArchive.h"
 #include "General/UI.h"
+#include "RffArchive.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
 
@@ -294,36 +295,7 @@ bool RffArchive::write(MemChunk& mc, bool update)
 // -----------------------------------------------------------------------------
 bool RffArchive::loadEntryData(ArchiveEntry* entry)
 {
-	// Check the entry is valid and part of this archive
-	if (!checkEntry(entry))
-		return false;
-
-	// Do nothing if the lump's size is zero,
-	// or if it has already been loaded
-	if (entry->size() == 0 || entry->isLoaded())
-	{
-		entry->setLoaded();
-		return true;
-	}
-
-	// Open rfffile
-	wxFile file(filename_);
-
-	// Check if opening the file failed
-	if (!file.IsOpened())
-	{
-		Log::error(fmt::format("RffArchive::loadEntryData: Failed to open rfffile {}", filename_));
-		return false;
-	}
-
-	// Seek to lump offset in file and read it in
-	file.Seek(getEntryOffset(entry), wxFromStart);
-	entry->importFileStream(file, entry->size());
-
-	// Set the lump to loaded
-	entry->setLoaded();
-
-	return true;
+	return loadEntryDataAtOffset(entry, getEntryOffset(entry));
 }
 
 // -----------------------------------------------------------------------------
@@ -410,25 +382,22 @@ bool RffArchive::isRffArchive(MemChunk& mc)
 bool RffArchive::isRffArchive(string_view filename)
 {
 	// Open file for reading
-	wxFile file(filename.to_string());
+	SFile file(filename);
 
 	// Check it opened ok
-	if (!file.IsOpened())
+	if (!file.isOpen())
 		return false;
 
 	// Check size
-	if (file.Length() < 12)
+	if (file.size() < 12)
 		return false;
 
 	// Read grp header
-	uint8_t  magic[4];
-	uint32_t version, dir_offset, num_lumps;
-
-	file.Seek(0, wxFromStart);
-	file.Read(magic, 4);       // Should be "RFF\x18"
-	file.Read(&version, 4);    // 0x01 0x03 \x00 \x00
-	file.Read(&dir_offset, 4); // Offset to directory
-	file.Read(&num_lumps, 4);  // No. of lumps in rff
+	char magic[4];
+	file.read(magic, 4);                    // Should be "RFF\x18"
+	auto version    = file.get<uint32_t>(); // 0x01 0x03 \x00 \x00
+	auto dir_offset = file.get<uint32_t>(); // Offset to directory
+	auto num_lumps  = file.get<uint32_t>(); // No. of lumps in rff
 
 	// Byteswap values for big endian if needed
 	dir_offset = wxINT32_SWAP_ON_BE(dir_offset);
@@ -442,16 +411,16 @@ bool RffArchive::isRffArchive(string_view filename)
 
 	// Compute total size
 	Lump* lumps = new Lump[num_lumps];
-	file.Seek(dir_offset, wxFromStart);
-	UI::setSplashProgressMessage("Reading rff archive data");
-	file.Read(lumps, num_lumps * sizeof(Lump));
+	file.seekFromStart(dir_offset);
+	file.read(lumps, num_lumps * sizeof(Lump));
 	BloodCrypt(lumps, dir_offset, num_lumps * sizeof(Lump));
 	uint32_t totalsize = 12 + num_lumps * sizeof(Lump);
 	for (uint32_t a = 0; a < num_lumps; ++a)
 		totalsize += lumps[a].Size;
+	delete[] lumps;
 
 	// Check if total size is correct
-	if (totalsize > file.Length())
+	if (totalsize > file.size())
 		return false;
 
 	// If it's passed to here it's probably a grp file

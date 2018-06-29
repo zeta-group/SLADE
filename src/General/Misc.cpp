@@ -797,8 +797,10 @@ void Misc::readWindowInfo(Tokenizer& tz)
 	}
 }
 
-void Misc::writeWindowInfo(wxFile& file)
+string Misc::writeWindowInfo()
 {
+	fmt::memory_buffer buf;
 	for (auto& info : window_info)
-		file.Write(fmt::format("\t{} {} {} {} {}\n", info.id, info.width, info.height, info.left, info.top));
+		format_to(buf, "\t{} {} {} {} {}\n", info.id, info.width, info.height, info.left, info.top);
+	return to_string(buf);
 }

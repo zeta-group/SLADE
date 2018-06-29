@@ -445,6 +445,8 @@ bool MainWindow::exitProgram()
 	}
 
 	// Check if we can close the map editor
+	// TODO: Need to check if the map editor has been initialised at all
+	//       (otherwise windowWx will init, which we obviously don't want when exiting)
 	if (MapEditor::windowWx()->IsShown())
 		if (!MapEditor::windowWx()->Close())
 			return false;
