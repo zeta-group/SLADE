@@ -31,6 +31,7 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "KeyBind.h"
+#include "General/Database.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
 
@@ -747,57 +748,88 @@ void KeyBind::initBinds()
 }
 
 // -----------------------------------------------------------------------------
-// Writes all keybind definitions as a string
+// Reads keybinds from the database
 // -----------------------------------------------------------------------------
-string KeyBind::writeBinds()
+void KeyBind::readFromDB()
 {
-	// Init string
-	string ret = "";
+	auto db = Database::connectionRO();
 
-	// Go through all keybinds
+	SQLite::Statement sql(*db, "SELECT * FROM keybind WHERE keybind_id = ?");
 	for (auto& kb : keybinds)
 	{
-		// Add keybind line
-		ret += "\t";
-		ret += kb.name_;
-
-		// 'unbound' indicates no binds
-		if (kb.keys_.empty())
-			ret += " unbound";
-
-		// Go through all bound keys
-		for (unsigned a = 0; a < kb.keys_.size(); a++)
+		sql.bind(1, kb.name_);
+		bool first = true;
+		while (sql.executeStep())
 		{
-			auto& kp = kb.keys_[a];
-			ret += " \"";
+			// If first key, clear existing
+			if (first)
+			{
+				kb.keys_.clear();
+				first = false;
+			}
 
-			// Add modifiers (if any)
-			if (kp.alt)
-				ret += "a";
-			if (kp.ctrl)
-				ret += "c";
-			if (kp.shift)
-				ret += "s";
-			if (kp.alt || kp.ctrl || kp.shift)
-				ret += "|";
+			auto key = sql.getColumn(4).getString();
 
-			// Add key
-			ret += kp.key;
-			ret += "\"";
+			// 'unbound' means no keys bound
+			if (key == "unbound")
+			{
+				kb.keys_.clear();
+				continue;
+			}
 
-			// Add comma if there are any more keys
-			if (a < kb.keys_.size() - 1)
-				ret += ",";
+			// Add keypress
+			kb.keys_.emplace_back(
+				key, sql.getColumn(1).getInt() > 0, sql.getColumn(2).getInt() > 0, sql.getColumn(3).getInt() > 0);
 		}
 
-		ret += "\n";
+		sql.reset();
 	}
-
-	return ret;
 }
 
 // -----------------------------------------------------------------------------
-// Reads keybind defeinitions from tokenizer [tz]
+// Writes all keybinds to the database
+// -----------------------------------------------------------------------------
+void KeyBind::writeToDB()
+{
+	auto db = Database::connectionRW();
+
+	// Clear table
+	db->exec("DELETE FROM keybind");
+
+	SQLite::Statement sql_update_kb(*db, "INSERT INTO keybind (keybind_id, alt, ctrl, shift, key) VALUES (?,?,?,?,?)");
+
+	SQLite::Transaction transaction(*db);
+	for (const auto& kb : keybinds)
+	{
+		if (kb.keys_.empty())
+		{
+			// No keys bound, add "unbound" row
+			sql_update_kb.bind(1, kb.name_);
+			sql_update_kb.bind(2, false);
+			sql_update_kb.bind(3, false);
+			sql_update_kb.bind(4, false);
+			sql_update_kb.bind(5, "unbound");
+			sql_update_kb.exec();
+			sql_update_kb.reset();
+			continue;
+		}
+
+		for (const auto& key : kb.keys_)
+		{
+			sql_update_kb.bind(1, kb.name_);
+			sql_update_kb.bind(2, key.alt);
+			sql_update_kb.bind(3, key.ctrl);
+			sql_update_kb.bind(4, key.shift);
+			sql_update_kb.bind(5, key.key);
+			sql_update_kb.exec();
+			sql_update_kb.reset();
+		}
+	}
+	transaction.commit();
+}
+
+// -----------------------------------------------------------------------------
+// Reads (old cfg format) keybind definitions from tokenizer [tz]
 // -----------------------------------------------------------------------------
 bool KeyBind::readBinds(Tokenizer& tz)
 {

@@ -205,35 +205,30 @@ void SStartPage::load(bool new_tip)
 
 	// Generate recent files string
 	wxString recent;
-	if (App::archiveManager().numRecentFiles() > 0)
+	auto     recent_files = App::archiveManager().recentFiles(12);
+	for (auto i = 0; i < recent_files.size(); ++i)
 	{
-		for (unsigned a = 0; a < 12; a++)
-		{
-			if (a >= App::archiveManager().numRecentFiles())
-				break; // No more recent files
+		// Determine icon
+		wxString fn   = recent_files[i];
+		wxString icon = "archive";
+		if (fn.EndsWith(".wad"))
+			icon = "wad";
+		else if (fn.EndsWith(".zip") || fn.EndsWith(".pk3") || fn.EndsWith(".pke"))
+			icon = "zip";
+		else if (wxDirExists(fn))
+			icon = "folder";
 
-			// Determine icon
-			wxString fn   = App::archiveManager().recentFile(a);
-			wxString icon = "archive";
-			if (fn.EndsWith(".wad"))
-				icon = "wad";
-			else if (fn.EndsWith(".zip") || fn.EndsWith(".pk3") || fn.EndsWith(".pke"))
-				icon = "zip";
-			else if (wxDirExists(fn))
-				icon = "folder";
-
-			// Add recent file row
-			recent += wxString::Format(
-				"<div class=\"link\">"
-				"<img src=\"%s.png\" class=\"link\" />"
-				"<a class=\"link\" href=\"recent://%d\">%s</a>"
-				"</div>",
-				icon,
-				a,
-				fn);
-		}
+		// Add recent file row
+		recent += wxString::Format(
+			"<div class=\"link\">"
+			"<img src=\"%s.png\" class=\"link\" />"
+			"<a class=\"link\" href=\"recent://%d\">%s</a>"
+			"</div>",
+			icon,
+			i,
+			fn);
 	}
-	else
+	if (recent_files.empty())
 		recent = "No recently opened files";
 
 	// Replace placeholders in the html (theme css, recent files, tip, etc.)

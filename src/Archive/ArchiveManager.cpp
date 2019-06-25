@@ -36,8 +36,10 @@
 #include "Formats/All.h"
 #include "Formats/DirArchive.h"
 #include "General/Console/Console.h"
+#include "General/Database.h"
 #include "General/ResourceManager.h"
 #include "General/UI.h"
+#include "Utility/DateTime.h"
 #include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 
@@ -48,7 +50,6 @@
 //
 // -----------------------------------------------------------------------------
 CVAR(Int, base_resource, -1, CVar::Flag::Save)
-CVAR(Int, max_recent_files, 25, CVar::Flag::Save)
 CVAR(Bool, auto_open_wads_root, false, CVar::Flag::Save)
 
 
@@ -346,6 +347,9 @@ shared_ptr<Archive> ArchiveManager::openArchive(string_view filename, bool manag
 			// Add the archive
 			addArchive(new_archive);
 
+			// Add/update in database
+			addOrUpdateArchiveDB(filename, *new_archive);
+
 			// Announce open
 			if (!silent)
 			{
@@ -354,9 +358,6 @@ shared_ptr<Archive> ArchiveManager::openArchive(string_view filename, bool manag
 				mc.write(&index, 4);
 				announce("archive_opened", mc);
 			}
-
-			// Add to recent files
-			addRecentFile(filename);
 		}
 
 		// Return the opened archive
@@ -522,6 +523,9 @@ shared_ptr<Archive> ArchiveManager::openDirArchive(string_view dir, bool manage,
 			// Add the archive
 			addArchive(new_archive);
 
+			// Add to recent files
+			addOrUpdateArchiveDB(dir, *new_archive);
+
 			// Announce open
 			if (!silent)
 			{
@@ -530,9 +534,6 @@ shared_ptr<Archive> ArchiveManager::openDirArchive(string_view dir, bool manage,
 				mc.write(&index, 4);
 				announce("archive_opened", mc);
 			}
-
-			// Add to recent files
-			addRecentFile(dir);
 		}
 
 		// Return the opened archive
@@ -734,6 +735,43 @@ vector<shared_ptr<Archive>> ArchiveManager::getDependentArchives(Archive* archiv
 }
 
 // -----------------------------------------------------------------------------
+// Adds (or updates) the given [archive] at [file_path] in the database
+// -----------------------------------------------------------------------------
+void ArchiveManager::addOrUpdateArchiveDB(string_view file_path, const Archive& archive) const
+{
+	if (auto sql = Database::global().getOrCreateCachedQuery(
+			"am_insert_archive_file",
+			"REPLACE INTO archive_file (path, size, md5, format_id, last_opened, last_modified) "
+			"VALUES (?,?,?,?,?,?)",
+			true))
+	{
+		sql->clearBindings();
+
+		if (archive.formatId() != "folder")
+		{
+			// Regular archive
+			SFile file(file_path);
+			sql->bind(2, file.size());
+			sql->bind(3, file.calculateMD5());
+			sql->bind(6, FileUtil::fileModifiedTime(file_path));
+		}
+		else
+		{
+			// Directory
+			sql->bind(2, 0);
+			sql->bind(3, "");
+			sql->bind(6, 0);
+		}
+
+		sql->bind(1, string{ file_path });
+		sql->bind(4, archive.formatId());
+		sql->bind(5, DateTime::now());
+		sql->exec();
+		sql->reset();
+	}
+}
+
+// -----------------------------------------------------------------------------
 // Returns a string containing the extensions of all supported archive formats,
 // that can be used for wxWidgets file dialogs
 // -----------------------------------------------------------------------------
@@ -825,6 +863,49 @@ shared_ptr<Archive> ArchiveManager::shareArchive(Archive* const archive)
 }
 
 // -----------------------------------------------------------------------------
+// Returns a list of the [count] most recently opened files
+// -----------------------------------------------------------------------------
+vector<string> ArchiveManager::recentFiles(int count) const
+{
+	vector<string> paths;
+
+	// Get or create cached query to select base resource paths
+	if (auto sql = Database::global().getOrCreateCachedQuery(
+			"am_list_recent_files", "SELECT path FROM archive_file ORDER BY last_opened DESC LIMIT ?"))
+	{
+		sql->bind(1, count);
+
+		// Execute query and add results to list
+		while (sql->executeStep())
+			paths.push_back(sql->getColumn(0).getString());
+
+		sql->reset();
+	}
+
+	return paths;
+}
+
+// -----------------------------------------------------------------------------
+// Returns a list of all base resource archive paths
+// -----------------------------------------------------------------------------
+vector<string> ArchiveManager::baseResourcePaths() const
+{
+	vector<string> paths;
+
+	// Get or create cached query to select base resource paths
+	if (auto sql = Database::global().getOrCreateCachedQuery("am_list_br_paths", "SELECT path FROM base_resource_path"))
+	{
+		// Execute query and add results to list
+		while (sql->executeStep())
+			paths.push_back(sql->getColumn(0).getString());
+
+		sql->reset();
+	}
+
+	return paths;
+}
+
+// -----------------------------------------------------------------------------
 // Adds [path] to the list of base resource paths
 // -----------------------------------------------------------------------------
 bool ArchiveManager::addBaseResourcePath(string_view path)
@@ -833,15 +914,19 @@ bool ArchiveManager::addBaseResourcePath(string_view path)
 	if (!FileUtil::fileExists(path))
 		return false;
 
-	// Second, check the path doesn't already exist
-	for (auto& base_resource_path : base_resource_paths_)
-	{
-		if (base_resource_path == path)
-			return false;
-	}
+	// Get or create cached query to add base resource paths
+	auto sql = Database::global().getOrCreateCachedQuery(
+		"am_insert_br_path", "INSERT OR IGNORE INTO base_resource_path (path) VALUES (?)", true);
+	if (!sql)
+		return false;
 
-	// Add it
-	base_resource_paths_.emplace_back(path);
+	// Add path to database (if it doesn't already exist)
+	sql->bind(1, string{ path });
+	auto result = sql->exec();
+	sql->reset();
+
+	if (!result)
+		return false;
 
 	// Announce
 	announce("base_resource_path_added");
@@ -854,10 +939,6 @@ bool ArchiveManager::addBaseResourcePath(string_view path)
 // -----------------------------------------------------------------------------
 void ArchiveManager::removeBaseResourcePath(unsigned index)
 {
-	// Check index
-	if (index >= base_resource_paths_.size())
-		return;
-
 	// Unload base resource if removed is open
 	if (index == (unsigned)base_resource)
 		openBaseResource(-1);
@@ -867,10 +948,16 @@ void ArchiveManager::removeBaseResourcePath(unsigned index)
 		base_resource = base_resource - 1;
 
 	// Remove the path
-	base_resource_paths_.erase(base_resource_paths_.begin() + index);
+	if (Database::global().exec(fmt::format("DELETE FROM base_resource_path WHERE rowid = {}", index + 1)) > 0)
+		announce("base_resource_path_removed");
+}
 
-	// Announce
-	announce("base_resource_path_removed");
+// -----------------------------------------------------------------------------
+// Returns the number of base resource archive paths in the database
+// -----------------------------------------------------------------------------
+unsigned ArchiveManager::numBaseResourcePaths() const
+{
+	return Database::connectionRO()->execAndGet("SELECT COUNT(*) FROM base_resource_path").getInt();
 }
 
 // -----------------------------------------------------------------------------
@@ -878,11 +965,15 @@ void ArchiveManager::removeBaseResourcePath(unsigned index)
 // -----------------------------------------------------------------------------
 string ArchiveManager::getBaseResourcePath(unsigned index)
 {
-	// Check index
-	if (index >= base_resource_paths_.size())
-		return "INVALID INDEX";
+	auto db = Database::connectionRO();
+	if (!db)
+		return {};
 
-	return base_resource_paths_[index];
+	SQLite::Statement sql_br_path(*db, fmt::format("SELECT path FROM base_resource_path WHERE rowid = {}", index + 1));
+	if (sql_br_path.executeStep())
+		return sql_br_path.getColumn(0).getString();
+
+	return {};
 }
 
 // -----------------------------------------------------------------------------
@@ -901,8 +992,13 @@ bool ArchiveManager::openBaseResource(int index)
 		base_resource_archive_ = nullptr;
 	}
 
-	// Check index
-	if (index < 0 || (unsigned)index >= base_resource_paths_.size())
+	// Get base resource path at [index]
+	string filename;
+	if (index >= 0)
+		filename = getBaseResourcePath(index);
+
+	// Check index was valid
+	if (filename.empty())
 	{
 		base_resource = -1;
 		announce("base_resource_changed");
@@ -910,7 +1006,6 @@ bool ArchiveManager::openBaseResource(int index)
 	}
 
 	// Create archive based on file type
-	auto filename = base_resource_paths_[index];
 	if (WadArchive::isWadArchive(filename))
 		base_resource_archive_ = std::make_unique<WadArchive>();
 	else if (ZipArchive::isZipArchive(filename))
@@ -1024,94 +1119,6 @@ vector<ArchiveEntry*> ArchiveManager::findAllResourceEntries(Archive::SearchOpti
 	}
 
 	return ret;
-}
-
-// -----------------------------------------------------------------------------
-// Returns the recent file path at [index]
-// -----------------------------------------------------------------------------
-string ArchiveManager::recentFile(unsigned index)
-{
-	// Check index
-	if (index >= recent_files_.size())
-		return "";
-
-	return recent_files_[index];
-}
-
-// -----------------------------------------------------------------------------
-// Adds a recent file to the list, if it doesn't exist already
-// -----------------------------------------------------------------------------
-void ArchiveManager::addRecentFile(string_view path)
-{
-	// Check the path is valid
-	if (!(FileUtil::fileExists(path) || FileUtil::dirExists(path)))
-		return;
-
-	// Replace \ with /
-	auto file_path = string{ path };
-	std::replace(file_path.begin(), file_path.end(), '\\', '/');
-
-	// Check if the file is already in the list
-	for (unsigned a = 0; a < recent_files_.size(); a++)
-	{
-		if (recent_files_[a] == file_path)
-		{
-			// Move this file to the top of the list
-			recent_files_.erase(recent_files_.begin() + a);
-			recent_files_.insert(recent_files_.begin(), file_path);
-
-			// Announce
-			announce("recent_files_changed");
-
-			return;
-		}
-	}
-
-	// Add the file to the top of the list
-	recent_files_.insert(recent_files_.begin(), file_path);
-
-	// Keep it trimmed
-	while (recent_files_.size() > (unsigned)max_recent_files)
-		recent_files_.pop_back();
-
-	// Announce
-	announce("recent_files_changed");
-}
-
-// -----------------------------------------------------------------------------
-// Adds a list of recent file paths to the recent file list
-// -----------------------------------------------------------------------------
-void ArchiveManager::addRecentFiles(const vector<string>& paths)
-{
-	// Mute annoucements
-	setMuted(true);
-
-	// Clear existing list
-	recent_files_.clear();
-
-	// Add the files
-	for (const auto& path : paths)
-		addRecentFile(path);
-
-	// Announce
-	setMuted(false);
-	announce("recent_files_changed");
-}
-
-// -----------------------------------------------------------------------------
-// Removes the recent file matching [path]
-// -----------------------------------------------------------------------------
-void ArchiveManager::removeRecentFile(string_view path)
-{
-	for (unsigned a = 0; a < recent_files_.size(); a++)
-	{
-		if (recent_files_[a] == path)
-		{
-			recent_files_.erase(recent_files_.begin() + a);
-			announce("recent_files_changed");
-			return;
-		}
-	}
 }
 
 // -----------------------------------------------------------------------------
@@ -1275,12 +1282,15 @@ void ArchiveManager::onAnnouncement(Announcer* announcer, string_view event_name
 	event_data.seek(0, SEEK_SET);
 
 	// Check that the announcement came from an archive in the list
-	int32_t index = archiveIndex((Archive*)announcer);
+	auto    archive = dynamic_cast<Archive*>(announcer);
+	int32_t index   = archiveIndex(archive);
 	if (index >= 0)
 	{
 		// If the archive was saved
 		if (event_name == "saved")
 		{
+			addOrUpdateArchiveDB(archive->filename(), *archive);
+
 			MemChunk mc;
 			mc.write(&index, 4);
 			announce("archive_saved", mc);

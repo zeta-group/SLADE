@@ -695,9 +695,6 @@ bool ArchivePanel::saveAs()
 	// Refresh entry list
 	entry_list_->updateList();
 
-	// Add as recent file
-	App::archiveManager().addRecentFile(info.filenames[0]);
-
 	return true;
 }
 

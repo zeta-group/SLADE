@@ -199,6 +199,12 @@
     <Filter Include="ThirdParty\Fmt">
       <UniqueIdentifier>{a702b279-106e-4595-954a-c8e0ab9d9dd3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\sqlite3">
+      <UniqueIdentifier>{1b0124c6-1162-4ddb-bd04-62a8edd80542}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SQLiteCPP">
+      <UniqueIdentifier>{7f570804-dd44-44eb-8146-dd13dcb50c9e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\thirdparty\mus2mid\mus2mid.cpp">
@@ -1584,6 +1590,36 @@
     <ClCompile Include="..\src\Archive\ArchiveDir.cpp">
       <Filter>Archive</Filter>
     </ClCompile>
+    <ClCompile Include="..\thirdparty\sqlite3\sqlite3.c">
+      <Filter>ThirdParty\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Backup.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Column.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Database.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Exception.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Statement.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\SQLiteCpp\Transaction.cpp">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Utility\MD5.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\General\Database.cpp">
+      <Filter>General</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Utility\DateTime.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2791,6 +2827,48 @@
     </ClInclude>
     <ClInclude Include="..\src\Archive\ArchiveDir.h">
       <Filter>Archive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\sqlite3\sqlite3.h">
+      <Filter>ThirdParty\sqlite3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Assertion.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Backup.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Column.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Database.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Exception.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\SQLiteCpp.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Statement.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Transaction.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\Utils.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\SQLiteCpp\VariadicBind.h">
+      <Filter>ThirdParty\SQLiteCPP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Utility\MD5.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\General\Database.h">
+      <Filter>General</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Utility\DateTime.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

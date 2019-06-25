@@ -33,6 +33,7 @@
 #include "Main.h"
 #include "NodeBuilders.h"
 #include "Archive/ArchiveManager.h"
+#include "General/Database.h"
 #include "Utility/Parser.h"
 #include "Utility/StringUtils.h"
 
@@ -48,7 +49,6 @@ vector<Builder> builders;
 Builder         invalid;
 Builder         none;
 string          custom;
-vector<string>  builder_paths;
 } // namespace NodeBuilders
 
 
@@ -118,34 +118,6 @@ void NodeBuilders::init()
 		}
 		builders.push_back(builder);
 	}
-
-	// Set builder paths
-	for (unsigned a = 0; a < builder_paths.size(); a += 2)
-		builder(builder_paths[a]).path = builder_paths[a + 1];
-}
-
-// -----------------------------------------------------------------------------
-// Adds [path] for [builder]
-// -----------------------------------------------------------------------------
-void NodeBuilders::addBuilderPath(string_view builder, string_view path)
-{
-	builder_paths.emplace_back(builder);
-	builder_paths.emplace_back(path);
-}
-
-// -----------------------------------------------------------------------------
-// Writes builder paths to [file]
-// -----------------------------------------------------------------------------
-void NodeBuilders::saveBuilderPaths(wxFile& file)
-{
-	file.Write("nodebuilder_paths\n{\n");
-	for (auto& builder : builders)
-	{
-		auto path = builder.path;
-		std::replace(path.begin(), path.end(), '\\', '/');
-		file.Write(wxString::Format("\t%s \"%s\"\n", builder.id, path));
-	}
-	file.Write("}\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -161,11 +133,9 @@ unsigned NodeBuilders::nNodeBuilders()
 // -----------------------------------------------------------------------------
 NodeBuilders::Builder& NodeBuilders::builder(string_view id)
 {
-	for (unsigned a = 0; a < builders.size(); a++)
-	{
-		if (builders[a].id == id)
-			return builders[a];
-	}
+	for (auto& builder : builders)
+		if (builder.id == id)
+			return builder;
 
 	return invalid;
 }
@@ -180,4 +150,54 @@ NodeBuilders::Builder& NodeBuilders::builder(unsigned index)
 		return invalid;
 
 	return builders[index];
+}
+
+// -----------------------------------------------------------------------------
+// Returns the configured executable path for node builder [id]
+// -----------------------------------------------------------------------------
+string NodeBuilders::builderPath(string_view id)
+{
+	for (unsigned i = 0; i < builders.size(); ++i)
+		if (builders[i].id == id)
+			return builderPath(i);
+
+	// Invalid id
+	return {};
+}
+
+// -----------------------------------------------------------------------------
+// Returns the configured executable path for the node builder at [index]
+// -----------------------------------------------------------------------------
+string NodeBuilders::builderPath(unsigned index)
+{
+	// Check index
+	if (index >= builders.size())
+		return {};
+
+	if (auto db = Database::connectionRO())
+	{
+		SQLite::Statement sql(*db, "SELECT path FROM nodebuilder_path WHERE nodebuilder_id = ?");
+		sql.bind(1, builders[index].id);
+		if (sql.executeStep())
+			return sql.getColumn(0).getString();
+	}
+
+	// Failed to connect to db or no row returned
+	return {};
+}
+
+void NodeBuilders::setBuilderPath(string_view id, string_view path)
+{
+	auto db = Database::connectionRW();
+	if (!db)
+		return;
+
+	auto builder = NodeBuilders::builder(id);
+	if (&builder == &invalid)
+		return;
+
+	SQLite::Statement sql(*db, "REPLACE INTO nodebuilder_path (nodebuilder_id, path) VALUES (?,?)");
+	sql.bind(1, builder.id);
+	sql.bind(2, string{ path });
+	sql.exec();
 }

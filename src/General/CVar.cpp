@@ -31,6 +31,7 @@
 //
 // -----------------------------------------------------------------------------
 #include "Main.h"
+#include "General/Database.h"
 #include "Utility/StringUtils.h"
 #include "thirdparty/fmt/fmt/format.h"
 
@@ -63,6 +64,30 @@ void addCVarList(CVar* cvar)
 	cvars[n_cvars] = cvar;
 	n_cvars++;
 }
+
+// -----------------------------------------------------------------------------
+// Updates [cvar] in the database with the given [value]
+// -----------------------------------------------------------------------------
+template<typename T> void updateCVarDB(CVar* cvar, T value)
+{
+	try
+	{
+		auto sql_update = Database::global().getOrCreateCachedQuery(
+			"cvar_update", "REPLACE INTO cvar(name, value) VALUES (?,?)", true);
+		if (!sql_update)
+			return;
+
+		sql_update->clearBindings();
+		sql_update->bind(1, cvar->name);
+		sql_update->bind(2, value);
+		sql_update->exec();
+		sql_update->reset();
+	}
+	catch (SQLite::Exception& e)
+	{
+		Log::error("Unable to update cvar \"{}\" in the database: {}", cvar->name, e.getErrorStr());
+	}
+}
 } // namespace
 
 
@@ -86,6 +111,14 @@ CIntCVar::CIntCVar(const string& NAME, int defval, uint16_t FLAGS)
 }
 
 // -----------------------------------------------------------------------------
+// Updates the saved cvar value in the database
+// -----------------------------------------------------------------------------
+void CIntCVar::updateDB()
+{
+	updateCVarDB<int>(this, value);
+}
+
+// -----------------------------------------------------------------------------
 // CBoolCVar class constructor
 // -----------------------------------------------------------------------------
 CBoolCVar::CBoolCVar(const string& NAME, bool defval, uint16_t FLAGS)
@@ -95,6 +128,14 @@ CBoolCVar::CBoolCVar(const string& NAME, bool defval, uint16_t FLAGS)
 	value = defval;
 	type  = Type::Boolean;
 	addCVarList(this);
+}
+
+// -----------------------------------------------------------------------------
+// Updates the saved cvar value in the database
+// -----------------------------------------------------------------------------
+void CBoolCVar::updateDB()
+{
+	updateCVarDB<bool>(this, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -110,6 +151,14 @@ CFloatCVar::CFloatCVar(const string& NAME, double defval, uint16_t FLAGS)
 }
 
 // -----------------------------------------------------------------------------
+// Updates the saved cvar value in the database
+// -----------------------------------------------------------------------------
+void CFloatCVar::updateDB()
+{
+	updateCVarDB<double>(this, value);
+}
+
+// -----------------------------------------------------------------------------
 // CStringCVar class constructor
 // -----------------------------------------------------------------------------
 CStringCVar::CStringCVar(const string& NAME, const string& defval, uint16_t FLAGS)
@@ -119,6 +168,14 @@ CStringCVar::CStringCVar(const string& NAME, const string& defval, uint16_t FLAG
 	value = defval;
 	type  = Type::String;
 	addCVarList(this);
+}
+
+// -----------------------------------------------------------------------------
+// Updates the saved cvar value in the database
+// -----------------------------------------------------------------------------
+void CStringCVar::updateDB()
+{
+	updateCVarDB<string>(this, value);
 }
 
 
@@ -156,51 +213,37 @@ void CVar::putList(vector<string>& list)
 }
 
 // -----------------------------------------------------------------------------
-// Saves cvars to a config file
+// Reads all saved cvars from the database
 // -----------------------------------------------------------------------------
-string CVar::writeAll()
+void CVar::readFromDB()
 {
-	uint32_t max_size = 0;
-	for (unsigned i = 0; i < n_cvars; ++i)
+	auto db = Database::connectionRO();
+	if (!db)
 	{
-		if (cvars[i]->name.size() > max_size)
-			max_size = cvars[i]->name.size();
+		Log::warning("Unable to open database connection, not loading CVars");
+		return;
 	}
 
-	fmt::memory_buffer buf;
-	format_to(buf, "cvars\n{{\n");
-
-	for (unsigned i = 0; i < n_cvars; ++i)
+	SQLite::Statement sql_cvars(*db, "SELECT * FROM cvar");
+	while (sql_cvars.executeStep())
 	{
-		auto cvar = cvars[i];
-		if (cvar->flags & Flag::Save)
+		auto name = sql_cvars.getColumn("name").getString();
+		auto cvar = get(name);
+
+		if (!cvar)
+			continue;
+
+		auto col_value = sql_cvars.getColumn("value");
+
+		switch (cvar->type)
 		{
-			format_to(buf, "\t{} ", cvar->name);
-
-			int spaces = max_size - cvar->name.size();
-			for (int a = 0; a < spaces; a++)
-				buf.push_back(' ');
-
-			if (cvar->type == Type::Integer)
-				format_to(buf, "{}\n", cvar->getValue().Int);
-
-			if (cvar->type == Type::Boolean)
-				format_to(buf, "{}\n", cvar->getValue().Bool);
-
-			if (cvar->type == Type::Float)
-				format_to(buf, "{:1.5f}\n", cvar->getValue().Float);
-
-			if (cvar->type == Type::String)
-			{
-				auto value = StrUtil::escapedString(dynamic_cast<CStringCVar*>(cvar)->value, true);
-				format_to(buf, "\"{}\"\n", value);
-			}
+		case Type::Boolean: dynamic_cast<CBoolCVar*>(cvar)->value = col_value.getInt() != 0; break;
+		case Type::Integer: dynamic_cast<CIntCVar*>(cvar)->value = col_value.getInt(); break;
+		case Type::Float: dynamic_cast<CFloatCVar*>(cvar)->value = col_value.getDouble(); break;
+		case Type::String: dynamic_cast<CStringCVar*>(cvar)->value = col_value.getString(); break;
+		default: break;
 		}
 	}
-
-	format_to(buf, "}}\n\n");
-
-	return to_string(buf);
 }
 
 // -----------------------------------------------------------------------------

@@ -43,10 +43,15 @@ struct WindowInfo
 {
 	string id;
 	int    width, height, left, top;
-	WindowInfo(string_view id, int w, int h, int l, int t) : id{ id }, width{ w }, height{ h }, left{ l }, top{ t } {}
+	WindowInfo(string_view id, int w = -1, int h = -1, int l = -1, int t = -1) :
+		id{ id },
+		width{ w },
+		height{ h },
+		left{ l },
+		top{ t }
+	{
+	}
 };
 WindowInfo getWindowInfo(string_view id);
 void       setWindowInfo(string_view id, int width, int height, int left, int top);
-void       readWindowInfo(Tokenizer& tz);
-void       writeWindowInfo(wxFile& file);
 } // namespace Misc

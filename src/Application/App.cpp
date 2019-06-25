@@ -38,6 +38,7 @@
 #include "General/Clipboard.h"
 #include "General/ColourConfiguration.h"
 #include "General/Console/Console.h"
+#include "General/Database.h"
 #include "General/Executables.h"
 #include "General/KeyBind.h"
 #include "General/Misc.h"
@@ -58,6 +59,7 @@
 #include "TextEditor/TextStyle.h"
 #include "UI/SBrush.h"
 #include "UI/WxUtils.h"
+#include "Utility/FileUtils.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
 #include "thirdparty/dumb/dumb.h"
@@ -227,93 +229,6 @@ bool initDirectories()
 }
 
 // -----------------------------------------------------------------------------
-// Reads and parses the SLADE configuration file
-// -----------------------------------------------------------------------------
-void readConfigFile()
-{
-	// Open SLADE.cfg
-	Tokenizer tz;
-	if (!tz.openFile(App::path("slade3.cfg", App::Dir::User)))
-		return;
-
-	// Go through the file with the tokenizer
-	while (!tz.atEnd())
-	{
-		// If we come across a 'cvars' token, read in the cvars section
-		if (tz.advIf("cvars", 2))
-		{
-			// Keep reading name/value pairs until we hit the ending '}'
-			while (!tz.checkOrEnd("}"))
-			{
-				CVar::set(tz.current().text, tz.peek().text);
-				tz.adv(2);
-			}
-
-			tz.adv(); // Skip ending }
-		}
-
-		// Read base resource archive paths
-		if (tz.advIf("base_resource_paths", 2))
-		{
-			while (!tz.checkOrEnd("}"))
-			{
-				archive_manager.addBaseResourcePath(tz.current().text);
-				tz.adv();
-			}
-
-			tz.adv(); // Skip ending }
-		}
-
-		// Read recent files list
-		if (tz.advIf("recent_files", 2))
-		{
-			while (!tz.checkOrEnd("}"))
-			{
-				archive_manager.addRecentFile(tz.current().text);
-				tz.adv();
-			}
-
-			tz.adv(); // Skip ending }
-		}
-
-		// Read keybinds
-		if (tz.advIf("keys", 2))
-			KeyBind::readBinds(tz);
-
-		// Read nodebuilder paths
-		if (tz.advIf("nodebuilder_paths", 2))
-		{
-			while (!tz.checkOrEnd("}"))
-			{
-				NodeBuilders::addBuilderPath(tz.current().text, tz.peek().text);
-				tz.adv(2);
-			}
-
-			tz.adv(); // Skip ending }
-		}
-
-		// Read game exe paths
-		if (tz.advIf("executable_paths", 2))
-		{
-			while (!tz.checkOrEnd("}"))
-			{
-				Executables::setGameExePath(tz.current().text, tz.peek().text);
-				tz.adv(2);
-			}
-
-			tz.adv(); // Skip ending }
-		}
-
-		// Read window size/position info
-		if (tz.advIf("window_info", 2))
-			Misc::readWindowInfo(tz);
-
-		// Next token
-		tz.adv();
-	}
-}
-
-// -----------------------------------------------------------------------------
 // Processes command line [args]
 // -----------------------------------------------------------------------------
 vector<string> processCommandLine(vector<string>& args)
@@ -345,6 +260,172 @@ vector<string> processCommandLine(vector<string>& args)
 
 	return to_open;
 }
+
+// -----------------------------------------------------------------------------
+// Loads settings etc. from slade3.cfg into the program database
+// -----------------------------------------------------------------------------
+void convertConfigToDatabase()
+{
+	// Open SLADE.cfg
+	Tokenizer tz;
+	if (!tz.openFile(App::path("slade3.cfg", App::Dir::User)))
+		return;
+
+	// Get database connection
+	auto db = Database::connectionRW();
+	if (!db)
+		return;
+
+	// Go through the file with the tokenizer
+	while (!tz.atEnd())
+	{
+		// CVars
+		if (tz.advIf("cvars", 2))
+		{
+			SQLite::Statement sql_update_cvar(*db, "REPLACE INTO cvar(name, value) VALUES (?,?)");
+
+			// Keep reading name/value pairs until we hit the ending '}'
+			SQLite::Transaction t(*db);
+			while (!tz.checkOrEnd("}"))
+			{
+				auto cvar = CVar::get(tz.current().text);
+				if (cvar)
+				{
+					sql_update_cvar.clearBindings();
+					sql_update_cvar.bind(1, cvar->name);
+					switch (cvar->type)
+					{
+					case CVar::Type::Boolean: sql_update_cvar.bind(2, StrUtil::asBoolean(tz.peek().text)); break;
+					case CVar::Type::Integer: sql_update_cvar.bind(2, StrUtil::asInt(tz.peek().text)); break;
+					case CVar::Type::Float: sql_update_cvar.bind(2, StrUtil::asDouble(tz.peek().text)); break;
+					case CVar::Type::String: sql_update_cvar.bind(2, tz.peek().text); break;
+					default: break;
+					}
+
+					sql_update_cvar.exec();
+					sql_update_cvar.reset();
+				}
+
+				tz.adv(2);
+			}
+			t.commit();
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Base resource paths
+		if (tz.advIf("base_resource_paths", 2))
+		{
+			SQLite::Statement sql_insert_br_path(*db, "INSERT OR IGNORE INTO base_resource_path (path) VALUES (?)");
+
+			SQLite::Transaction t(*db);
+			while (!tz.checkOrEnd("}"))
+			{
+				sql_insert_br_path.bind(1, tz.current().text);
+				sql_insert_br_path.exec();
+				sql_insert_br_path.reset();
+				tz.adv();
+			}
+			t.commit();
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Recent files
+		if (tz.advIf("recent_files", 2))
+		{
+			SQLite::Statement sql(
+				*db,
+				"INSERT OR IGNORE INTO recent_file (path, size, md5, format_id, last_opened, last_modified) "
+				"VALUES (?,?,?,?,?,?)");
+
+			SQLite::Transaction t(*db);
+			while (!tz.checkOrEnd("}"))
+			{
+				const auto& path = tz.current().text;
+
+				sql.clearBindings();
+				sql.bind(1, path);
+
+				if (FileUtil::fileExists(path))
+				{
+					// File
+					SFile file(path);
+					sql.bind(2, file.size());
+					sql.bind(3, file.calculateMD5());
+					sql.bind(4, ""); // TODO: Add detect format static function to Archive(Manager)
+					sql.bind(5, 0);
+					sql.bind(6, FileUtil::fileModifiedTime(path));
+					Log::info("Add archive (file): {}", path);
+				}
+				else
+				{
+					// Directory
+					sql.bind(2, 0);
+					sql.bind(3, "");
+					sql.bind(4, "folder");
+					sql.bind(5, 0);
+					sql.bind(6, 0);
+					Log::info("Add archive (folder): {}", path);
+				}
+				sql.exec();
+				sql.reset();
+
+				tz.adv();
+			}
+			t.commit();
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Keybinds
+		if (tz.advIf("keys", 2))
+		{
+			KeyBind::readBinds(tz);
+			KeyBind::writeToDB();
+		}
+
+		// Nodebuilder paths
+		if (tz.advIf("nodebuilder_paths", 2))
+		{
+			SQLite::Statement   sql(*db, "REPLACE INTO nodebuilder_path (nodebuilder_id, path) VALUES (?,?)");
+			SQLite::Transaction transaction(*db);
+			while (!tz.checkOrEnd("}"))
+			{
+				sql.bind(1, tz.current().text);
+				sql.bind(2, tz.peek().text);
+				sql.exec();
+				sql.reset();
+				tz.adv(2);
+			}
+			transaction.commit();
+
+			tz.adv(); // Skip ending }
+		}
+
+		// Window info
+		if (tz.advIf("window_info", 2))
+		{
+			tz.advIf("{");
+			while (!tz.check("}") && !tz.atEnd())
+			{
+				auto id     = tz.current().text;
+				int  width  = tz.next().asInt();
+				int  height = tz.next().asInt();
+				int  left   = tz.next().asInt();
+				int  top    = tz.next().asInt();
+				Misc::setWindowInfo(id, width, height, left, top);
+				tz.adv();
+			}
+		}
+
+		tz.adv();
+	}
+
+	// Rename config file so we don't load it again
+	FileUtil::renameFile(App::path("slade3.cfg", App::Dir::User), App::path("slade3.cfg.backup", App::Dir::User));
+}
+
 } // namespace App
 
 // -----------------------------------------------------------------------------
@@ -436,10 +517,6 @@ bool App::init(vector<string>& args, double ui_scale)
 	// Init keybinds
 	KeyBind::initBinds();
 
-	// Load configuration file
-	Log::info("Loading configuration");
-	readConfigFile();
-
 	// Check that SLADE.pk3 can be found
 	Log::info("Loading resources");
 	archive_manager.init();
@@ -450,6 +527,26 @@ bool App::init(vector<string>& args, double ui_scale)
 			"SLADE executable",
 			"Error",
 			wxICON_ERROR);
+		return false;
+	}
+
+	// Init database
+	try
+	{
+		bool db_exists = Database::fileExists();
+		Database::init();
+
+		// Load old config into database if it was just created
+		if (!db_exists)
+			convertConfigToDatabase();
+
+		// Read some stuff from the database
+		CVar::readFromDB();
+		KeyBind::readFromDB();
+	}
+	catch (SQLite::Exception& ex)
+	{
+		Log::error("Error initialising database: {}", ex.what());
 		return false;
 	}
 
@@ -554,70 +651,6 @@ bool App::init(vector<string>& args, double ui_scale)
 }
 
 // -----------------------------------------------------------------------------
-// Saves the SLADE configuration file
-// -----------------------------------------------------------------------------
-void App::saveConfigFile()
-{
-	// Open SLADE.cfg for writing text
-	wxFile file(App::path("slade3.cfg", App::Dir::User), wxFile::write);
-
-	// Do nothing if it didn't open correctly
-	if (!file.IsOpened())
-		return;
-
-	// Write cfg header
-	file.Write("/*****************************************************\n");
-	file.Write(" * SLADE Configuration File\n");
-	file.Write(" * Don't edit this unless you know what you're doing\n");
-	file.Write(" *****************************************************/\n\n");
-
-	// Write cvars
-	file.Write(CVar::writeAll());
-
-	// Write base resource archive paths
-	file.Write("\nbase_resource_paths\n{\n");
-	for (size_t a = 0; a < archive_manager.numBaseResourcePaths(); a++)
-	{
-		auto path = archive_manager.getBaseResourcePath(a);
-		std::replace(path.begin(), path.end(), '\\', '/');
-		file.Write(wxString::Format("\t\"%s\"\n", path), wxConvUTF8);
-	}
-	file.Write("}\n");
-
-	// Write recent files list (in reverse to keep proper order when reading back)
-	file.Write("\nrecent_files\n{\n");
-	for (int a = archive_manager.numRecentFiles() - 1; a >= 0; a--)
-	{
-		auto path = archive_manager.recentFile(a);
-		std::replace(path.begin(), path.end(), '\\', '/');
-		file.Write(wxString::Format("\t\"%s\"\n", path), wxConvUTF8);
-	}
-	file.Write("}\n");
-
-	// Write keybinds
-	file.Write("\nkeys\n{\n");
-	file.Write(KeyBind::writeBinds());
-	file.Write("}\n");
-
-	// Write nodebuilder paths
-	file.Write("\n");
-	NodeBuilders::saveBuilderPaths(file);
-
-	// Write game exe paths
-	file.Write("\nexecutable_paths\n{\n");
-	file.Write(Executables::writePaths());
-	file.Write("}\n");
-
-	// Write window info
-	file.Write("\nwindow_info\n{\n");
-	Misc::writeWindowInfo(file);
-	file.Write("}\n");
-
-	// Close configuration file
-	file.Write("\n// End Configuration File\n\n");
-}
-
-// -----------------------------------------------------------------------------
 // Application exit, shuts down and cleans everything up.
 // If [save_config] is true, saves all configuration related files
 // -----------------------------------------------------------------------------
@@ -627,9 +660,6 @@ void App::exit(bool save_config)
 
 	if (save_config)
 	{
-		// Save configuration
-		saveConfigFile();
-
 		// Save text style configuration
 		StyleSet::saveCurrent();
 
@@ -674,6 +704,9 @@ void App::exit(bool save_config)
 
 	// Close DUMB
 	dumb_exit();
+
+	// Close Database
+	Database::close();
 
 	// Exit wx Application
 	wxGetApp().Exit();
@@ -756,4 +789,9 @@ CONSOLE_COMMAND(setup_wizard, 0, false)
 {
 	SetupWizardDialog dlg(MainEditor::windowWx());
 	dlg.ShowModal();
+}
+
+CONSOLE_COMMAND(config_to_db, 0, false)
+{
+	App::convertConfigToDatabase();
 }

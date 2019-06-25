@@ -8,6 +8,7 @@ bool           fileExists(string_view path);
 bool           dirExists(string_view path);
 bool           removeFile(string_view path);
 bool           copyFile(string_view from, string_view to);
+bool           renameFile(string_view from, string_view to);
 bool           readFileToString(const string& path, string& str);
 bool           writeStringToFile(string& str, const string& path);
 bool           createDir(string_view path);
@@ -48,6 +49,8 @@ public:
 
 	bool write(const void* buffer, unsigned count) override;
 	bool writeStr(string_view str) const;
+
+	string calculateMD5();
 
 private:
 	FILE*       handle_ = nullptr;

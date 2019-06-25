@@ -316,9 +316,6 @@ void PreferencesDialog::applyPreferences()
 		if (i.second)
 			i.second->applyPreferences();
 	prefs_advanced_->applyPreferences();
-
-	// Write file so changes are not lost
-	App::saveConfigFile();
 }
 
 

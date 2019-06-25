@@ -1,6 +1,7 @@
 # Use system packages if available
 find_package(ZLIB)
 find_package(BZip2)
+find_package(SQLite3 REQUIRED)
 
 if(NOT ZLIB_FOUND)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
@@ -18,6 +19,10 @@ endif(NOT BZIP2_FOUND)
 set(ZLIB_LIBRARY ${ZLIB_LIBRARY} PARENT_SCOPE)
 set(BZIP2_LIBRARIES ${BZIP2_LIBRARIES} PARENT_SCOPE)
 
+include_directories(
+	.
+)
+
 # Roll the rest up into a big ball and compile it by itself
 set(EXTERNAL_SOURCES
 )
@@ -32,5 +37,5 @@ file(GLOB_RECURSE EXTERNAL_SOURCES
 	)
 
 add_library(external ${EXTERNAL_SOURCES})
-target_link_libraries(external ${ZLIB_LIBRARY})
+target_link_libraries(external ${ZLIB_LIBRARY} sqlite3)
 set(EXTERNAL_LIBRARIES external PARENT_SCOPE)

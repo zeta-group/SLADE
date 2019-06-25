@@ -744,17 +744,19 @@ void MapEditorWindow::buildNodes(Archive* wad)
 	}
 
 	// Check for undefined path
-	if (!wxFileExists(builder.path) && !nb_warned)
+	wxString builder_path = NodeBuilders::builderPath(builder.id);
+	if (!wxFileExists(builder_path) && !nb_warned)
 	{
 		// Open nodebuilder preferences
 		PreferencesDialog::openPreferences(this, "Node Builders");
 
 		// Get new builder if one was selected
 		builder = NodeBuilders::builder(nodebuilder_id);
+		builder_path = NodeBuilders::builderPath(builder.id);
 		command = builder.command;
 
 		// Check again
-		if (!wxFileExists(builder.path))
+		if (!wxFileExists(builder_path))
 		{
 			wxMessageBox(
 				"No valid Node Builder is currently configured, nodes will not be built!", "Warning", wxICON_WARNING);
@@ -767,13 +769,13 @@ void MapEditorWindow::buildNodes(Archive* wad)
 	command.Replace("$o", wxString(options));
 
 	// Run nodebuilder
-	if (wxFileExists(builder.path))
+	if (wxFileExists(builder_path))
 	{
 		wxArrayString out;
-		Log::info(wxString::Format("execute \"%s %s\"", builder.path, command));
+		Log::info(wxString::Format("execute \"%s %s\"", builder_path, command));
 		wxGetApp().SetTopWindow(this);
 		auto focus = wxWindow::FindFocus();
-		wxExecute(wxString::Format("\"%s\" %s", builder.path, command), out, wxEXEC_HIDE_CONSOLE);
+		wxExecute(wxString::Format("\"%s\" %s", builder_path, command), out, wxEXEC_HIDE_CONSOLE);
 		wxGetApp().SetTopWindow(MainEditor::windowWx());
 		if (focus)
 			focus->SetFocusFromKbd();
@@ -960,7 +962,6 @@ bool MapEditorWindow::saveMapAs()
 	// Write wad to file
 	wad.save(info.filenames[0]);
 	auto archive = App::archiveManager().openArchive(info.filenames[0], true, true);
-	App::archiveManager().addRecentFile(info.filenames[0]);
 
 	// Update current map description
 	auto maps = archive->detectMaps();

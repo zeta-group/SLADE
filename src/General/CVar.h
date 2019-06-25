@@ -44,10 +44,13 @@ public:
 	}
 
 	// Static functions
-	static string writeAll();
 	static void   set(const string& cvar_name, const string& value);
 	static CVar*  get(const string& cvar_name);
 	static void   putList(vector<string>& list);
+	static void   readFromDB();
+
+protected:
+	virtual void updateDB() {}
 };
 
 class CIntCVar : public CVar
@@ -65,6 +68,7 @@ public:
 	int operator=(int val)
 	{
 		value = val;
+		updateDB();
 		return val;
 	}
 
@@ -74,6 +78,9 @@ public:
 		val.Int = value;
 		return val;
 	}
+
+protected:
+	void updateDB() override;
 };
 
 class CBoolCVar : public CVar
@@ -90,6 +97,7 @@ public:
 	bool operator=(bool val)
 	{
 		value = val;
+		updateDB();
 		return val;
 	}
 
@@ -99,6 +107,9 @@ public:
 		val.Bool = value;
 		return val;
 	}
+
+protected:
+	void updateDB() override;
 };
 
 class CFloatCVar : public CVar
@@ -115,6 +126,7 @@ public:
 	double operator=(double val)
 	{
 		value = val;
+		updateDB();
 		return val;
 	}
 
@@ -124,6 +136,9 @@ public:
 		val.Float = value;
 		return val;
 	}
+
+protected:
+	void updateDB() override;
 };
 
 class CStringCVar : public CVar
@@ -144,8 +159,12 @@ public:
 	CStringCVar& operator=(string_view val)
 	{
 		value = val;
+		updateDB();
 		return *this;
 	}
+
+protected:
+	void updateDB() override;
 };
 
 #define CVAR(type, name, val, flags) C##type##CVar name(#name, val, flags);

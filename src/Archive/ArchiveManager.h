@@ -36,15 +36,14 @@ public:
 	shared_ptr<Archive>         shareArchive(Archive* archive);
 
 	// General access
-	const vector<string>&                 recentFiles() const { return recent_files_; }
-	const vector<string>&                 baseResourcePaths() const { return base_resource_paths_; }
+	vector<string>                        baseResourcePaths() const;
 	const vector<weak_ptr<ArchiveEntry>>& bookmarks() const { return bookmarks_; }
 
 	// Base resource archive stuff
 	Archive* baseResourceArchive() const { return base_resource_archive_.get(); }
 	bool     addBaseResourcePath(string_view path);
 	void     removeBaseResourcePath(unsigned index);
-	unsigned numBaseResourcePaths() const { return base_resource_paths_.size(); }
+	unsigned numBaseResourcePaths() const;
 	string   getBaseResourcePath(unsigned index);
 	bool     openBaseResource(int index);
 
@@ -54,11 +53,7 @@ public:
 	vector<ArchiveEntry*> findAllResourceEntries(Archive::SearchOptions& options, Archive* ignore = nullptr);
 
 	// Recent files
-	string   recentFile(unsigned index);
-	unsigned numRecentFiles() const { return recent_files_.size(); }
-	void     addRecentFile(string_view path);
-	void     addRecentFiles(const vector<string>& paths);
-	void     removeRecentFile(string_view path);
+	vector<string> recentFiles(int count = 25) const;
 
 	// Bookmarks
 	void          addBookmark(const shared_ptr<ArchiveEntry>& entry);
@@ -83,10 +78,9 @@ private:
 	unique_ptr<Archive>            program_resource_archive_;
 	unique_ptr<Archive>            base_resource_archive_;
 	bool                           res_archive_open_ = false;
-	vector<string>                 base_resource_paths_;
-	vector<string>                 recent_files_;
 	vector<weak_ptr<ArchiveEntry>> bookmarks_;
 
 	bool initArchiveFormats() const;
 	void getDependentArchivesInternal(Archive* archive, vector<shared_ptr<Archive>>& vec);
+	void addOrUpdateArchiveDB(string_view file_path, const Archive& archive) const;
 };

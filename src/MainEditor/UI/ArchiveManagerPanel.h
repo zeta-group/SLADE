@@ -86,7 +86,7 @@ public:
 
 	void        disableArchiveListUpdate() const;
 	void        refreshArchiveList() const;
-	void        refreshRecentFileList() const;
+	void        refreshRecentFileList();
 	void        refreshBookmarkList() const;
 	void        refreshAllTabs() const;
 	void        updateOpenListItem(int index) const;
@@ -185,4 +185,5 @@ private:
 	bool             asked_save_unchanged_        = false;
 	bool             checked_dir_archive_changes_ = false;
 	vector<Archive*> checking_archives_;
+	vector<wxString> recent_files_;
 };

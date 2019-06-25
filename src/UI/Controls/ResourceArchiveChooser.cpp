@@ -150,15 +150,16 @@ void ResourceArchiveChooser::onBtnOpenResource(wxCommandEvent& e)
 void ResourceArchiveChooser::onBtnRecent(wxCommandEvent& e)
 {
 	// Build list of recent wad filename strings
-	wxArrayString recent;
-	for (unsigned a = 0; a < App::archiveManager().numRecentFiles(); a++)
-		recent.Add(App::archiveManager().recentFile(a));
+	wxArrayString recent_wx;
+	auto          recent = App::archiveManager().recentFiles();
+	for (const auto& path : recent)
+		recent_wx.Add(path);
 
 	// Show dialog
-	wxSingleChoiceDialog dlg(this, "Select a recent Archive to open", "Open Recent", recent);
+	wxSingleChoiceDialog dlg(this, "Select a recent Archive to open", "Open Recent", recent_wx);
 	if (dlg.ShowModal() == wxID_OK)
 	{
-		auto na = App::archiveManager().openArchive(App::archiveManager().recentFile(dlg.GetSelection()), true, true);
+		auto na = App::archiveManager().openArchive(recent[dlg.GetSelection()], true, true);
 		if (na)
 		{
 			list_resources_->Append(na->filename(false));

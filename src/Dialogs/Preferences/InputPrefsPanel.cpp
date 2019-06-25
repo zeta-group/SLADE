@@ -436,6 +436,9 @@ void InputPrefsPanel::applyPreferences()
 
 	// Update map editor menus
 	MapEditor::window()->setupMenu();
+
+	// Write changes to database
+	KeyBind::writeToDB();
 }
 
 

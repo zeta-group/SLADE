@@ -33,6 +33,8 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "FileUtils.h"
+#include "MD5.h"
+#include "UI/WxUtils.h"
 #include <filesystem>
 #include <fstream>
 
@@ -88,7 +90,20 @@ bool FileUtil::copyFile(string_view from, string_view to)
 	static std::error_code ec;
 	if (!fs::copy_file(from, to, ec))
 	{
-		Log::warning("Unable to copy file from \"{}\" to \"{}\": {}", from, to, ec.message());
+		Log::warning(R"(Unable to copy file from "{}" to "{}": {})", from, to, ec.message());
+		return false;
+	}
+
+	return true;
+}
+
+bool FileUtil::renameFile(string_view from, string_view to)
+{
+	static std::error_code ec;
+	fs::rename(from, to, ec);
+	if (ec)
+	{
+		Log::warning(R"(Unable to move file from "{}" to "{}": {})", from, to, ec.message());
 		return false;
 	}
 
@@ -177,7 +192,9 @@ vector<string> FileUtil::allFilesInDir(string_view path, bool include_subdirs, b
 // -----------------------------------------------------------------------------
 time_t FileUtil::fileModifiedTime(string_view path)
 {
-	return static_cast<time_t>(fs::last_write_time(path).time_since_epoch().count());
+	// Still need to use wx here unfortunately
+	return wxFileModificationTime(WxUtils::strFromView(path));
+	// return static_cast<time_t>(fs::last_write_time(path).time_since_epoch().count());
 }
 
 
@@ -321,4 +338,37 @@ bool SFile::writeStr(string_view str) const
 		return fwrite(str.data(), 1, str.size(), handle_);
 
 	return false;
+}
+
+// -----------------------------------------------------------------------------
+// Calculates the MD5 hash of the file and returns it as a string
+// -----------------------------------------------------------------------------
+string SFile::calculateMD5()
+{
+	MD5  md5;
+	auto current_pos = currentPos();
+	auto size        = this->size();
+
+	seekFromStart(0);
+	unsigned pos = 0;
+	md5.init();
+
+	// Read in 1mb chunks
+	unsigned chunk_size = 1024;
+	char     buffer[1024];
+	while (pos < size)
+	{
+		if (size - pos < chunk_size)
+			chunk_size = size - pos;
+
+		read(buffer, chunk_size);
+		md5.update(buffer, chunk_size);
+
+		pos += chunk_size;
+	}
+
+	md5.finalize();
+	seekFromStart(current_pos);
+
+	return md5.hexdigest();
 }

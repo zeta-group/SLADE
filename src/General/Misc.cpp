@@ -34,6 +34,7 @@
 #include "General/Misc.h"
 #include "Archive/Archive.h"
 #include "Archive/ArchiveEntry.h"
+#include "General/Database.h"
 #include "Graphics/SImage/SIFormat.h"
 #include "Graphics/SImage/SImage.h"
 #include "Utility/StringUtils.h"
@@ -49,10 +50,6 @@ CVAR(Bool, size_as_string, true, CVar::Flag::Save)
 CVAR(Bool, percent_encoding, false, CVar::Flag::Save)
 EXTERN_CVAR(Float, col_cie_tristim_x)
 EXTERN_CVAR(Float, col_cie_tristim_z)
-namespace Misc
-{
-vector<WindowInfo> window_info;
-}
 
 
 // -----------------------------------------------------------------------------
@@ -555,10 +552,20 @@ Vec2i Misc::findJaguarTextureDimensions(ArchiveEntry* entry, string_view name)
 // -----------------------------------------------------------------------------
 Misc::WindowInfo Misc::getWindowInfo(string_view id)
 {
-	for (auto& a : window_info)
+	if (auto db = Database::connectionRO())
 	{
-		if (a.id == id)
-			return a;
+		SQLite::Statement sql(*db, "SELECT * FROM window_info WHERE id = ?");
+		sql.bind(1, string{ id });
+
+		if (sql.executeStep())
+		{
+			WindowInfo inf(id);
+			inf.left      = sql.getColumn(1).getInt();
+			inf.top       = sql.getColumn(2).getInt();
+			inf.width     = sql.getColumn(3).getInt();
+			inf.height    = sql.getColumn(4).getInt();
+			return inf;
+		}
 	}
 
 	return WindowInfo("", -1, -1, -1, -1);
@@ -572,49 +579,18 @@ void Misc::setWindowInfo(string_view id, int width, int height, int left, int to
 	if (id.empty())
 		return;
 
-	for (auto& a : window_info)
+	if (auto db = Database::connectionRW())
 	{
-		if (a.id == id)
-		{
-			if (width >= -1)
-				a.width = width;
-			if (height >= -1)
-				a.height = height;
-			if (left >= -1)
-				a.left = left;
-			if (top >= -1)
-				a.top = top;
-			return;
-		}
+		SQLite::Statement sql(
+			*db, "REPLACE INTO window_info (id,left,top,width,height,maximised) VALUES (?,?,?,?,?,?)");
+
+		sql.bind(1, string{ id });
+		sql.bind(2, left);
+		sql.bind(3, top);
+		sql.bind(4, width);
+		sql.bind(5, height);
+		sql.bind(6, false); // 'maximised' column unused for now
+
+		sql.exec();
 	}
-
-	window_info.emplace_back(id, width, height, left, top);
-}
-
-// -----------------------------------------------------------------------------
-// Reads saved window info from tokenizer [tz]
-// -----------------------------------------------------------------------------
-void Misc::readWindowInfo(Tokenizer& tz)
-{
-	// Read definitions
-	tz.advIf("{");
-	while (!tz.check("}") && !tz.atEnd())
-	{
-		auto id     = tz.current().text;
-		int  width  = tz.next().asInt();
-		int  height = tz.next().asInt();
-		int  left   = tz.next().asInt();
-		int  top    = tz.next().asInt();
-		setWindowInfo(id, width, height, left, top);
-		tz.adv();
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Writes all saved window info to [file]
-// -----------------------------------------------------------------------------
-void Misc::writeWindowInfo(wxFile& file)
-{
-	for (auto& a : window_info)
-		file.Write(wxString::Format("\t%s %d %d %d %d\n", a.id, a.width, a.height, a.left, a.top));
 }

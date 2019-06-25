@@ -105,7 +105,7 @@ string Executables::writePaths()
 	string ret;
 
 	for (auto& exe : game_exes)
-		ret += fmt::format("\t{} \"{}\"\n", exe.id, StrUtil::escapedString(exe.path, true));
+		ret += fmt::format("\t{} = \"{}\";\n", exe.id, StrUtil::escapedString(exe.path, true));
 
 	return ret;
 }
@@ -153,6 +153,11 @@ string Executables::writeExecutables()
 		ret += "\t}\n\n";
 	}
 
+	ret += "}\n";
+
+	// Write paths
+	ret += "\npaths\n{\n";
+	ret += writePaths();
 	ret += "}\n";
 
 	return ret;
@@ -205,6 +210,19 @@ void Executables::parse(Parser* p, bool custom)
 		// External Executable
 		else if (type == "external_exe")
 			parseExternalExe(exe_node);
+	}
+
+	// Paths
+	n = p->parseTreeRoot()->childPTN("paths");
+	if (!n)
+		return;
+
+	for (unsigned a = 0; a < n->nChildren(); a++)
+	{
+		auto path_node = n->childPTN(a);
+		auto exe       = gameExe(path_node->name());
+		if (exe)
+			exe->path = path_node->stringValue();
 	}
 }
 

@@ -6,7 +6,6 @@ struct Builder
 {
 	string         id;
 	string         name;
-	string         path;
 	string         command;
 	string         exe;
 	vector<string> options;
@@ -14,9 +13,10 @@ struct Builder
 };
 
 void     init();
-void     addBuilderPath(string_view builder, string_view path);
-void     saveBuilderPaths(wxFile& file);
 unsigned nNodeBuilders();
 Builder& builder(string_view id);
 Builder& builder(unsigned index);
+string   builderPath(string_view id);
+string   builderPath(unsigned index);
+void     setBuilderPath(string_view id, string_view path);
 } // namespace NodeBuilders

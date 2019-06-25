@@ -128,7 +128,7 @@ void NodesPrefsPanel::populateOptions(const wxString& options) const
 	btn_browse_path_->Enable(builder.id != "none");
 
 	// Set builder path
-	text_path_->SetValue(builder.path);
+	text_path_->SetValue(NodeBuilders::builderPath(builder.id));
 
 	// Clear current options
 	clb_options_->Clear();
@@ -192,6 +192,6 @@ void NodesPrefsPanel::onBtnBrowse(wxCommandEvent& e)
 		return;
 
 	// Set builder path
-	builder.path = info.filenames[0];
+	NodeBuilders::setBuilderPath(builder.id, info.filenames[0]);
 	text_path_->SetValue(info.filenames[0]);
 }
