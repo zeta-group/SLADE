@@ -41,10 +41,20 @@ CREATE TABLE window_info (
     id        TEXT    PRIMARY KEY
                       NOT NULL,
     [left]    INTEGER,
-    top       INTEGER,
+    [top]     INTEGER,
     width     INTEGER,
     height    INTEGER,
     maximised BOOLEAN
+);
+
+CREATE TABLE wx_window_layout (
+    window_id TEXT NOT NULL,
+    component TEXT NOT NULL,
+    layout    TEXT,
+    UNIQUE (
+        window_id,
+        component
+    )
 );
 
 COMMIT TRANSACTION;

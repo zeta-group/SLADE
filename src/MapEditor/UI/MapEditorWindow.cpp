@@ -39,6 +39,7 @@
 #include "Dialogs/Preferences/PreferencesDialog.h"
 #include "Dialogs/RunDialog.h"
 #include "Game/Configuration.h"
+#include "General/Database.h"
 #include "General/Misc.h"
 #include "General/UI.h"
 #include "MainEditor/MainEditor.h"
@@ -129,26 +130,21 @@ MapEditorWindow::~MapEditorWindow()
 // -----------------------------------------------------------------------------
 void MapEditorWindow::loadLayout()
 {
-	// Open layout file
-	Tokenizer tz;
-	if (!tz.openFile(App::path("mapwindow.layout", App::Dir::User)))
+	auto db = Database::connectionRO();
+	if (!db)
 		return;
 
-	// Parse layout
+	// Setup SQL query to get layout of main window components
+	SQLite::Statement sql(*db, "SELECT * FROM wx_window_layout WHERE window_id = ?");
+	sql.bind(1, "map");
+
+	// Go through query results
 	auto m_mgr = wxAuiManager::GetManager(this);
-	while (true)
+	while (sql.executeStep())
 	{
-		// Read component+layout pair
-		wxString component = tz.getToken();
-		wxString layout    = tz.getToken();
-
-		// Load layout to component
-		if (!component.IsEmpty() && !layout.IsEmpty())
-			m_mgr->LoadPaneInfo(layout, m_mgr->GetPane(component));
-
-		// Check if we're done
-		if (tz.peekToken().empty())
-			break;
+		auto component = sql.getColumn(1).getString();
+		auto layout = sql.getColumn(2).getString();
+		m_mgr->LoadPaneInfo(layout, m_mgr->GetPane(component));
 	}
 }
 
@@ -157,39 +153,35 @@ void MapEditorWindow::loadLayout()
 // -----------------------------------------------------------------------------
 void MapEditorWindow::saveLayout()
 {
-	// Open layout file
-	wxFile file(App::path("mapwindow.layout", App::Dir::User), wxFile::write);
+	try
+	{
+		auto db = Database::connectionRW();
+		if (!db)
+			return;
 
-	// Write component layout
-	auto m_mgr = wxAuiManager::GetManager(this);
+		SQLite::Statement sql(*db, "REPLACE INTO wx_window_layout (window_id,component,layout) VALUES (?,?,?)");
+		sql.bind(1, "map");
 
-	// Console pane
-	file.Write("\"console\" ");
-	wxString pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("console"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
+		auto m_mgr = wxAuiManager::GetManager(this);
 
-	// Item info pane
-	file.Write("\"item_props\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("item_props"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
+		// Quick lambda function to avoid repetition
+		auto insert_layout = [&](const wxString& component) {
+			sql.bind(2, component.ToStdString());
+			sql.bind(3, m_mgr->SavePaneInfo(m_mgr->GetPane(component)).ToStdString());
+			sql.exec();
+			sql.reset();
+		};
 
-	// Script editor pane
-	file.Write("\"script_editor\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("script_editor"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Map checks pane
-	file.Write("\"map_checks\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("map_checks"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Undo history pane
-	file.Write("\"undo_history\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("undo_history"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Close file
-	file.Close();
+		insert_layout("console");
+		insert_layout("item_props");
+		insert_layout("script_editor");
+		insert_layout("map_checks");
+		insert_layout("undo_history");
+	}
+	catch (const std::exception& ex)
+	{
+		Log::error("Error saving main window layout: {}", ex.what());
+	}
 }
 
 // -----------------------------------------------------------------------------

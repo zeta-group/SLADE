@@ -37,6 +37,7 @@
 #include "ArchiveManagerPanel.h"
 #include "ArchivePanel.h"
 #include "Dialogs/Preferences/PreferencesDialog.h"
+#include "General/Database.h"
 #include "General/Misc.h"
 #include "Graphics/Icons.h"
 #include "MapEditor/MapEditor.h"
@@ -137,25 +138,20 @@ MainWindow::~MainWindow()
 // -----------------------------------------------------------------------------
 void MainWindow::loadLayout() const
 {
-	// Open layout file
-	Tokenizer tz;
-	if (!tz.openFile(App::path("mainwindow.layout", App::Dir::User)))
+	auto db = Database::connectionRO();
+	if (!db)
 		return;
 
-	// Parse layout
-	while (true)
+	// Setup SQL query to get layout of main window components
+	SQLite::Statement sql(*db, "SELECT * FROM wx_window_layout WHERE window_id = ?");
+	sql.bind(1, "main");
+
+	// Go through query results
+	while (sql.executeStep())
 	{
-		// Read component+layout pair
-		wxString component = tz.getToken();
-		wxString layout    = tz.getToken();
-
-		// Load layout to component
-		if (!component.IsEmpty() && !layout.IsEmpty())
-			aui_mgr_->LoadPaneInfo(layout, aui_mgr_->GetPane(component));
-
-		// Check if we're done
-		if (tz.peekToken().empty())
-			break;
+		auto component = sql.getColumn(1).getString();
+		auto layout = sql.getColumn(2).getString();
+		aui_mgr_->LoadPaneInfo(layout, aui_mgr_->GetPane(component));
 	}
 }
 
@@ -164,28 +160,31 @@ void MainWindow::loadLayout() const
 // -----------------------------------------------------------------------------
 void MainWindow::saveLayout() const
 {
-	// Open layout file
-	wxFile file(App::path("mainwindow.layout", App::Dir::User), wxFile::write);
+	try
+	{
+		auto db = Database::connectionRW();
+		if (!db)
+			return;
 
-	// Write component layout
+		SQLite::Statement sql(*db, "REPLACE INTO wx_window_layout (window_id,component,layout) VALUES (?,?,?)");
+		sql.bind(1, "main");
 
-	// Console pane
-	file.Write("\"console\" ");
-	wxString pinf = aui_mgr_->SavePaneInfo(aui_mgr_->GetPane("console"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
+		// Quick lambda function to avoid repetition
+		auto insert_layout = [&](const wxString& component) {
+			sql.bind(2, component.ToStdString());
+			sql.bind(3, aui_mgr_->SavePaneInfo(aui_mgr_->GetPane(component)).ToStdString());
+			sql.exec();
+			sql.reset();
+		};
 
-	// Archive Manager pane
-	file.Write("\"archive_manager\" ");
-	pinf = aui_mgr_->SavePaneInfo(aui_mgr_->GetPane("archive_manager"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Undo History pane
-	file.Write("\"undo_history\" ");
-	pinf = aui_mgr_->SavePaneInfo(aui_mgr_->GetPane("undo_history"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Close file
-	file.Close();
+		insert_layout("console");
+		insert_layout("archive_manager");
+		insert_layout("undo_history");
+	}
+	catch (const std::exception& ex)
+	{
+		Log::error("Error saving main window layout: {}", ex.what());
+	}
 }
 
 // -----------------------------------------------------------------------------
