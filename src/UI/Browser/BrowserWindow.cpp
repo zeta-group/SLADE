@@ -34,7 +34,7 @@
 // -----------------------------------------------------------------------------
 #include "Main.h"
 #include "BrowserWindow.h"
-#include "General/Misc.h"
+#include "General/UI.h"
 #include "UI/WxUtils.h"
 
 using namespace slade;
@@ -172,14 +172,14 @@ BrowserWindow::BrowserWindow(wxWindow* parent, bool truncate_names) :
 	truncate_names_{ truncate_names }
 {
 	// Init size/pos
-	auto info = misc::getWindowInfo("browser");
+	auto info = ui::getWindowInfo("browser");
 	if (!info.id.empty())
 	{
 		SetClientSize(info.width, info.height);
 		SetPosition(wxPoint(info.left, info.top));
 	}
 	else
-		misc::setWindowInfo("browser", 768, 600, 0, 0);
+		ui::setWindowInfo("browser", 768, 600, 0, 0);
 
 	// Init variables
 	items_root_ = new BrowserTreeNode();
@@ -275,7 +275,7 @@ BrowserWindow::~BrowserWindow()
 {
 	browser_maximised = wxTopLevelWindow::IsMaximized();
 	if (!wxTopLevelWindow::IsMaximized())
-		misc::setWindowInfo("browser", GetClientSize().x, GetClientSize().y, GetPosition().x, GetPosition().y);
+		ui::setWindowInfo("browser", GetClientSize().x, GetClientSize().y, GetPosition().x, GetPosition().y);
 }
 
 // -----------------------------------------------------------------------------

@@ -51,10 +51,6 @@ CVAR(Bool, size_as_string, true, CVar::Flag::Save)
 CVAR(Bool, percent_encoding, false, CVar::Flag::Save)
 EXTERN_CVAR(Float, col_cie_tristim_x)
 EXTERN_CVAR(Float, col_cie_tristim_z)
-namespace slade::misc
-{
-vector<WindowInfo> window_info;
-}
 
 
 // -----------------------------------------------------------------------------

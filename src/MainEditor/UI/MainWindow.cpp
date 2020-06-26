@@ -434,7 +434,7 @@ bool MainWindow::exitProgram()
 	saveLayout();
 	mw_maximized = IsMaximized();
 	if (!IsMaximized())
-		misc::setWindowInfo(id_, GetSize().x, GetSize().y, GetPosition().x, GetPosition().y);
+		ui::setWindowInfo(id_.c_str(), GetSize().x, GetSize().y, GetPosition().x, GetPosition().y);
 
 	// Save selected palette
 	global_palette = wxutil::strToView(palette_chooser_->GetStringSelection());
