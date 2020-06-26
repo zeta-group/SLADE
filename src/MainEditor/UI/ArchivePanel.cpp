@@ -50,6 +50,7 @@
 #include "General/Clipboard.h"
 #include "General/Executables.h"
 #include "General/KeyBind.h"
+#include "General/Library.h"
 #include "General/Misc.h"
 #include "General/UI.h"
 #include "Graphics/Icons.h"
@@ -795,7 +796,7 @@ bool ArchivePanel::saveAs()
 	// entry_list_->updateList();
 
 	// Add as recent file
-	app::archiveManager().addRecentFile(info.filenames[0]);
+	library::addOrUpdateArchive(info.filenames[0], *archive);
 
 	return true;
 }

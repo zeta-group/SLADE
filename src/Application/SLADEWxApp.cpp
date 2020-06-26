@@ -557,9 +557,12 @@ bool SLADEWxApp::OnInit()
 
 	// Init application
 	if (!app::init(args, ui_scale))
+	{
+		wxMessageBox(global::error, "SLADE Initialization Error", wxICON_ERROR);
 		return false;
+	}
 
-		// Check for updates
+	// Check for updates
 #ifdef __WXMSW__
 	wxHTTP::Initialize();
 	if (update_check)

@@ -36,6 +36,7 @@
 #include "StartPage.h"
 #include "App.h"
 #include "Archive/ArchiveManager.h"
+#include "General/Library.h"
 #include "General/SAction.h"
 #include "General/Web.h"
 #include "Graphics/Icons.h"
@@ -216,15 +217,16 @@ void SStartPage::load(bool new_tip)
 
 	// Generate recent files string
 	wxString recent;
-	if (app::archiveManager().numRecentFiles() > 0)
+	auto recent_files = library::recentFiles();
+	if (!recent_files.empty())
 	{
 		for (unsigned a = 0; a < 12; a++)
 		{
-			if (a >= app::archiveManager().numRecentFiles())
+			if (a >= recent_files.size())
 				break; // No more recent files
 
 			// Determine icon
-			wxString fn   = app::archiveManager().recentFile(a);
+			wxString fn   = recent_files[a];
 			wxString icon = "archive";
 			if (fn.EndsWith(".wad"))
 				icon = "wad";

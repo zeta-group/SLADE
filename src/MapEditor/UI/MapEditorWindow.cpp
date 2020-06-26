@@ -35,7 +35,7 @@
 #include "Archive/ArchiveManager.h"
 #include "Archive/Formats/WadArchive.h"
 #include "Game/Configuration.h"
-#include "General/Misc.h"
+#include "General/Library.h"
 #include "General/UI.h"
 #include "MainEditor/MainEditor.h"
 #include "MapEditor/MapBackupManager.h"
@@ -131,27 +131,12 @@ MapEditorWindow::~MapEditorWindow()
 // -----------------------------------------------------------------------------
 void MapEditorWindow::loadLayout()
 {
-	// Open layout file
-	Tokenizer tz;
-	if (!tz.openFile(app::path("mapwindow.layout", app::Dir::User)))
-		return;
+	auto* aui_mgr = wxAuiManager::GetManager(this);
+	auto  layout  = ui::getWindowLayout(id_.c_str());
 
-	// Parse layout
-	auto m_mgr = wxAuiManager::GetManager(this);
-	while (true)
-	{
-		// Read component+layout pair
-		wxString component = tz.getToken();
-		wxString layout    = tz.getToken();
-
-		// Load layout to component
-		if (!component.IsEmpty() && !layout.IsEmpty())
-			m_mgr->LoadPaneInfo(layout, m_mgr->GetPane(component));
-
-		// Check if we're done
-		if (tz.peekToken().empty())
-			break;
-	}
+	for (const auto& component : layout)
+		if (!component.first.empty() && !component.second.empty())
+			aui_mgr->LoadPaneInfo(component.second, aui_mgr->GetPane(component.first));
 }
 
 // -----------------------------------------------------------------------------
@@ -159,39 +144,16 @@ void MapEditorWindow::loadLayout()
 // -----------------------------------------------------------------------------
 void MapEditorWindow::saveLayout()
 {
-	// Open layout file
-	wxFile file(app::path("mapwindow.layout", app::Dir::User), wxFile::write);
+	vector<StringPair> layout;
+	auto*              aui_mgr = wxAuiManager::GetManager(this);
 
-	// Write component layout
-	auto m_mgr = wxAuiManager::GetManager(this);
+	layout.emplace_back("console", aui_mgr->SavePaneInfo(aui_mgr->GetPane("console")).ToStdString());
+	layout.emplace_back("item_props", aui_mgr->SavePaneInfo(aui_mgr->GetPane("item_props")).ToStdString());
+	layout.emplace_back("script_editor", aui_mgr->SavePaneInfo(aui_mgr->GetPane("script_editor")).ToStdString());
+	layout.emplace_back("map_checks", aui_mgr->SavePaneInfo(aui_mgr->GetPane("map_checks")).ToStdString());
+	layout.emplace_back("undo_history", aui_mgr->SavePaneInfo(aui_mgr->GetPane("undo_history")).ToStdString());
 
-	// Console pane
-	file.Write("\"console\" ");
-	wxString pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("console"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Item info pane
-	file.Write("\"item_props\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("item_props"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Script editor pane
-	file.Write("\"script_editor\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("script_editor"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Map checks pane
-	file.Write("\"map_checks\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("map_checks"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Undo history pane
-	file.Write("\"undo_history\" ");
-	pinf = m_mgr->SavePaneInfo(m_mgr->GetPane("undo_history"));
-	file.Write(wxString::Format("\"%s\"\n", pinf));
-
-	// Close file
-	file.Close();
+	ui::setWindowLayout(id_.c_str(), layout);
 }
 
 // -----------------------------------------------------------------------------
@@ -218,7 +180,7 @@ void MapEditorWindow::setupMenu()
 	auto menu_map = new wxMenu("");
 	SAction::fromId("mapw_save")->addToMenu(menu_map);
 	SAction::fromId("mapw_saveas")->addToMenu(menu_map);
-	//SAction::fromId("mapw_rename")->addToMenu(menu_map);
+	// SAction::fromId("mapw_rename")->addToMenu(menu_map);
 	SAction::fromId("mapw_backup")->addToMenu(menu_map);
 	menu_map->AppendSeparator();
 	SAction::fromId("mapw_run_map")->addToMenu(menu_map);
@@ -300,7 +262,7 @@ void MapEditorWindow::setupLayout()
 	auto tbg_map = new SToolBarGroup(toolbar_, "_Map");
 	tbg_map->addActionButton("mapw_save");
 	tbg_map->addActionButton("mapw_saveas");
-	//tbg_map->addActionButton("mapw_rename"); // TODO: Actually implement this one
+	// tbg_map->addActionButton("mapw_rename"); // TODO: Actually implement this one
 	tbg_map->addActionButton("mapw_preferences");
 	toolbar_->addGroup(tbg_map);
 
@@ -964,7 +926,7 @@ bool MapEditorWindow::saveMapAs()
 	// Write wad to file
 	wad.save(info.filenames[0]);
 	auto archive = app::archiveManager().openArchive(info.filenames[0], true, true);
-	app::archiveManager().addRecentFile(info.filenames[0]);
+	library::addOrUpdateArchive(info.filenames[0], *archive);
 
 	// Update current map description
 	auto maps = archive->detectMaps();
@@ -1400,7 +1362,7 @@ void MapEditorWindow::onClose(wxCloseEvent& e)
 	// Save current layout
 	saveLayout();
 	if (!IsMaximized())
-		misc::setWindowInfo(id_, GetSize().x, GetSize().y, GetPosition().x, GetPosition().y);
+		ui::setWindowInfo(id_.c_str(), GetSize().x, GetSize().y, GetPosition().x, GetPosition().y);
 
 	Show(false);
 	closeMap();
