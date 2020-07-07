@@ -27,7 +27,7 @@ public:
 
 	// Misc
 	bool     loadEntryData(ArchiveEntry* entry) override;
-	unsigned numEntries() override { return rootDir()->numEntries(); }
+	unsigned numEntries() const override { return rootDir()->numEntries(); }
 
 	// Entry addition/removal
 	shared_ptr<ArchiveEntry> addEntry(

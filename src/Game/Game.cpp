@@ -242,7 +242,7 @@ void game::updateCustomDefinitions()
 	auto base_resource = app::archiveManager().baseResourceArchive();
 	if (base_resource)
 	{
-		zscript_custom.parseZScript(base_resource);
+		zscript_custom.parseZScript(*base_resource);
 		config_current.parseDecorateDefs(base_resource);
 		config_current.parseMapInfo(*base_resource);
 	}
@@ -252,7 +252,7 @@ void game::updateCustomDefinitions()
 
 	// ZScript first
 	for (const auto& archive : resource_archives)
-		zscript_custom.parseZScript(archive.get());
+		zscript_custom.parseZScript(*archive);
 
 	// Other definitions
 	for (const auto& archive : resource_archives)
@@ -413,12 +413,12 @@ void game::init()
 	if (wxFileExists(zdoom_pk3_path))
 	{
 		zscript_parse_thread = std::make_unique<std::thread>([=]() {
-			ZipArchive zdoom_pk3;
-			if (!zdoom_pk3.open(zdoom_pk3_path))
+			auto zdoom_pk3 = std::make_shared<ZipArchive>();
+			if (!zdoom_pk3->open(zdoom_pk3_path))
 				return;
 
 			// ZScript
-			auto zscript_entry = zdoom_pk3.entryAtPath("zscript.txt");
+			auto zscript_entry = zdoom_pk3->entryAtPath("zscript.txt");
 
 			if (!zscript_entry)
 			{
@@ -427,14 +427,17 @@ void game::init()
 			}
 			else
 			{
-				zscript_base.parseZScript(zscript_entry);
+				zscript::Parser parser;
+				parser.parseZScript(*zscript_entry, true);
+
+				zscript_base.parseZScript(*zscript_entry);
 
 				auto lang = TextLanguage::fromId("zscript");
 				if (lang)
-					lang->loadZScript(zscript_base);
+					lang->loadZScript(zscript_base, false, &parser.dbContext());
 
 				// MapInfo
-				config_current.parseMapInfo(zdoom_pk3);
+				config_current.parseMapInfo(*zdoom_pk3);
 			}
 		});
 		zscript_parse_thread->detach();

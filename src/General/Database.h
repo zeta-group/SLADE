@@ -25,8 +25,10 @@ public:
 
 	int exec(const string& query) const;
 	int exec(const char* query) const;
+	i64 lastRowId() const;
 
 	SQLite::Transaction beginTransaction(bool write = false);
+	void                enableForeignKeyConstraints(bool enable = true);
 
 private:
 	string file_path_;
@@ -54,7 +56,8 @@ template<typename T> bool rowExists(SQLite::Database& connection, string_view ta
 }
 
 // General
-bool init();
-void close();
+bool   init();
+void   close();
+string programDatabasePath();
 
 } // namespace slade::database

@@ -20,7 +20,7 @@ public:
 
 	// Misc
 	bool     loadEntryData(ArchiveEntry* entry) override;
-	unsigned numEntries() override { return rootDir()->numEntries(); }
+	unsigned numEntries() const override { return rootDir()->numEntries(); }
 
 	static bool isLibArchive(MemChunk& mc);
 	static bool isLibArchive(const string& filename);

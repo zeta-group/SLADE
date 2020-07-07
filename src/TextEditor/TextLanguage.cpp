@@ -37,6 +37,7 @@
 #include "App.h"
 #include "Archive/ArchiveManager.h"
 #include "Game/ZScript.h"
+#include "General/Database.h"
 #include "Utility/Parser.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
@@ -198,6 +199,64 @@ void TLFunction::addContext(
 			ctx.params.push_back({ p.type, p.name, p.default_value, !p.default_value.empty() });
 }
 
+void TLFunction::addContext(
+	string_view        context,
+	int                identifier_id,
+	bool               custom,
+	string_view        desc,
+	string_view        dep_f,
+	database::Context* db)
+{
+	auto* ps_func        = db->cacheQuery("zs_func_details", "SELECT * FROM zs_function WHERE identifier_id = ?");
+	auto* ps_func_params = db->cacheQuery(
+		"zs_func_params", "SELECT * FROM zs_function_parameter WHERE identifier_id = ? ORDER BY [index]");
+	if (!ps_func || !ps_func_params)
+		return;
+
+	ps_func->bind(1, identifier_id);
+	if (ps_func->executeStep())
+	{
+		// Ignore overriding functions
+		if (ps_func->getColumn("override").getInt() > 0)
+			return;
+
+		contexts_.emplace_back(
+			context,
+			ps_func->getColumn("return_type").getString(),
+			desc,
+			ps_func->getColumn("deprecated").getString(),
+			dep_f,
+			custom);
+		auto& ctx = contexts_.back();
+
+		auto visibility = ps_func->getColumn("visibility").getInt();
+		if (visibility == static_cast<int>(zscript::Visibility::Private))
+			ctx.qualifiers += "private ";
+		else if (visibility == static_cast<int>(zscript::Visibility::Protected))
+			ctx.qualifiers += "protected ";
+
+		if (ps_func->getColumn("static").getInt() > 0)
+			ctx.qualifiers += "static ";
+		if (ps_func->getColumn("virtual").getInt() > 0)
+			ctx.qualifiers += "virtual ";
+
+		// Params
+		ps_func_params->bind(1, identifier_id);
+		while (ps_func_params->executeStep())
+		{
+			auto default_value = ps_func_params->getColumn("default_value").getString();
+			ctx.params.push_back({ ps_func_params->getColumn("type").getString(),
+								   ps_func_params->getColumn("name").getString(),
+								   default_value,
+								   !default_value.empty() });
+		}
+
+		ps_func_params->reset();
+	}
+
+	ps_func->reset();
+}
+
 // -----------------------------------------------------------------------------
 // Clears any custom contextx for the function
 // -----------------------------------------------------------------------------
@@ -342,40 +401,55 @@ void TextLanguage::addFunction(
 // -----------------------------------------------------------------------------
 // Loads types (classes) and functions from parsed ZScript definitions [defs]
 // -----------------------------------------------------------------------------
-void TextLanguage::loadZScript(zscript::Definitions& defs, bool custom)
+void TextLanguage::loadZScript(zscript::Definitions& defs, bool custom, database::Context* db)
 {
-	// Classes
-	for (const auto& c : defs.classes())
+	if (!db)
+		db = &database::global();
+
+	static auto       sql_classes_base   = "SELECT * FROM zs_identifier WHERE type_id = 2 AND source_id = 0";
+	static auto       sql_classes_custom = "SELECT * FROM zs_identifier WHERE type_id = 2 AND source_id > 0";
+	SQLite::Statement ps_classes(*db->connectionRO(), custom ? sql_classes_custom : sql_classes_base);
+	SQLite::Statement ps_class_functions(
+		*db->connectionRO(), "SELECT * FROM zs_identifier WHERE type_id = 6 AND parent_id = ?");
+
+	// Get all class names & identifier ids
+	vector<std::pair<int, string>> class_identifiers;
+	while (ps_classes.executeStep())
+		class_identifiers.emplace_back(ps_classes.getColumn("id"), ps_classes.getColumn("name"));
+
+	for (const auto& id : class_identifiers)
 	{
 		// Add class as type
-		addWord(Type, c.name(), custom);
+		addWord(Type, id.second, custom);
+
+		ps_class_functions.bind(1, id.first);
 
 		// Add class functions
-		for (const auto& f : c.functions())
+		while (ps_class_functions.executeStep())
 		{
-			// Ignore overriding functions
-			if (f.isOverride())
-				continue;
+			auto fn_name = ps_class_functions.getColumn("name").getString();
 
 			// Check if the function exists
-			auto* func = function(f.name());
+			auto* func = function(fn_name);
 
 			// If it doesn't, create it
 			if (!func)
 			{
-				functions_.emplace_back(f.name());
+				functions_.emplace_back(fn_name);
 				func = &functions_.back();
 			}
 
 			// Add the context
-			if (!func->hasContext(f.baseClass()))
-				func->addContext(
-					c.name(),
-					f,
-					custom,
-					zfuncs_ex_props_[func->name()].description,
-					zfuncs_ex_props_[func->name()].deprecated_f);
+			func->addContext(
+				id.second,
+				ps_class_functions.getColumn("id").getInt(),
+				custom,
+				zfuncs_ex_props_[func->name()].description,
+				zfuncs_ex_props_[func->name()].deprecated_f,
+				db);
 		}
+
+		ps_class_functions.reset();
 	}
 }
 

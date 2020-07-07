@@ -14,9 +14,12 @@ namespace slade::library
 sigslot::signal<> signal_updated;
 }
 
-void library::addOrUpdateArchive(string_view file_path, const Archive& archive)
+void library::addOrUpdateArchive(string_view file_path, const Archive& archive, database::Context* db)
 {
-	if (auto sql = database::global().cacheQuery(
+	if (!db)
+		db = &database::global();
+
+	if (auto sql = db->cacheQuery(
 			"am_insert_archive_file",
 			"REPLACE INTO archive_file (path, size, md5, format_id, last_opened, last_modified) "
 			"VALUES (?,?,?,?,?,?)",
@@ -50,12 +53,15 @@ void library::addOrUpdateArchive(string_view file_path, const Archive& archive)
 	}
 }
 
-vector<string> library::recentFiles(unsigned count)
+vector<string> library::recentFiles(unsigned count, database::Context* db)
 {
+	if (!db)
+		db = &database::global();
+
 	vector<string> paths;
 
 	// Get or create cached query to select base resource paths
-	if (auto sql = database::global().cacheQuery(
+	if (auto sql = db->cacheQuery(
 			"am_list_recent_files", "SELECT path FROM archive_file ORDER BY last_opened DESC LIMIT ?"))
 	{
 		sql->bind(1, count);
@@ -68,6 +74,24 @@ vector<string> library::recentFiles(unsigned count)
 	}
 
 	return paths;
+}
+
+int library::archiveFileId(const Archive& archive, database::Context* db)
+{
+	if (!db)
+		db = &database::global();
+
+	int id = 0;
+
+	if (auto sql = db->cacheQuery("am_get_archive_id", "SELECT id FROM archive_file WHERE path = ?"))
+	{
+		sql->bind(1, archive.filename());
+		if (sql->executeStep())
+			id = sql->getColumn(0).getInt();
+		sql->reset();
+	}
+
+	return id;
 }
 
 sigslot::signal<>& library::signalUpdated()

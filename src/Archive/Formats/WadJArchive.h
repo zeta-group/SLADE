@@ -15,8 +15,8 @@ public:
 	bool open(MemChunk& mc) override;                      // Open from MemChunk
 	bool write(MemChunk& mc, bool update = true) override; // Write to MemChunk
 
-	string detectNamespace(ArchiveEntry* entry) override;
-	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) override;
+	string detectNamespace(ArchiveEntry* entry) const override;
+	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) const override;
 
 	static bool isWadJArchive(MemChunk& mc);
 	static bool isWadJArchive(const string& filename);

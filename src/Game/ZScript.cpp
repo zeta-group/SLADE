@@ -34,6 +34,8 @@
 #include "App.h"
 #include "Archive/Archive.h"
 #include "Archive/ArchiveManager.h"
+#include "General/Database.h"
+#include "General/Library.h"
 #include "Utility/StringUtils.h"
 #include "Utility/Tokenizer.h"
 
@@ -64,6 +66,24 @@ bool dump_parsed_states    = false;
 bool dump_parsed_functions = false;
 
 string db_comment = "//$";
+
+auto sql_insert_source     = "INSERT INTO zs_source (archive_file_id, entry_path) VALUES (?,?)";
+auto sql_insert_identifier = "INSERT INTO zs_identifier (source_id, type_id, name, parent_id) VALUES (?,?,?,?)";
+auto sql_insert_enum_value = "INSERT INTO zs_enumerator_value (identifier_id, name, value) VALUES (?,?,?)";
+auto sql_insert_class =
+	"INSERT INTO zs_class (identifier_id, scope_id, base_class, abstract, native, replaces, version)"
+	"VALUES (?,?,?,?,?,?,?)";
+auto sql_insert_class_default     = "INSERT INTO zs_class_default_property (identifier_id, name, value) VALUES (?,?,?)";
+auto sql_insert_class_editor_prop = "INSERT INTO zs_class_editor_property (identifier_id, name, value) VALUES (?,?,?)";
+auto sql_insert_struct            = "INSERT INTO zs_struct (identifier_id, scope_id, native, version) VALUES (?,?,?,?)";
+auto sql_insert_function =
+	"INSERT INTO zs_function (identifier_id, scope_id, return_type, visibility, action, action_scope, const, final, "
+	"native, override, static, vararg, virtual, virtualscope, deprecated, version) "
+	"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+auto sql_insert_function_parameter =
+	"INSERT INTO zs_function_parameter (identifier_id, [index], name, type, default_value) "
+	"VALUES (?,?,?,?,?)";
+
 } // namespace slade::zscript
 
 
@@ -188,15 +208,15 @@ bool checkKeywordValueStatement(const vector<string>& tokens, unsigned index, st
 // -----------------------------------------------------------------------------
 // Parses all statements/blocks in [entry], adding them to [parsed]
 // -----------------------------------------------------------------------------
-void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed, vector<ArchiveEntry*>& entry_stack)
+void parseBlocks(ArchiveEntry& entry, vector<ParsedStatement>& parsed, vector<ArchiveEntry*>& entry_stack)
 {
 	Tokenizer tz;
 	tz.setSpecialCharacters(Tokenizer::DEFAULT_SPECIAL_CHARACTERS + "()+-[]&!?.");
 	tz.enableDecorate(true);
 	tz.setCommentTypes(Tokenizer::CommentTypes::CPPStyle | Tokenizer::CommentTypes::CStyle);
-	tz.openMem(entry->data(), "ZScript");
+	tz.openMem(entry.data(), "ZScript");
 
-	entry_stack.push_back(entry);
+	entry_stack.push_back(&entry);
 
 	while (!tz.atEnd())
 	{
@@ -205,7 +225,7 @@ void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed, vector<Ar
 		{
 			if (tz.checkNC("#include"))
 			{
-				auto inc_entry = entry->relativeEntry(tz.next().text);
+				auto inc_entry = entry.relativeEntry(tz.next().text);
 
 				// Check #include path could be resolved
 				if (!inc_entry)
@@ -213,7 +233,7 @@ void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed, vector<Ar
 					log::warning(
 						"Warning parsing ZScript entry {}: "
 						"Unable to find #included entry \"{}\" at line {}, skipping",
-						entry->name(),
+						entry.name(),
 						tz.current().text,
 						tz.current().line_no);
 				}
@@ -222,12 +242,12 @@ void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed, vector<Ar
 					log::warning(
 						"Warning parsing ZScript entry {}: "
 						"Detected circular #include \"{}\" on line {}, skipping",
-						entry->name(),
+						entry.name(),
 						tz.current().text,
 						tz.current().line_no);
 				}
 				else
-					parseBlocks(inc_entry, parsed, entry_stack);
+					parseBlocks(*inc_entry, parsed, entry_stack);
 			}
 
 			tz.advToNextLine();
@@ -243,14 +263,14 @@ void parseBlocks(ArchiveEntry* entry, vector<ParsedStatement>& parsed, vector<Ar
 
 		// ZScript
 		parsed.push_back({});
-		parsed.back().entry = entry;
+		parsed.back().entry = &entry;
 		if (!parsed.back().parse(tz))
 			parsed.pop_back();
 	}
 
 	// Set entry type
-	if (etype_zscript && entry->type() != etype_zscript)
-		entry->setType(etype_zscript);
+	if (etype_zscript && entry.type() != etype_zscript)
+		entry.setType(etype_zscript);
 
 	entry_stack.pop_back();
 }
@@ -265,6 +285,23 @@ bool isKeyword(string_view word)
 			return true;
 
 	return false;
+}
+
+int findClassIdentifierId(const string& class_name, int source_id, database::Context* db)
+{
+	int id = 0;
+
+	if (auto* ps = db->cacheQuery(
+			"zs_find_class_id", "SELECT id FROM zs_identifier WHERE type_id = 2 AND name = ? AND source_id = ?", true))
+	{
+		ps->bind(1, class_name);
+		ps->bind(2, source_id);
+		if (ps->executeStep())
+			id = ps->getColumn(0).getInt();
+		ps->reset();
+	}
+
+	return id;
 }
 
 } // namespace slade::zscript
@@ -950,7 +987,7 @@ void Definitions::clear()
 // -----------------------------------------------------------------------------
 // Parses ZScript in [entry]
 // -----------------------------------------------------------------------------
-bool Definitions::parseZScript(ArchiveEntry* entry)
+bool Definitions::parseZScript(ArchiveEntry& entry)
 {
 	// Parse into tree of expressions and blocks
 	auto                    start = app::runTimer();
@@ -1023,17 +1060,17 @@ bool Definitions::parseZScript(ArchiveEntry* entry)
 // -----------------------------------------------------------------------------
 // Parses all ZScript entries in [archive]
 // -----------------------------------------------------------------------------
-bool Definitions::parseZScript(Archive* archive)
+bool Definitions::parseZScript(const Archive& archive)
 {
 	// Get base ZScript file
 	Archive::SearchOptions opt;
 	opt.match_name      = "zscript";
 	opt.ignore_ext      = true;
-	auto zscript_enries = archive->findAll(opt);
+	auto zscript_enries = archive.findAll(opt);
 	if (zscript_enries.empty())
 		return false;
 
-	log::info(2, "Parsing ZScript entries found in archive {}", archive->filename());
+	log::info(2, "Parsing ZScript entries found in archive {}", archive.filename());
 
 	// Get ZScript entry type (all parsed ZScript entries will be set to this)
 	etype_zscript = EntryType::fromId("zscript");
@@ -1043,7 +1080,7 @@ bool Definitions::parseZScript(Archive* archive)
 	// Parse ZScript entries
 	bool ok = true;
 	for (auto entry : zscript_enries)
-		if (!parseZScript(entry))
+		if (!parseZScript(*entry))
 			ok = false;
 
 	return ok;
@@ -1189,6 +1226,678 @@ void ParsedStatement::dump(int indent)
 
 
 
+Parser::Parser()
+{
+	bool ok = db_.open(database::programDatabasePath());
+
+	ps_insert_identifier_     = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_identifier);
+	ps_insert_enum_value_     = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_enum_value);
+	ps_insert_class_          = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_class);
+	ps_insert_class_default_  = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_class_default);
+	ps_insert_class_ed_prop_  = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_class_editor_prop);
+	ps_insert_struct_         = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_struct);
+	ps_insert_function_       = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_function);
+	ps_insert_function_param_ = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_function_parameter);
+}
+
+bool Parser::parseZScript(ArchiveEntry& entry, bool base_source)
+{
+	int source_id;
+	if (base_source)
+	{
+		source_id = 0;
+
+		// Delete everything defined in the 'base' source (ie. gzdoom.pk3, source_id 0)
+		db_.enableForeignKeyConstraints(true);
+		db_.exec("DELETE FROM zs_identifier WHERE source_id = 0");
+		db_.enableForeignKeyConstraints(false);
+	}
+	else
+	{
+		auto archive_id = library::archiveFileId(*entry.parent(), &db_);
+
+		db_.enableForeignKeyConstraints(true);
+		SQLite::Statement ps_remove_source(
+			*db_.connectionRW(), "DELETE FROM zs_source WHERE archive_file_id = ? AND entry_path = ?");
+		ps_remove_source.bind(1, archive_id);
+		ps_remove_source.bind(2, entry.path(true));
+		ps_remove_source.exec();
+		db_.enableForeignKeyConstraints(false);
+
+		SQLite::Statement ps_insert_source(*db_.connectionRW(), sql_insert_source);
+		ps_insert_source.bind(1, archive_id);
+		ps_insert_source.bind(2, entry.path(true));
+		ps_insert_source.exec();
+
+		source_id = db_.lastRowId();
+	}
+
+	// Parse into tree of expressions and blocks
+	auto                    start = app::runTimer();
+	vector<ParsedStatement> parsed;
+	vector<ArchiveEntry*>   entry_stack;
+	parseBlocks(entry, parsed, entry_stack);
+	log::info(2, "parseBlocks (DB): {}ms", app::runTimer() - start);
+	start = app::runTimer();
+
+	auto transaction = SQLite::Transaction(*db_.connectionRW());
+
+	for (auto& statement : parsed)
+	{
+		if (statement.tokens.empty())
+			continue;
+
+		if (dump_parsed_blocks)
+			statement.dump();
+
+
+		// Class
+		if (strutil::equalCI(statement.tokens[0], "class"))
+		{
+			if (!parseClass(statement, source_id))
+				return false;
+		}
+
+		// Struct
+		else if (strutil::equalCI(statement.tokens[0], "struct"))
+		{
+			if (!parseStruct(statement, source_id, 0))
+				return false;
+		}
+
+		// Extend Class
+		else if (
+			statement.tokens.size() > 2 && strutil::equalCI(statement.tokens[0], "extend")
+			&& strutil::equalCI(statement.tokens[1], "class"))
+		{
+			if (auto id = findClassIdentifierId(statement.tokens[2], source_id, &db_); id > 0)
+			{
+				if (!parseClassBlock(statement.block, source_id, id))
+					return false;
+			}
+			else
+				logParserMessage(
+					statement,
+					log::MessageType::Warning,
+					fmt::format("Unknown class \"{}\" for extend class", statement.tokens[2]));
+		}
+
+		// Enum
+		else if (strutil::equalCI(statement.tokens[0], "enum"))
+		{
+			if (!parseEnum(statement, source_id, 0))
+				return false;
+		}
+
+		// Const
+		else if (strutil::equalCI(statement.tokens[0], "const"))
+		{
+			if (!parseConst(statement, source_id, 0))
+				return false;
+		}
+
+		// Static Array
+		else if (
+			statement.tokens.size() > 2 && strutil::equalCI(statement.tokens[0], "static")
+			&& strutil::equalCI(statement.tokens[1], "const"))
+		{
+			// TODO
+		}
+
+		// Unknown
+		else
+			zscript::logParserMessage(
+				statement, log::MessageType::Warning, fmt::format("Unknown keyword {}", statement.tokens[0]));
+	}
+
+	transaction.commit();
+
+	log::info(2, "ZScript (DB): {}ms", app::runTimer() - start);
+
+	return true;
+}
+
+bool Parser::parseZScript(shared_ptr<Archive> archive)
+{
+	// Clear definitions from archive in the database
+	auto archive_id = library::archiveFileId(*archive, &db_);
+	if (archive_id > 0)
+		db_.exec(fmt::format("DELETE FROM zs_source WHERE archive_file_id = {}", archive_id));
+
+	// Get base ZScript file
+	Archive::SearchOptions opt;
+	opt.match_name      = "zscript";
+	opt.ignore_ext      = true;
+	auto zscript_enries = archive->findAll(opt);
+	if (zscript_enries.empty())
+		return false;
+
+	log::info(2, "Parsing ZScript entries found in archive {}", archive->filename());
+
+	// Get ZScript entry type (all parsed ZScript entries will be set to this)
+	etype_zscript = EntryType::fromId("zscript");
+	if (etype_zscript == EntryType::unknownType())
+		etype_zscript = nullptr;
+
+	// Parse ZScript entries
+	bool ok = true;
+	for (auto entry : zscript_enries)
+	{
+		auto e_shared = entry->getShared();
+		if (!parseZScript(*e_shared))
+			ok = false;
+	}
+
+	return ok;
+}
+
+bool Parser::parseEnum(ParsedStatement& enum_statement, int source_id, int parent_id)
+{
+	// Check valid statement
+	if (enum_statement.block.empty())
+		return false;
+	if (enum_statement.tokens.size() < 2)
+		return false;
+
+	// Parse name
+	ps_insert_identifier_->bind(1, source_id);
+	ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::Enumerator));
+	ps_insert_identifier_->bind(3, enum_statement.tokens[1]);
+	ps_insert_identifier_->bind(4, parent_id);
+	ps_insert_identifier_->exec();
+	ps_insert_identifier_->reset();
+	auto identifier_id = db_.lastRowId();
+
+	// Parse values
+	unsigned index = 0;
+	unsigned count = enum_statement.block[0].tokens.size();
+	while (index < count)
+	{
+		ps_insert_enum_value_->bind(1, identifier_id);
+		ps_insert_enum_value_->bind(2, enum_statement.block[0].tokens[index]);
+		ps_insert_enum_value_->bind(3, 0); // TODO: Parse value
+		ps_insert_enum_value_->exec();
+		ps_insert_enum_value_->reset();
+
+		// Skip past next ,
+		while (index + 1 < count)
+			if (enum_statement.block[0].tokens[++index] == ',')
+				break;
+
+		index++;
+	}
+
+	return true;
+}
+
+bool zscript::Parser::parseClass(ParsedStatement& class_statement, int source_id)
+{
+	const auto& tokens       = class_statement.tokens;
+	const auto  tokens_count = class_statement.tokens.size();
+
+	if (tokens_count < 2)
+	{
+		logParserMessage(class_statement, log::MessageType::Warning, "Class parse failed");
+		return false;
+	}
+
+	auto&  name = tokens[1];
+	string base_class, version, replaces_class;
+	bool   native   = false;
+	bool   abstract = false;
+	auto   scope    = ObjectScope::Data;
+
+	for (unsigned a = 2; a < tokens_count; a++)
+	{
+		// Inherits
+		if (tokens[a] == ':' && a < tokens_count - 1)
+		{
+			base_class = tokens[a + 1];
+			++a;
+		}
+
+		// Native
+		else if (strutil::equalCI(tokens[a], "native"))
+			native = true;
+
+		// Abstract
+		else if (strutil::equalCI(tokens[a], "abstract"))
+			abstract = true;
+
+		// Version
+		else if (checkKeywordValueStatement(tokens, a, "version", version))
+			a += 3;
+
+		// Replaces
+		else if (strutil::equalCI(tokens[a], "replaces") && a < tokens_count - 1)
+		{
+			replaces_class = tokens[a + 1];
+			++a;
+		}
+
+		// Play scope
+		else if (strutil::equalCI(tokens[a], "play"))
+			scope = ObjectScope::Play;
+
+		// UI scope
+		else if (strutil::equalCI(tokens[a], "ui"))
+			scope = ObjectScope::UI;
+
+		// Unknown
+		else
+			logParserMessage(
+				class_statement,
+				log::MessageType::Warning,
+				fmt::format("Unexpected token \"{}\" in class definition", tokens[a]));
+	}
+
+	// Add identifier row
+	ps_insert_identifier_->bind(1, source_id);
+	ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::Class));
+	ps_insert_identifier_->bind(3, name);
+	ps_insert_identifier_->bind(4, 0);
+	ps_insert_identifier_->exec();
+	ps_insert_identifier_->reset();
+	auto identifier_id = db_.lastRowId();
+
+	// Add class row
+	ps_insert_class_->bind(1, identifier_id);
+	ps_insert_class_->bind(2, static_cast<int>(scope));
+	ps_insert_class_->bind(3, base_class);
+	ps_insert_class_->bind(4, abstract);
+	ps_insert_class_->bind(5, native);
+	ps_insert_class_->bind(6, replaces_class);
+	ps_insert_class_->bind(7, version);
+	ps_insert_class_->exec();
+	ps_insert_class_->reset();
+
+	if (!parseClassBlock(class_statement.block, source_id, identifier_id))
+	{
+		logParserMessage(class_statement, log::MessageType::Warning, "Class parse failed");
+		return false;
+	}
+
+	return true;
+}
+
+bool zscript::Parser::parseClassBlock(vector<ParsedStatement>& block, int source_id, int class_id)
+{
+	for (auto& statement : block)
+	{
+		if (statement.tokens.empty())
+			continue;
+
+		// Default block
+		string_view first_token = statement.tokens[0];
+		if (strutil::equalCI(first_token, "default"))
+		{
+			if (!parseClassDefaults(statement.block, class_id))
+				return false;
+		}
+
+		// States
+		else if (strutil::equalCI(first_token, "states"))
+		{
+		}
+		//	states_.parse(statement);
+
+		// Enum
+		else if (strutil::equalCI(first_token, "enum"))
+		{
+			if (!parseEnum(statement, source_id, class_id))
+				return false;
+		}
+
+		// Struct
+		else if (strutil::equalCI(first_token, "struct"))
+		{
+			if (!parseStruct(statement, source_id, class_id))
+				return false;
+		}
+
+		// DB property comment
+		else if (strutil::startsWith(first_token, db_comment))
+		{
+			/*if (statement.tokens.size() > 1)
+				db_properties_.emplace_back(first_token.substr(3), statement.tokens[1]);
+			else
+				db_properties_.emplace_back(first_token.substr(3), "true");*/
+		}
+
+		// Function
+		else if (Function::isFunction(statement))
+		{
+			if (!parseFunction(statement, source_id, class_id))
+				return false;
+		}
+
+		// Variable
+		else if (statement.tokens.size() >= 2 && statement.block.empty())
+			continue;
+	}
+
+	return true;
+}
+
+bool zscript::Parser::parseClassDefaults(vector<ParsedStatement>& defaults, int class_id)
+{
+	for (auto& statement : defaults)
+	{
+		if (statement.tokens.empty())
+			continue;
+
+		// DB property comment
+		if (strutil::startsWith(statement.tokens[0], db_comment))
+		{
+			string_view prop = statement.tokens[0];
+			prop.remove_prefix(3);
+
+			ps_insert_class_ed_prop_->bind(1, class_id);
+			ps_insert_class_ed_prop_->bind(2, string{ prop });
+
+			if (statement.tokens.size() > 1)
+				ps_insert_class_ed_prop_->bind(3, statement.tokens[1]);
+			else
+				ps_insert_class_ed_prop_->bind(3, "true");
+
+			ps_insert_class_ed_prop_->exec();
+			ps_insert_class_ed_prop_->reset();
+
+			continue;
+		}
+
+		// Flags
+		unsigned t     = 0;
+		unsigned count = statement.tokens.size();
+		while (t < count)
+		{
+			if (statement.tokens[t] == '+')
+				ps_insert_class_default_->bind(3, "true");
+			else if (statement.tokens[t] == '-')
+				ps_insert_class_default_->bind(3, "false");
+			else
+				break;
+
+			ps_insert_class_default_->bind(1, class_id);
+			ps_insert_class_default_->bind(2, statement.tokens[++t]);
+			ps_insert_class_default_->exec();
+			ps_insert_class_default_->reset();
+
+			t++;
+		}
+
+		if (t >= count)
+			continue;
+
+		// Name
+		auto name = statement.tokens[t];
+		if (t + 2 < count && statement.tokens[t + 1] == '.')
+		{
+			name.append(".").append(statement.tokens[t + 2]);
+			t += 2;
+		}
+
+		ps_insert_class_default_->bind(1, class_id);
+		ps_insert_class_default_->bind(2, name);
+
+		// Value
+		// For now ignore anything after the first whitespace/special character
+		// so stuff like arithmetic expressions or comma separated lists won't
+		// really work properly yet
+		if (t + 1 < count)
+			ps_insert_class_default_->bind(3, statement.tokens[t + 1]);
+
+		// Name only (no value), set as boolean true
+		else if (t < count)
+			ps_insert_class_default_->bind(3, "true");
+
+		else
+			continue;
+
+		ps_insert_class_default_->exec();
+		ps_insert_class_default_->reset();
+	}
+
+	return true;
+}
+
+bool zscript::Parser::parseStruct(ParsedStatement& struct_statement, int source_id, int parent_id)
+{
+	const auto tokens_count = struct_statement.tokens.size();
+
+	if (tokens_count < 2)
+	{
+		logParserMessage(struct_statement, log::MessageType::Warning, "Struct parse failed");
+		return false;
+	}
+
+	auto&  name = struct_statement.tokens[1];
+	string version;
+	bool   native = false;
+	auto   scope  = ObjectScope::Data;
+
+	for (unsigned a = 2; a < tokens_count; a++)
+	{
+		// Native
+		if (strutil::equalCI(struct_statement.tokens[a], "native"))
+			native = true;
+
+		// Version
+		else if (checkKeywordValueStatement(struct_statement.tokens, a, "version", version))
+			a += 3;
+
+		// Play scope
+		else if (strutil::equalCI(struct_statement.tokens[a], "play"))
+			scope = ObjectScope::Play;
+
+		// UI scope
+		else if (strutil::equalCI(struct_statement.tokens[a], "ui"))
+			scope = ObjectScope::UI;
+
+		// Data scope
+		else if (strutil::equalCI(struct_statement.tokens[a], "clearscope"))
+			scope = ObjectScope::Data;
+	}
+
+	// Add identifier row
+	ps_insert_identifier_->bind(1, source_id);
+	ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::Struct));
+	ps_insert_identifier_->bind(3, name);
+	ps_insert_identifier_->bind(4, parent_id);
+	ps_insert_identifier_->exec();
+	ps_insert_identifier_->reset();
+	auto identifier_id = db_.lastRowId();
+
+	// Add struct row
+	ps_insert_struct_->bind(1, identifier_id);
+	ps_insert_struct_->bind(2, static_cast<int>(scope));
+	ps_insert_struct_->bind(3, native);
+	ps_insert_struct_->bind(4, version);
+	ps_insert_struct_->exec();
+	ps_insert_struct_->reset();
+
+	// TODO: Parse struct block
+
+	return true;
+}
+
+bool zscript::Parser::parseConst(ParsedStatement& const_statement, int source_id, int parent_id)
+{
+	// Check valid statement
+	if (const_statement.tokens.size() < 4)
+		return false;
+
+	// Add identifier row
+	ps_insert_identifier_->bind(1, source_id);
+	ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::Const));
+	ps_insert_identifier_->bind(3, const_statement.tokens[1]);
+	ps_insert_identifier_->bind(4, parent_id);
+	ps_insert_identifier_->exec();
+	ps_insert_identifier_->reset();
+	// auto identifier_id = db_.lastRowId();
+
+	// TODO: Parse/store value?
+
+	return true;
+}
+
+bool zscript::Parser::parseFunction(ParsedStatement& func_statement, int source_id, int parent_id)
+{
+	struct Parameter
+	{
+		string name;
+		string type;
+		string default_value;
+	};
+
+	string      name, returns, deprecated, version, action_scope;
+	Visibility  visibility = Visibility::Public;
+	ObjectScope scope      = ObjectScope::Data;
+	bool        action, bconst, final, native, override, bstatic, vararg, bvirtual, virtualscope;
+
+	action = bconst = final = native = override = bstatic = vararg = bvirtual = virtualscope = false;
+
+	// Parse from last to first token (easier this way)
+	const auto& tokens      = func_statement.tokens;
+	unsigned    token_count = tokens.size();
+	unsigned    i           = token_count - 1;
+
+	// Find end of parameters
+	while (tokens[i] != ")")
+	{
+		// Const
+		if (strutil::equalCI(tokens.back(), "const"))
+			bconst = true;
+
+		--i;
+	}
+	auto params_end = i;
+
+	// Find start of parameters
+	while (tokens[i] != "(")
+		--i;
+
+	// Parse parameters
+	vector<Parameter> params;
+	unsigned          pi = i + 1;
+	while (pi < params_end)
+	{
+		auto type = parseType(tokens, pi);
+
+		if (type == "...")
+		{
+			params.push_back({ "...", {}, {} });
+			break;
+		}
+		else
+		{
+			params.push_back({ tokens[pi++], type, {} });
+			if (pi < params_end && tokens[pi] == '=')
+			{
+				++pi;
+				params.back().default_value = parseValue(tokens, pi);
+			}
+		}
+
+		if (pi < params_end && tokens[pi] == strutil::COMMA)
+			++pi;
+	}
+
+	// Name
+	name = tokens[--i];
+
+	// Returns
+	returns = tokens[--i];
+	while (i >= 1 && tokens[i - 1] == ",")
+	{
+		i -= 2;
+		returns = tokens[i] + ", " + returns;
+	}
+	auto att_end = i;
+
+	// Attributes/flags
+	for (unsigned ti = 0; ti < att_end; ++ti)
+	{
+		if (checkKeywordValueStatement(tokens, ti, "action", action_scope))
+			ti += 3;
+		else if (strutil::equalCI(tokens[ti], "action"))
+			action = true;
+		else if (strutil::equalCI(tokens[ti], "final"))
+			final = true;
+		else if (strutil::equalCI(tokens[ti], "native"))
+			native = true;
+		else if (strutil::equalCI(tokens[ti], "override"))
+			override = true;
+		else if (strutil::equalCI(tokens[ti], "static"))
+			bstatic = true;
+		else if (strutil::equalCI(tokens[ti], "vararg"))
+			vararg = true;
+		else if (strutil::equalCI(tokens[ti], "virtual"))
+			bvirtual = true;
+		else if (strutil::equalCI(tokens[ti], "virtualscope"))
+			virtualscope = true;
+		else if (strutil::equalCI(tokens[ti], "private"))
+			visibility = Visibility::Private;
+		else if (strutil::equalCI(tokens[ti], "protected"))
+			visibility = Visibility::Protected;
+		else if (strutil::equalCI(tokens[ti], "play"))
+			scope = ObjectScope::Play;
+		else if (strutil::equalCI(tokens[ti], "ui"))
+			scope = ObjectScope::UI;
+		else if (checkKeywordValueStatement(tokens, ti, "deprecated", deprecated))
+			ti += 3;
+		else if (checkKeywordValueStatement(tokens, ti, "version", version))
+			ti += 3;
+	}
+
+	// Add identifier row
+	ps_insert_identifier_->bind(1, source_id);
+	ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::Function));
+	ps_insert_identifier_->bind(3, name);
+	ps_insert_identifier_->bind(4, parent_id);
+	ps_insert_identifier_->exec();
+	ps_insert_identifier_->reset();
+	auto identifier_id = db_.lastRowId();
+
+	// Add function row
+	ps_insert_function_->bind(1, identifier_id);
+	ps_insert_function_->bind(2, static_cast<int>(scope));
+	ps_insert_function_->bind(3, returns);
+	ps_insert_function_->bind(4, static_cast<int>(visibility));
+	ps_insert_function_->bind(5, action);
+	ps_insert_function_->bind(6, action_scope);
+	ps_insert_function_->bind(7, bconst);
+	ps_insert_function_->bind(8, final);
+	ps_insert_function_->bind(9, native);
+	ps_insert_function_->bind(10, override);
+	ps_insert_function_->bind(11, bstatic);
+	ps_insert_function_->bind(12, vararg);
+	ps_insert_function_->bind(13, bvirtual);
+	ps_insert_function_->bind(14, virtualscope);
+	ps_insert_function_->bind(15, deprecated);
+	ps_insert_function_->bind(16, version);
+	ps_insert_function_->exec();
+	ps_insert_function_->reset();
+
+	// Add parameters
+	auto index = 0;
+	for (const auto& param : params)
+	{
+		ps_insert_function_param_->bind(1, identifier_id);
+		ps_insert_function_param_->bind(2, index++);
+		ps_insert_function_param_->bind(3, param.name);
+		ps_insert_function_param_->bind(4, param.type);
+		ps_insert_function_param_->bind(5, param.default_value);
+		ps_insert_function_param_->exec();
+		ps_insert_function_param_->reset();
+	}
+
+	return true;
+}
+
+
+
+
 
 
 
@@ -1222,7 +1931,7 @@ CONSOLE_COMMAND(test_parse_zscript, 0, false)
 	if (entry)
 	{
 		Definitions test;
-		if (test.parseZScript(entry))
+		if (test.parseZScript(*entry))
 			log::console("Parsed Successfully");
 		else
 			log::console("Parsing failed");
@@ -1248,7 +1957,7 @@ CONSOLE_COMMAND(test_parseblocks, 1, false)
 	vector<ArchiveEntry*>   entry_stack;
 	for (auto a = 0; a < num; ++a)
 	{
-		parseBlocks(entry, parsed, entry_stack);
+		parseBlocks(*entry, parsed, entry_stack);
 		parsed.clear();
 	}
 	log::console(fmt::format("Took {}ms", app::runTimer() - start));

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "General/Database.h"
 #include "ThingType.h"
 #include "Utility/Property.h"
 
@@ -11,6 +12,30 @@ class Tokenizer;
 
 namespace zscript
 {
+	enum class ObjectScope
+	{
+		Data = 1,
+		Play,
+		UI
+	};
+
+	enum class IdentifierType
+	{
+		Variable = 1,
+		Class,
+		Struct,
+		Enumerator,
+		Const,
+		Function
+	};
+
+	enum class Visibility
+	{
+		Public = 1,
+		Private,
+		Protected
+	};
+
 	struct ParsedStatement
 	{
 		ArchiveEntry* entry = nullptr;
@@ -186,8 +211,8 @@ namespace zscript
 		const vector<Class>& classes() const { return classes_; }
 
 		void clear();
-		bool parseZScript(ArchiveEntry* entry);
-		bool parseZScript(Archive* archive);
+		bool parseZScript(ArchiveEntry& entry);
+		bool parseZScript(const Archive& archive);
 
 		void exportThingTypes(std::map<int, game::ThingType>& types, vector<game::ThingType>& parsed);
 
@@ -197,5 +222,40 @@ namespace zscript
 		vector<Variable>   variables_;
 		vector<Function>   functions_; // needed? dunno if global functions are a thing
 	};
+
+
+	class Parser
+	{
+	public:
+		Parser();
+		~Parser() = default;
+
+		database::Context& dbContext() { return db_; }
+
+		bool parseZScript(ArchiveEntry& entry, bool base_source = false);
+		bool parseZScript(shared_ptr<Archive> archive);
+
+	private:
+		database::Context db_;
+
+		// DB perpared statements
+		unique_ptr<SQLite::Statement> ps_insert_identifier_;
+		unique_ptr<SQLite::Statement> ps_insert_enum_value_;
+		unique_ptr<SQLite::Statement> ps_insert_class_;
+		unique_ptr<SQLite::Statement> ps_insert_class_default_;
+		unique_ptr<SQLite::Statement> ps_insert_class_ed_prop_;
+		unique_ptr<SQLite::Statement> ps_insert_struct_;
+		unique_ptr<SQLite::Statement> ps_insert_function_;
+		unique_ptr<SQLite::Statement> ps_insert_function_param_;
+
+		bool parseEnum(ParsedStatement& enum_statement, int source_id, int parent_id);
+		bool parseClass(ParsedStatement& class_statement, int source_id);
+		bool parseClassBlock(vector<ParsedStatement>& block, int source_id, int class_id);
+		bool parseClassDefaults(vector<ParsedStatement>& defaults, int class_id);
+		bool parseStruct(ParsedStatement& struct_statement, int source_id, int parent_id);
+		bool parseConst(ParsedStatement& const_statement, int source_id, int parent_id);
+		bool parseFunction(ParsedStatement& func_statement, int source_id, int parent_id);
+	};
+
 } // namespace zscript
 } // namespace slade

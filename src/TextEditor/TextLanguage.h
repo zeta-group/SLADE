@@ -8,6 +8,11 @@ namespace zscript
 	class Definitions;
 } // namespace zscript
 
+namespace database
+{
+	class Context;
+}
+
 class TLFunction
 {
 public:
@@ -35,9 +40,7 @@ public:
 		Context() = default;
 
 		Context(string_view context, string_view return_type, string_view description) :
-			context{ context },
-			return_type{ return_type },
-			description{ description }
+			context{ context }, return_type{ return_type }, description{ description }
 		{
 		}
 
@@ -78,6 +81,13 @@ public:
 		bool                     custom,
 		string_view              desc,
 		string_view              dep_f);
+	void addContext(
+		string_view        context,
+		int                identifier_id,
+		bool               custom,
+		string_view        desc,
+		string_view        dep_f,
+		database::Context* db);
 
 	void clear()
 	{
@@ -148,7 +158,7 @@ public:
 		string_view deprecated  = "",
 		bool        replace     = false,
 		string_view return_type = "");
-	void loadZScript(zscript::Definitions& defs, bool custom = false);
+	void loadZScript(zscript::Definitions& defs, bool custom = false, database::Context* db = nullptr);
 
 	string wordList(WordType type, bool include_custom = true);
 	string functionsList();

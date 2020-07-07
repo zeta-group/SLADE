@@ -21,7 +21,7 @@ public:
 
 	// Misc
 	bool     loadEntryData(ArchiveEntry* entry) override;
-	unsigned numEntries() override { return rootDir()->numEntries(); }
+	unsigned numEntries() const override { return rootDir()->numEntries(); }
 
 	// Entry addition/removal
 	shared_ptr<ArchiveEntry> addEntry(
@@ -39,8 +39,8 @@ public:
 	bool renameEntry(ArchiveEntry* entry, string_view name) override;
 
 	// Detection
-	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) override;
-	string detectNamespace(ArchiveEntry* entry) override;
+	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) const override;
+	string detectNamespace(ArchiveEntry* entry) const override;
 
 	static bool isDatArchive(MemChunk& mc);
 	static bool isDatArchive(const string& filename);

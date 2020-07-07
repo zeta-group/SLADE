@@ -542,7 +542,7 @@ vector<Archive::MapDesc> ZipArchive::detectMaps()
 // Returns the first entry matching the search criteria in [options], or null if
 // no matching entry was found
 // -----------------------------------------------------------------------------
-ArchiveEntry* ZipArchive::findFirst(SearchOptions& options)
+ArchiveEntry* ZipArchive::findFirst(SearchOptions& options) const
 {
 	// Init search variables
 	auto dir = rootDir().get();
@@ -575,7 +575,7 @@ ArchiveEntry* ZipArchive::findFirst(SearchOptions& options)
 // Returns the last entry matching the search criteria in [options], or null if
 // no matching entry was found
 // -----------------------------------------------------------------------------
-ArchiveEntry* ZipArchive::findLast(SearchOptions& options)
+ArchiveEntry* ZipArchive::findLast(SearchOptions& options) const
 {
 	// Init search variables
 	auto dir = rootDir().get();
@@ -607,7 +607,7 @@ ArchiveEntry* ZipArchive::findLast(SearchOptions& options)
 // -----------------------------------------------------------------------------
 // Returns all entries matching the search criteria in [options]
 // -----------------------------------------------------------------------------
-vector<ArchiveEntry*> ZipArchive::findAll(SearchOptions& options)
+vector<ArchiveEntry*> ZipArchive::findAll(SearchOptions& options) const
 {
 	// Init search variables
 	auto                  dir = rootDir().get();

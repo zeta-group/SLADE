@@ -82,8 +82,8 @@ bool database::Context::open(string_view file_path)
 		return false;
 
 	file_path_     = file_path;
-	connection_ro_ = std::make_unique<SQLite::Database>(file_path_, SQLite::OPEN_READONLY);
-	connection_rw_ = std::make_unique<SQLite::Database>(file_path_, SQLite::OPEN_READWRITE);
+	connection_ro_ = std::make_unique<SQLite::Database>(file_path_, SQLite::OPEN_READONLY, 100);
+	connection_rw_ = std::make_unique<SQLite::Database>(file_path_, SQLite::OPEN_READWRITE, 100);
 
 	return true;
 }
@@ -169,9 +169,28 @@ int database::Context::exec(const char* query) const
 	return connection_rw_ ? connection_rw_->exec(query) : 0;
 }
 
+i64 database::Context::lastRowId() const
+{
+	return connection_rw_->getLastInsertRowid();
+}
+
 SQLite::Transaction database::Context::beginTransaction(bool write)
 {
 	return SQLite::Transaction(write ? *connection_rw_ : *connection_ro_);
+}
+
+void database::Context::enableForeignKeyConstraints(bool enable)
+{
+	if (enable)
+	{
+		connection_rw_->exec("PRAGMA foreign_keys = ON");
+		connection_ro_->exec("PRAGMA foreign_keys = ON");
+	}
+	else
+	{
+		connection_rw_->exec("PRAGMA foreign_keys = OFF");
+		connection_ro_->exec("PRAGMA foreign_keys = OFF");
+	}
 }
 
 
@@ -375,6 +394,14 @@ bool database::init()
 void database::close()
 {
 	db_global.close();
+}
+
+// -----------------------------------------------------------------------------
+// Returns the path to the program database file
+// -----------------------------------------------------------------------------
+string database::programDatabasePath()
+{
+	return app::path("slade.sqlite", app::Dir::User);
 }
 
 

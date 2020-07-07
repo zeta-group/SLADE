@@ -517,7 +517,7 @@ vector<Archive::MapDesc> DirArchive::detectMaps()
 // Returns the first entry matching the search criteria in [options], or null if
 // no matching entry was found
 // -----------------------------------------------------------------------------
-ArchiveEntry* DirArchive::findFirst(SearchOptions& options)
+ArchiveEntry* DirArchive::findFirst(SearchOptions& options) const
 {
 	// Init search variables
 	auto dir = rootDir().get();
@@ -550,7 +550,7 @@ ArchiveEntry* DirArchive::findFirst(SearchOptions& options)
 // Returns the last entry matching the search criteria in [options], or null if
 // no matching entry was found
 // -----------------------------------------------------------------------------
-ArchiveEntry* DirArchive::findLast(SearchOptions& options)
+ArchiveEntry* DirArchive::findLast(SearchOptions& options) const
 {
 	// Init search variables
 	auto dir = rootDir().get();
@@ -582,7 +582,7 @@ ArchiveEntry* DirArchive::findLast(SearchOptions& options)
 // -----------------------------------------------------------------------------
 // Returns all entries matching the search criteria in [options]
 // -----------------------------------------------------------------------------
-vector<ArchiveEntry*> DirArchive::findAll(SearchOptions& options)
+vector<ArchiveEntry*> DirArchive::findAll(SearchOptions& options) const
 {
 	// Init search variables
 	auto dir = rootDir().get();

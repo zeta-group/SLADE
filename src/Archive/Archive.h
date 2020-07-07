@@ -86,7 +86,7 @@ public:
 
 	// Misc
 	virtual bool     loadEntryData(ArchiveEntry* entry) = 0;
-	virtual unsigned numEntries();
+	virtual unsigned numEntries() const;
 	virtual void     close();
 	void             entryStateChanged(ArchiveEntry* entry);
 	void             putEntryTreeAsList(vector<ArchiveEntry*>& list, ArchiveDir* start = nullptr) const;
@@ -130,8 +130,8 @@ public:
 	// Detection
 	virtual MapDesc         mapDesc(ArchiveEntry* maphead) { return MapDesc(); }
 	virtual vector<MapDesc> detectMaps() { return {}; }
-	virtual string          detectNamespace(ArchiveEntry* entry);
-	virtual string          detectNamespace(size_t index, ArchiveDir* dir = nullptr);
+	virtual string          detectNamespace(ArchiveEntry* entry) const;
+	virtual string          detectNamespace(size_t index, ArchiveDir* dir = nullptr) const;
 
 	// Search
 	struct SearchOptions
@@ -153,9 +153,9 @@ public:
 			search_subdirs  = false;
 		}
 	};
-	virtual ArchiveEntry*         findFirst(SearchOptions& options);
-	virtual ArchiveEntry*         findLast(SearchOptions& options);
-	virtual vector<ArchiveEntry*> findAll(SearchOptions& options);
+	virtual ArchiveEntry*         findFirst(SearchOptions& options) const;
+	virtual ArchiveEntry*         findLast(SearchOptions& options) const;
+	virtual vector<ArchiveEntry*> findAll(SearchOptions& options) const;
 	virtual vector<ArchiveEntry*> findModifiedEntries(ArchiveDir* dir = nullptr);
 
 	// Signals
@@ -167,7 +167,7 @@ public:
 		sigslot::signal<Archive&, ArchiveEntry&>                   entry_added;
 		sigslot::signal<Archive&, ArchiveDir&, ArchiveEntry&>      entry_removed; // Archive, Parent Dir, Removed Entry
 		sigslot::signal<Archive&, ArchiveEntry&>                   entry_state_changed;
-		sigslot::signal<Archive&, ArchiveEntry&, string_view>      entry_renamed;
+		sigslot::signal<Archive&, ArchiveEntry&, string_view>      entry_renamed; // Archive, Entry, Previous Name
 		sigslot::signal<Archive&, ArchiveDir&, unsigned, unsigned> entries_swapped; // Archive, Dir, Index 1, Index 2
 		sigslot::signal<Archive&, ArchiveDir&>                     dir_added;
 		sigslot::signal<Archive&, ArchiveDir&, ArchiveDir&>        dir_removed; // Archive, Parent dir, Removed Dir
@@ -216,7 +216,7 @@ public:
 	}
 
 	// Misc
-	unsigned numEntries() override { return rootDir()->numEntries(); }
+	unsigned numEntries() const override { return rootDir()->numEntries(); }
 	void     getEntryTreeAsList(vector<ArchiveEntry*>& list, ArchiveDir* start = nullptr)
 	{
 		return Archive::putEntryTreeAsList(list, nullptr);
@@ -255,8 +255,8 @@ public:
 	}
 
 	// Detection
-	string detectNamespace(ArchiveEntry* entry) override { return "global"; }
-	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) override { return "global"; }
+	string detectNamespace(ArchiveEntry* entry) const override { return "global"; }
+	string detectNamespace(size_t index, ArchiveDir* dir = nullptr) const override { return "global"; }
 };
 
 // Simple class that will block and unblock modification signals for an archive via RAII

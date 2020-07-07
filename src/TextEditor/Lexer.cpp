@@ -760,8 +760,9 @@ void ZScriptLexer::styleWord(LexerState& state, string_view word)
 		++index;
 	}
 
-	// Check for '(' (possible function)
-	if (state.editor->GetCharAt(index) == '(')
+	// Check for '(' or ';' (possible function)
+	auto chr = state.editor->GetCharAt(index);
+	if (chr == '(' || chr == ';')
 	{
 		string word_str{ word };
 		if (!language_->caseSensitive())
@@ -792,7 +793,7 @@ void ZScriptLexer::clearWords()
 // -----------------------------------------------------------------------------
 bool ZScriptLexer::isFunction(TextEditorCtrl* editor, int start_pos, int end_pos)
 {
-	// Check for '(' after word
+	// Check for '(' or ';' after word
 
 	// Skip whitespace
 	auto index = end_pos;
@@ -803,7 +804,7 @@ bool ZScriptLexer::isFunction(TextEditorCtrl* editor, int start_pos, int end_pos
 			break;
 		++index;
 	}
-	if (editor->GetCharAt(index) != '(')
+	if (editor->GetCharAt(index) != '(' && editor->GetCharAt(index) != ';')
 		return false;
 
 	// Check if word is a function name
