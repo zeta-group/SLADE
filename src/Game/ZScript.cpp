@@ -83,6 +83,9 @@ auto sql_insert_function =
 auto sql_insert_function_parameter =
 	"INSERT INTO zs_function_parameter (identifier_id, [index], name, type, default_value) "
 	"VALUES (?,?,?,?,?)";
+auto sql_insert_state_frame =
+	"INSERT INTO zs_state_frame (identifier_id, sprite_base, sprite_frames, duration) "
+	"VALUES (?,?,?,?)";
 
 } // namespace slade::zscript
 
@@ -97,7 +100,7 @@ namespace slade::zscript
 // -----------------------------------------------------------------------------
 // Writes a log [message] of [type] beginning with the location of [statement]
 // -----------------------------------------------------------------------------
-void logParserMessage(ParsedStatement& statement, log::MessageType type, string_view message)
+void logParserMessage(const ParsedStatement& statement, log::MessageType type, string_view message)
 {
 	string location = "<unknown location>";
 	if (statement.entry)
@@ -981,7 +984,6 @@ void Definitions::clear()
 	classes_.clear();
 	enumerators_.clear();
 	variables_.clear();
-	functions_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -1238,6 +1240,7 @@ Parser::Parser()
 	ps_insert_struct_         = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_struct);
 	ps_insert_function_       = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_function);
 	ps_insert_function_param_ = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_function_parameter);
+	ps_insert_state_frame_    = std::make_unique<SQLite::Statement>(*db_.connectionRW(), sql_insert_state_frame);
 }
 
 bool Parser::parseZScript(ArchiveEntry& entry, bool base_source)
@@ -1538,8 +1541,9 @@ bool zscript::Parser::parseClassBlock(vector<ParsedStatement>& block, int source
 		// States
 		else if (strutil::equalCI(first_token, "states"))
 		{
+			if (!parseStateTable(statement, source_id, class_id))
+				return false;
 		}
-		//	states_.parse(statement);
 
 		// Enum
 		else if (strutil::equalCI(first_token, "enum"))
@@ -1890,6 +1894,121 @@ bool zscript::Parser::parseFunction(ParsedStatement& func_statement, int source_
 		ps_insert_function_param_->bind(5, param.default_value);
 		ps_insert_function_param_->exec();
 		ps_insert_function_param_->reset();
+	}
+
+	return true;
+}
+
+bool zscript::Parser::parseStateTable(const ParsedStatement& states_statement, int source_id, int parent_id)
+{
+	std::map<string, State> parsed_states;
+	vector<string>          current_states;
+	for (const auto& statement : states_statement.block)
+	{
+		if (statement.tokens.empty())
+			continue;
+
+		auto states_added = false;
+		auto index        = 0u;
+
+		// Check for state labels
+		for (auto a = 0u; a < statement.tokens.size(); ++a)
+		{
+			if (statement.tokens[a] == ':')
+			{
+				// Ignore ::
+				if (a + 1 < statement.tokens.size() && statement.tokens[a + 1] == ':')
+				{
+					++a;
+					continue;
+				}
+
+				if (!states_added)
+					current_states.clear();
+
+				string state;
+				for (auto b = index; b < a; ++b)
+					state += statement.tokens[b];
+
+				strutil::lowerIP(state);
+				current_states.push_back(state);
+				// if (state_first_.empty())
+				//	state_first_ = state;
+				states_added = true;
+
+				index = a + 1;
+			}
+		}
+
+		if (index >= statement.tokens.size())
+		{
+			logParserMessage(
+				statement,
+				log::MessageType::Warning,
+				fmt::format("Failed to parse states block beginning on line {}", states_statement.line));
+			continue;
+		}
+
+		// Ignore state commands
+		if (strutil::equalCI(statement.tokens[index], "stop") || strutil::equalCI(statement.tokens[index], "goto")
+			|| strutil::equalCI(statement.tokens[index], "loop") || strutil::equalCI(statement.tokens[index], "wait")
+			|| strutil::equalCI(statement.tokens[index], "fail"))
+			continue;
+
+		if (index + 2 < statement.tokens.size())
+		{
+			// Parse duration
+			int duration = 0;
+			if (statement.tokens[index + 2] == '-' && index + 3 < statement.tokens.size())
+			{
+				// Negative number
+				strutil::toInt(statement.tokens[index + 3], duration);
+				duration = -duration;
+			}
+			else
+				strutil::toInt(statement.tokens[index + 2], duration);
+
+			for (auto& state : current_states)
+				parsed_states[state].frames.push_back(
+					{ statement.tokens[index], statement.tokens[index + 1], duration });
+		}
+	}
+
+	parsed_states.erase(strutil::EMPTY);
+
+	if (dump_parsed_states)
+	{
+		for (auto& state : parsed_states)
+		{
+			log::debug("State {}:", state.first);
+			for (auto& frame : state.second.frames)
+				log::debug(
+					"Sprite: {}, Frames: {}, Duration: {}", frame.sprite_base, frame.sprite_frame, frame.duration);
+		}
+	}
+
+	// Write states to database
+	for (const auto& state : parsed_states)
+	{
+		// Add identifier row
+		ps_insert_identifier_->bind(1, source_id);
+		ps_insert_identifier_->bind(2, static_cast<int>(IdentifierType::State));
+		ps_insert_identifier_->bind(3, state.first);
+		ps_insert_identifier_->bind(4, parent_id);
+		ps_insert_identifier_->exec();
+		ps_insert_identifier_->reset();
+		auto identifier_id = db_.lastRowId();
+
+		// Add frame rows
+		for (const auto& frame : state.second.frames)
+		{
+			ps_insert_state_frame_->bind(1, identifier_id);
+			ps_insert_state_frame_->bind(2, frame.sprite_base);
+			ps_insert_state_frame_->bind(3, frame.sprite_frame);
+			ps_insert_state_frame_->bind(4, frame.duration);
+			ps_insert_state_frame_->exec();
+			ps_insert_state_frame_->reset();
+		}
 	}
 
 	return true;

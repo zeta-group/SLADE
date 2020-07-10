@@ -11,5 +11,6 @@ INSERT INTO zs_identifier_type (id, name) VALUES (3, 'struct');
 INSERT INTO zs_identifier_type (id, name) VALUES (4, 'enum');
 INSERT INTO zs_identifier_type (id, name) VALUES (5, 'const');
 INSERT INTO zs_identifier_type (id, name) VALUES (6, 'function');
+INSERT INTO zs_identifier_type (id, name) VALUES (7, 'state');
 
 COMMIT TRANSACTION;

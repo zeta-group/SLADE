@@ -26,7 +26,8 @@ namespace zscript
 		Struct,
 		Enumerator,
 		Const,
-		Function
+		Function,
+		State
 	};
 
 	enum class Visibility
@@ -66,7 +67,7 @@ namespace zscript
 		vector<Value> values_;
 	};
 
-	class Identifier // rename this
+	class Identifier
 	{
 	public:
 		Identifier(string_view name = "") : name_{ name } {}
@@ -220,7 +221,6 @@ namespace zscript
 		vector<Class>      classes_;
 		vector<Enumerator> enumerators_;
 		vector<Variable>   variables_;
-		vector<Function>   functions_; // needed? dunno if global functions are a thing
 	};
 
 
@@ -247,6 +247,7 @@ namespace zscript
 		unique_ptr<SQLite::Statement> ps_insert_struct_;
 		unique_ptr<SQLite::Statement> ps_insert_function_;
 		unique_ptr<SQLite::Statement> ps_insert_function_param_;
+		unique_ptr<SQLite::Statement> ps_insert_state_frame_;
 
 		bool parseEnum(ParsedStatement& enum_statement, int source_id, int parent_id);
 		bool parseClass(ParsedStatement& class_statement, int source_id);
@@ -255,6 +256,7 @@ namespace zscript
 		bool parseStruct(ParsedStatement& struct_statement, int source_id, int parent_id);
 		bool parseConst(ParsedStatement& const_statement, int source_id, int parent_id);
 		bool parseFunction(ParsedStatement& func_statement, int source_id, int parent_id);
+		bool parseStateTable(const ParsedStatement& states_statement, int source_id, int parent_id);
 	};
 
 } // namespace zscript
