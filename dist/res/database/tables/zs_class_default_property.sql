@@ -6,4 +6,6 @@ CREATE TABLE zs_class_default_property (
     value         TEXT
 );
 
+CREATE INDEX zs_class_default_property_identifier_id ON zs_class_default_property (identifier_id);
+
 COMMIT TRANSACTION;

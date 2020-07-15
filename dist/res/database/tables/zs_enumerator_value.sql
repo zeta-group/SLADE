@@ -6,4 +6,6 @@ CREATE TABLE zs_enumerator_value (
     value         INTEGER
 );
 
+CREATE INDEX zs_enumerator_value_identifier_id ON zs_enumerator_value (identifier_id);
+
 COMMIT TRANSACTION;

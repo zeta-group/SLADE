@@ -12,4 +12,6 @@ CREATE TABLE zs_function_parameter (
     )
 );
 
+CREATE INDEX zs_function_parameter_identifier_id ON zs_function_parameter (identifier_id);
+
 COMMIT TRANSACTION;

@@ -1,7 +1,8 @@
 BEGIN TRANSACTION;
 
 CREATE TABLE zs_function (
-    identifier_id INTEGER REFERENCES zs_identifier (id) ON DELETE CASCADE,
+    identifier_id INTEGER REFERENCES zs_identifier (id) ON DELETE CASCADE
+                          PRIMARY KEY,
     scope_id      INTEGER REFERENCES zs_object_scope (id),
     return_type   TEXT,
     visibility    INTEGER,

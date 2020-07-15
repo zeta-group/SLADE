@@ -10,4 +10,6 @@ CREATE TABLE zs_class_editor_property (
     )
 );
 
+CREATE INDEX zs_class_editor_property_identifier_id ON zs_class_editor_property (identifier_id);
+
 COMMIT TRANSACTION;

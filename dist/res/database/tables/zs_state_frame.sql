@@ -7,4 +7,6 @@ CREATE TABLE zs_state_frame (
     duration      INTEGER
 );
 
+CREATE INDEX zs_state_frame_identifier_id ON zs_state_frame (identifier_id);
+
 COMMIT TRANSACTION;
