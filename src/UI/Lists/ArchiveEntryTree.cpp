@@ -144,9 +144,7 @@ void ArchiveViewModel::openArchive(shared_ptr<Archive> archive, UndoManager* und
 
 	// Dir added
 	connections_ += archive->signals().dir_added.connect([this](Archive& archive, ArchiveDir& dir) {
-		auto parent = createItemForDirectory(*dir.parent());
-		log::info("Dir added (parent {}, dir {})", parent.GetID(), static_cast<void*>(dir.dirEntry()));
-		ItemAdded(parent, wxDataViewItem(dir.dirEntry()));
+		ItemAdded(createItemForDirectory(*dir.parent()), wxDataViewItem(dir.dirEntry()));
 	});
 
 	// Dir removed
@@ -186,6 +184,11 @@ void ArchiveViewModel::setFilter(string_view name, string_view category)
 	if (name.empty() && filter_name_.empty() && filter_category_ == category)
 		return;
 
+	// Get current root items (to remove)
+	wxDataViewItemArray prev_items;
+	if (auto* archive = archive_.lock().get())
+		getDirChildItems(prev_items, *archive->rootDir());
+
 	filter_category_ = category;
 
 	// Process filter string
@@ -207,17 +210,18 @@ void ArchiveViewModel::setFilter(string_view name, string_view category)
 
 	if (auto* archive = archive_.lock().get())
 	{
-		wxDataViewItemArray items;
-		const auto&         dir = *archive->rootDir();
+		sort_enabled_ = false;
 
-		// Remove root items (unfiltered)
-		getDirChildItems(items, dir, false);
-		ItemsDeleted({}, items);
+		// Remove previous root items
+		ItemsDeleted({}, prev_items);
 
 		// Re-Add root items (filtered)
-		items.clear();
-		getDirChildItems(items, dir);
+		wxDataViewItemArray items;
+		getDirChildItems(items, *archive->rootDir());
 		ItemsAdded({}, items);
+
+		sort_enabled_ = true;
+		Resort();
 	}
 }
 
@@ -493,6 +497,9 @@ int ArchiveViewModel::Compare(
 	unsigned int          column,
 	bool                  ascending) const
 {
+	if (!sort_enabled_)
+		return 0;
+
 	auto* e1       = static_cast<ArchiveEntry*>(item1.GetID());
 	auto* e1_type  = e1->type();
 	auto* e2       = static_cast<ArchiveEntry*>(item2.GetID());
